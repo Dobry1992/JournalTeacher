@@ -1,0 +1,70 @@
+﻿@model IEnumerable<Portal.Models.Group>
+
+@{
+    ViewData["Title"] = "Учебные группы";
+    string[] colors = { "primary", "success", "danger", "warning", "info", "gradient-navy", "gradient-olive", "gradient-lime", "gradient-teal", "gradient-yellow", "indigo" };
+    int i = 0;
+}
+
+@await Html.PartialAsync("_NavMenuJournal")
+
+
+<section class="content-header">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-sm-6">
+            </div>
+        </div>
+    </div>
+</section>
+<section class="content">
+    <div class="container-fluid">
+        <form asp-action="IndexGroups" method="get" class="form-inline mb-3">
+            <div class="form-group m-auto">
+                <label class="mr-2" for="searchString"></label>
+                <input class="form-control mr-2" type="text" name="searchString" />
+                <input type="submit" value="Поиск" class="btn btn-primary mr-2" />
+            </div>
+        </form>
+        @foreach (var inst in ViewBag.Institutes)
+        {
+            @if (i == colors.Length) i = 0;
+            <section class="content">
+                <div class="container-fluid">
+                    <h4 class="mb-3 text-center bg-@colors[i] headGroup p-2 rounded">@inst.Name</h4>
+                    <div class="d-flex flex-row">
+                        @foreach (var item in Model)
+                        {
+                            @if (inst.InstituteID == item.InstituteID)
+                            {
+                                @if (item.DateExit > DateTime.Now)
+                                {
+                                    <a asp-controller="Groups" asp-action="DetailsGroup" asp-route-id="@item.GroupID" class="groups d-block p-4 mr-3 mb-3 text-decoration-none rounded shadow-lg bg-@colors[i]">
+                                        <p class="text-center">
+                                            <span class="text-xl">@Html.DisplayFor(modelItem => item.Name)</span><br />
+                                            <span>@item.DateEnter.ToShortDateString() - @item.DateExit.ToShortDateString()</span>
+                                        </p>
+                                    </a>
+                                }
+                                else
+                                {
+                                    <a asp-controller="Groups" asp-action="DetailsGroup" asp-route-id="@item.GroupID" class="groups d-block p-4 mr-3 mb-3 text-decoration-none rounded shadow-lg bg-gray">
+                                        <p class="text-center">
+                                            <span class="text-xl">@Html.DisplayFor(modelItem => item.Name)</span><br />
+                                            <span>@item.DateEnter.ToShortDateString() - @item.DateExit.ToShortDateString()</span>
+                                        </p>
+                                    </a>
+                                }
+                            }
+                        }
+                    </div>
+                </div>
+            </section>
+            i++;
+        }
+    </div>
+</section>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

@@ -1,0 +1,363 @@
+﻿@model Portal.Models.Group
+
+@{
+    ViewData["Title"] = "Информация о группе";
+    int i = 1;
+}
+
+@await Html.PartialAsync("_NavMenuJournal")
+
+<section class="content-header">
+    <div class="container-fluid">
+    </div>
+</section>
+<section class="content">
+    <div class="container-fluid">
+        <h3 class="mb-3 text-center bg-gray-light headGroup p-2 rounded shadow">@ViewBag.Institute.Name<br>@Model.Name</h3>
+        <div class="row">
+            <div class="col-12 col-sm-6 col-md-3">
+                <div class="info-box">
+                    <span class="info-box-icon bg-info elevation-1"><i class="fas fa-info"></i></span>
+                    <div class="info-box-content">
+                        <span class="info-box-text text-center">Текущий средний балл</span>
+                        <span class="info-box-number text-center">@ViewBag.Raiting</span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-sm-6 col-md-3">
+                <div class="info-box mb-3">
+                    <span class="info-box-icon bg-warning elevation-1"><i class="fas fa-users"></i></span>
+                    <div class="info-box-content">
+                        <span class="info-box-text text-center">Количество слушателей/курсантов</span>
+                        <span class="info-box-number text-center">@ViewBag.Students</span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-sm-6 col-md-3">
+                <div class="info-box mb-3">
+                    <span class="info-box-icon bg-success elevation-1"><i class="far fa-user"></i></span>
+                    <div class="info-box-content">
+                        <span class="info-box-text text-center">Лучший курсант/слушатель</span>
+                        @if (ViewBag.BestStudent != null)
+                        {
+                            <span class="info-box-text text-center"><a class="text-decoration-none stretched-link text-success" asp-controller="Students" asp-action="Details" asp-route-id="@ViewBag.BestStudent.Student.StudentID">@ViewBag.BestStudent.Student.LastName @ViewBag.BestStudent.Student.Name[0]. @ViewBag.BestStudent.Student.Surname[0].</a></span>
+                            <span class="info-box-number text-center">@ViewBag.BestStudent.Raiting.ToString()</span>
+                        }
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-sm-6 col-md-3">
+                <div class="info-box mb-3">
+                    <span class="info-box-icon bg-danger elevation-1"><i class="fas fa-user-alt"></i></span>
+                    <div class="info-box-content">
+                        <span class="info-box-text text-center">Худший курсант/слушатель</span>
+                        @if (ViewBag.WorseStudent != null)
+                        {
+                            <span class="info-box-text text-center"><a class="text-decoration-none stretched-link text-danger" asp-controller="Students" asp-action="Details" asp-route-id="@ViewBag.WorseStudent.Student.StudentID">@ViewBag.WorseStudent.Student.LastName @ViewBag.WorseStudent.Student.Name[0]. @ViewBag.WorseStudent.Student.Surname[0].</a></span>
+                            <span class="info-box-number text-center">@ViewBag.WorseStudent.Raiting.ToString()</span>
+                        }
+                    </div>
+                </div>
+            </div>
+            <div class="clearfix hidden-md-up"></div>
+        </div>
+        <div class="row">
+            <div class="col-md-6">
+                <!-- STACKED BAR CHART -->
+                <div class="card card-light">
+                    <div class="card-header">
+                        <h3 class="card-title">Средняя успеваемость за текущий учебный год по предмету</h3>
+                        <div class="card-tools">
+                            <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                                <i class="fas fa-minus"></i>
+                            </button>
+                        </div>
+                        <form asp-action="DetailsGroup" method="get">
+                            <div class="input-group mb-3">
+                                <select class="form-control" name="searchString">
+                                    @foreach (var journal in Model.Journals)
+                                    {
+                                        @if (ViewBag.Subject.SubjectID == journal.SubjectID)
+                                        {
+                                            <option selected value="@journal.SubjectID">@journal.Subject.Name</option>
+                                        }
+                                        else
+                                        {
+                                            <option value="@journal.SubjectID">@journal.Subject.Name</option>
+                                        }
+                                    }
+                                </select>
+                                <div class="input-group-append">
+                                    <button class="btn btn-success" type="submit"><i class="fas fa-search"></i></button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart">
+                            <canvas id="MarksSubject" style="min-height: 250px; height: 250px; max-height: 250px; max-width: 100%;"></canvas>
+                        </div>
+                    </div>
+                    <!-- /.card-body -->
+                </div>
+                <!-- /.card -->
+                <div class="card">
+                    <div class="card-header border-transparent">
+                        <h3 class="card-title">Текущий рейтинг слушателей/курсантов</h3>
+                        <div class="card-tools">
+                            <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                                <i class="fas fa-minus"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body p-2">
+                        <div class="table-responsive">
+                            <table class="table table-bordered dataTable hover table-sm compact" id="Table">
+                                <thead class="thead-dark">
+                                    <tr class="text-center">
+                                        <th class="text-center">#</th>
+                                        <th class="text-center">Ф.И.О.</th>
+                                        <th class="text-center">Средний балл</th>
+                                        <th class="text-center">Количество оценок</th>
+                                        <th class="text-center"></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var student in ViewBag.GroupRaiting)
+                                    {
+                                        <tr class="text-center">
+                                            <td>@i</td>
+                                            <td>@student.Student.LastName @student.Student.Name[0]. @student.Student.Surname[0].</td>
+                                            <td>@student.Raiting</td>
+                                            <td>@student.NumberOfMark</td>
+                                            <td><a class="btn btn-success btn-sm" title="Перейти" asp-controller="Students" asp-action="Details" asp-route-id="@student.Student.StudentID"><i class="fas fa-arrow-alt-circle-left text-white"></i></a></td>
+                                        </tr>
+                                        i++;
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card bg-light">
+                    <div class="card-header">
+                        <h3 class="card-title">Диаграмма оценок</h3>
+                        <div class="card-tools">
+                            <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                                <i class="fas fa-minus"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <div class="chart-responsive">
+                                    <canvas id="pieChart" height="200"></canvas>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <ul class="chart-legend clearfix">
+                                    @if (ViewBag.MarksPercent.Count != 0)
+                                    {
+                                        <li><i class="fas fa-circle" style="color: #006400"></i> 10 <span>(@ViewBag.MarksPercent[10] %)</span></li>
+                                        <li><i class="fas fa-circle" style="color: #00FF00"></i> 9 <span>(@ViewBag.MarksPercent[9] %)</span></li>
+                                        <li><i class="fas fa-circle" style="color: #0000FF"></i> 8 <span>(@ViewBag.MarksPercent[8] %)</span></li>
+                                        <li><i class="fas fa-circle" style="color: #00BFFF"></i> 7 <span>(@ViewBag.MarksPercent[7] %)</span></li>
+                                        <li><i class="fas fa-circle" style="color: #DAA520"></i> 6 <span>(@ViewBag.MarksPercent[6] %)</span></li>
+                                        <li><i class="fas fa-circle" style="color: #FFD700"></i> 5 <span>(@ViewBag.MarksPercent[5] %)</span></li>
+                                        <li><i class="fas fa-circle" style="color: #FFA500"></i> 4 <span>(@ViewBag.MarksPercent[4] %)</span></li>
+                                        <li><i class="fas fa-circle" style="color: #FF4500"></i> 3 <span>(@ViewBag.MarksPercent[3] %)</span></li>
+                                        <li><i class="fas fa-circle" style="color: #FF0000"></i> 2 <span>(@ViewBag.MarksPercent[2] %)</span></li>
+                                        <li><i class="fas fa-circle" style="color: #8B0000"></i> 1 <span>(@ViewBag.MarksPercent[1] %)</span></li>
+                                    }
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- STACKED BAR CHART -->
+                <div class="card card-light">
+                    <div class="card-header">
+                        <h3 class="card-title">Общая средняя успеваемость за текущий учебный год по всем предметам</h3>
+                        <div class="card-tools">
+                            <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                                <i class="fas fa-minus"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart">
+                            <canvas id="stackedBarChart" style="min-height: 250px; height: 250px; max-height: 250px; max-width: 100%;"></canvas>
+                        </div>
+                    </div>
+                    <!-- /.card-body -->
+                </div>
+                <!-- /.card -->
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ChartJS -->
+<script src="~/plugins/chart.js/Chart.min.js"></script>
+<!-- PAGE SCRIPTS -->
+<script>
+    $(function () {
+        'use strict'
+        var pieChartCanvas = $('#pieChart').get(0).getContext('2d')
+        var pieData = {
+            labels: [
+                '10',
+                '9',
+                '8',
+                '7',
+                '6',
+                '5',
+                '4',
+                '3',
+                '2',
+                '1'
+            ],
+            datasets: [
+                {
+                    data: [@ViewBag.MarksNumber[10], @ViewBag.MarksNumber[9], @ViewBag.MarksNumber[8], @ViewBag.MarksNumber[7], @ViewBag.MarksNumber[6], @ViewBag.MarksNumber[5], @ViewBag.MarksNumber[4], @ViewBag.MarksNumber[3], @ViewBag.MarksNumber[2], @ViewBag.MarksNumber[1]],
+                    backgroundColor: ['#006400', '#00FF00', '#0000FF', '#00BFFF', '#DAA520', '#FFD700', '#FFA500', '#FF4500', '#FF0000', '#8B0000'],
+                }
+            ]
+        }
+        var pieOptions = {
+            legend: {
+                display: false
+            }
+        }
+        var pieChart = new Chart(pieChartCanvas, {
+            type: 'doughnut',
+            data: pieData,
+            options: pieOptions
+        })
+
+         /* ChartJS*/
+        var areaChartData = {
+            labels: ['Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь', 'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август'],
+            datasets: [
+                {
+                    label: '',
+                    backgroundColor: 'rgba(194, 48, 14,0)',
+                    borderColor: 'rgba(194, 48, 14,0)',
+                    pointRadius: false,
+                    pointColor: '',
+                    pointStrokeColor: 'rgba(194, 48, 14,0)',
+                    pointHighlightFill: '',
+                    pointHighlightStroke: 'rgba(194, 48, 14,0)',
+                    data: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+                },
+                {
+                    label: '@ViewBag.Year',
+                    backgroundColor: 'rgba(194, 48, 14, 1)',
+                    borderColor: 'rgba(194, 48, 14, 1)',
+                    pointRadius: false,
+                    pointColor: 'rgba(194, 48, 14, 1)',
+                    pointStrokeColor: '#c1c7d1',
+                    pointHighlightFill: '#c1c7d1',
+                    pointHighlightStroke: 'rgba(220,220,220,1)',
+                    data: [@ViewBag.TimeRaiting["Сентябрь"], @ViewBag.TimeRaiting["Октябрь"], @ViewBag.TimeRaiting["Ноябрь"], @ViewBag.TimeRaiting["Декабрь"], @ViewBag.TimeRaiting["Январь"], @ViewBag.TimeRaiting["Февраль"], @ViewBag.TimeRaiting["Март"], @ViewBag.TimeRaiting["Апрель"], @ViewBag.TimeRaiting["Май"], @ViewBag.TimeRaiting["Июнь"], @ViewBag.TimeRaiting["Июль"], @ViewBag.TimeRaiting["Август"]]
+                },
+            ]
+        }
+
+        //---------------------
+        //- STACKED BAR CHART -
+        //---------------------
+        var stackedBarChartCanvas = $('#stackedBarChart').get(0).getContext('2d')
+        var barChartData = jQuery.extend(true, {}, areaChartData)
+        var temp0 = areaChartData.datasets[0]
+        var temp1 = areaChartData.datasets[1]
+        barChartData.datasets[0] = temp1
+        barChartData.datasets[1] = temp0
+        var stackedBarChartData = jQuery.extend(true, {}, barChartData)
+
+        var stackedBarChartOptions = {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                xAxes: [{
+                    stacked: true,
+                }],
+                yAxes: [{
+                    stacked: true
+                }]
+            }
+        }
+
+        var stackedBarChart = new Chart(stackedBarChartCanvas, {
+            type: 'bar',
+            data: stackedBarChartData,
+            options: stackedBarChartOptions
+        })
+
+        /* ChartJS*/
+        var areaChartData_1 = {
+            labels: ['Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь', 'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август'],
+            datasets: [
+                {
+                    label: '',
+                    backgroundColor: 'rgba(194, 48, 14,0)',
+                    borderColor: 'rgba(194, 48, 14,0)',
+                    pointRadius: false,
+                    pointColor: '',
+                    pointStrokeColor: 'rgba(194, 48, 14,0)',
+                    pointHighlightFill: '',
+                    pointHighlightStroke: 'rgba(194, 48, 14,0)',
+                    data: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+                },
+                {
+                    label: '@ViewBag.Year',
+                    backgroundColor: 'rgba(90, 0, 254, 1)',
+                    borderColor: 'rgba(90, 0, 254, 1)',
+                    pointRadius: false,
+                    pointColor: 'rgba(90, 0, 254, 1)',
+                    pointStrokeColor: '#bfbfbf',
+                    pointHighlightFill: '#fff',
+                    pointHighlightStroke: 'rgba(191, 191, 191,1)',
+                    data: [@ViewBag.SubjectRaiting["Сентябрь"], @ViewBag.SubjectRaiting["Октябрь"], @ViewBag.SubjectRaiting["Ноябрь"], @ViewBag.SubjectRaiting["Декабрь"], @ViewBag.SubjectRaiting["Январь"], @ViewBag.SubjectRaiting["Февраль"], @ViewBag.SubjectRaiting["Март"], @ViewBag.SubjectRaiting["Апрель"], @ViewBag.SubjectRaiting["Май"], @ViewBag.SubjectRaiting["Июнь"], @ViewBag.SubjectRaiting["Июль"], @ViewBag.SubjectRaiting["Август"]]
+                },
+            ]
+        }
+
+        //---------------------
+        //- STACKED BAR CHART -
+        //---------------------
+        var stackedBarChartCanvas_1 = $('#MarksSubject').get(0).getContext('2d')
+        var barChartData_1 = jQuery.extend(true, {}, areaChartData_1)
+        var temp0_1 = areaChartData_1.datasets[0]
+        var temp1_1 = areaChartData_1.datasets[1]
+        barChartData_1.datasets[0] = temp1_1
+        barChartData_1.datasets[1] = temp0_1
+        var stackedBarChartData_1 = jQuery.extend(true, {}, barChartData_1)
+
+        var stackedBarChartOptions_1 = {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                xAxes: [{
+                    stacked: true,
+                }],
+                yAxes: [{
+                    stacked: true
+                }]
+            }
+        }
+
+        var stackedBarChart_1 = new Chart(stackedBarChartCanvas_1, {
+            type: 'bar',
+            data: stackedBarChartData_1,
+            options: stackedBarChartOptions_1
+        })
+    })
+</script>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

@@ -1,0 +1,80 @@
+﻿@model IEnumerable<Portal.Models.StatementMark>
+
+@{
+    ViewData["Title"] = "Итоговые оценки";
+    int i = 1;
+}
+
+@await Html.PartialAsync("_NavMenuJournal")
+
+<div style="padding:7%">
+    <section class="content-header">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-sm-6">
+                    <h2>Список оценок</h2>
+                </div>
+            </div>
+        </div>
+    </section>
+    <section class="content">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-body">
+                            <form asp-action="Index" method="get" class="form-inline mb-3">
+                                <div class="form-group m-auto">
+                                    <label class="mr-2" for="date">Дата:</label>
+                                    <input class="form-control mr-2" type="date" name="date" />
+                                    <input type="submit" value="Поиск" class="btn btn-primary mr-2" />
+                                </div>
+                            </form>
+                            <div id="example1_wrapper" class="dataTables_wrapper dt-bootstrap4">
+                                <div class="row">
+                                    <div class="col-sm-12">
+                                        <table class="table table-bordered table-sm compact dataTable hover text-center" role="grid" id="LessonsTable">
+                                            <thead class="thead-dark">
+                                                <tr role="row">
+                                                    <th class="sorting_asc">#</th>
+                                                    <th class="sorting_asc">Слушатель/Курсант</th>
+                                                    <th class="sorting_asc">Группа</th>
+                                                    <th class="sorting_asc">Тип занятия</th>
+                                                    <th class="sorting_asc">Значение</th>
+                                                    <th class="sorting">Дата</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach (var item in Model)
+                                                {
+                                                    <tr role="row" class="odd bg-white">
+                                                        <td tabindex="0" class="sorting_1">@i</td>
+                                                        <td tabindex="0" class="sorting_1"><a class="text-decoration-none text-success" asp-controller="Students" asp-action="Details" asp-route-id="@item.Student.StudentID">@item.Student.LastName @item.Student.Name[0].@item.Student.Surname[0].</a></td>
+                                                        <td tabindex="0" class="sorting_1"><a class="text-decoration-none text-success" asp-controller="Groups" asp-action="DetailsGroup" asp-route-id="@item.Student.Group.GroupID">@item.Student.Group.Name</a></td>
+                                                        @foreach (var type in ViewBag.Types)
+                                                        {
+                                                            if (type.TypeOfExerciseID == item.TypeOfExerciseID)
+                                                            {
+                                                                <td tabindex="0" class="sorting_1">@type.Name</td>
+                                                            }
+
+                                                        }
+                                                        <td tabindex="0" class="sorting_1">@item.Value</td>
+                                                        <td tabindex="0" class="sorting_1">@item.Date.ToShortDateString()</td>
+                                                    </tr>
+                                                    i++;
+                                                }
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+
+<script src="~/js/lessons.js"></script>

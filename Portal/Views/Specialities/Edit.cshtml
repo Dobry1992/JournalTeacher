@@ -1,0 +1,61 @@
+﻿@model Portal.Models.Speciality
+
+@{
+    ViewData["Title"] = "Редактирование";
+}
+
+@await Html.PartialAsync("_NavMenuJournal")
+
+<div style="padding:10%">
+    <section class="content-header">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-sm-6">
+                    <h3>Редактировать специальность</h3>
+                </div>
+            </div>
+        </div>
+    </section>
+    <section class="content">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-body">
+                            <div id="example1_wrapper" class="dataTables_wrapper dt-bootstrap4">
+                                <div class="row">
+                                    <div class="col-sm-12">
+                                        <form asp-action="Edit">
+                                            <input hidden asp-for="SpecialityID" />
+                                            <input hidden asp-for="Arch" />
+                                            <input hidden asp-for="InstituteID" />
+                                            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                                            <div class="form-group">
+                                                <label asp-for="Name" class="control-label">Имя</label>
+                                                <input asp-for="Name" class="form-control" />
+                                                <span asp-validation-for="Name" class="text-danger"></span>
+                                            </div>
+                                            <div class="form-group">
+                                                <label asp-for="TimeOFStudy" class="control-label">Срок обучения, мес.</label>
+                                                <input asp-for="TimeOFStudy" class="form-control" />
+                                                <span asp-validation-for="TimeOFStudy" class="text-danger"></span>
+                                            </div>
+                                            <div class="form-group">
+                                                <input type="submit" value="Сохранить" class="btn btn-success" />
+                                                <a class="btn btn-primary" asp-controller="Specialities" asp-action="Index">Назад</a>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

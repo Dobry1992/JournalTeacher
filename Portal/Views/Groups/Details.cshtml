@@ -1,0 +1,95 @@
+﻿@model Portal.Models.Group
+
+@{
+    ViewData["Title"] = "Детали группы";
+    int i = 1;
+    List<Student> students = new();
+    foreach (Student student in Model.Students)
+    {
+        students.Add(student);
+    }
+    var studentsOrder = students.OrderByDescending(s => s.Status).ThenBy(s => s.LastName);
+}
+
+@await Html.PartialAsync("_NavMenuJournal")
+
+<div>
+    <section class="content-header">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-sm-6">
+                    <h1 class="mb-3">Список слушателей/курсантов</h1>
+                </div>
+            </div>
+        </div>
+    </section>
+    <section class="content">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-body">
+                            <div id="example1_wrapper" class="dataTables_wrapper dt-bootstrap4">
+                                <div class="row">
+                                    <div class="col-sm-12 table-wrap">
+                                        <h4 class="mb-3">Группа - @Model.Name<br>Cпециальность - @Model.Speciality.Name<br>Даты обучения: @Model.DateEnter.ToShortDateString() - @Model.DateExit.ToShortDateString()</h4>
+                                        <table id="Table" class="table table-bordered dataTable dtr-inline" role="grid">
+                                            <thead class="thead-dark">
+                                                <tr role="row">
+                                                    <th class="sorting_asc">#</th>
+                                                    <th class="sorting_asc">Ф.И.О.</th>
+                                                    <th class="sorting">Действие</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach (var item in studentsOrder)
+                                                {
+                                                    @if (item.Status == true)
+                                                    {
+                                                        <tr role="row" class="odd bg-white">
+                                                            <td tabindex="0" class="sorting_1">@i</td>
+                                                            <td tabindex="0" class="sorting_1">@item.LastName @item.Name @item.Surname</td>
+                                                            <td tabindex="0" class="sorting_1">
+                                                                <div class="container">
+                                                                    <a title="Редактировать" class="btn btn-warning" asp-controller="Students" asp-action="Edit" asp-route-id="@item.StudentID"><i class="fa fa-file-edit"></i></a>
+                                                                    <a title="Информация" class="btn btn-info" asp-controller="Students" asp-action="Details" asp-route-id="@item.StudentID"><i class="fa fa-info"></i></a>
+                                                                    <a title="Отчислить" class="btn btn-secondary" asp-controller="Students" asp-action="SetStatus" asp-route-id="@item.StudentID"><i class="fa fa-lock"></i></a>
+                                                                    <a title="Удалить" class="btn btn-danger" asp-controller="Students" asp-action="Delete" asp-route-id="@item.StudentID"><i class="fa fa-remove"></i></a>
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                    }
+                                                    else
+                                                    {
+                                                        <tr role="row" class="odd bg-gray">
+                                                            <td tabindex="0" class="sorting_1">@i</td>
+                                                            <td tabindex="0" class="sorting_1">@item.LastName @item.Name @item.Surname</td>
+                                                            <td tabindex="0" class="sorting_1">
+                                                                <div class="container">
+                                                                    <a title="Редактировать" class="btn btn-warning" asp-controller="Students" asp-action="Edit" asp-route-id="@item.StudentID"><i class="fa fa-file-edit"></i></a>
+                                                                    <a title="Информация" class="btn btn-info" asp-controller="Students" asp-action="Details" asp-route-id="@item.StudentID"><i class="fa fa-info"></i></a>
+                                                                    <a title="Восстановить" class="btn btn-success" asp-controller="Students" asp-action="SetStatus" asp-route-id="@item.StudentID"><i class="fa fa-lock-open"></i></a>
+                                                                    <a title="Удалить" class="btn btn-danger" asp-controller="Students" asp-action="Delete" asp-route-id="@item.StudentID"><i class="fa fa-remove"></i></a>
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                    }
+                                                    i++;
+                                                }
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+
+@section scripts{
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}
+

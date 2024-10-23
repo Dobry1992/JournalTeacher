@@ -1,0 +1,42 @@
+﻿@model IEnumerable<Portal.Models.Department>
+
+@{
+    ViewData["Title"] = "Моя кафедра";
+}
+
+@await Html.PartialAsync("_NavMenuJournal")
+
+<div style="padding:10%">
+    <section class="content-header">
+        <div class="container-fluid">
+        </div>
+    </section>
+    <section class="content">
+        <div class="container-fluid">
+            @foreach (var department in Model)
+            {
+                @if (User.IsInRole(department.Role) || User.IsInRole("SuperAdmin") || User.IsInRole("ANB-UMCH"))
+                {
+                    <div class="card bg-light">
+                        <div class="card-header text-center">Кафедра: @department.Name</div>
+                        <div class="card-body">
+                            <div class="list-group text-center">
+                                @foreach (var subject in department.Subjects)
+                                {
+                                    <a asp-controller="Subjects" asp-action="ChooseSubject" asp-route-id="@subject.SubjectID" class="list-group-item list-group-item-action border-top">@subject.Name</a>
+                                }
+                            </div>
+                            <div class="text-center">
+                                <a asp-controller="Subjects" asp-action="CreateSubject" asp-route-id="@department.DepartmentID" class="btn btn-primary mt-3">Добавить предмет</a>
+                            </div>
+                        </div>
+                    </div>
+                }
+            }
+        </div>
+    </section>
+</div>
+
+@section scripts{
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

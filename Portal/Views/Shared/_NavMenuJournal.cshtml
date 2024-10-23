@@ -1,0 +1,77 @@
+﻿<nav class="main-header navbar navbar-expand-md navbar-light navbar-white">
+    <ul class="navbar-nav">
+        <li class="nav-item mr-2">
+            <a class="nav-link" data-widget="pushmenu" href="#" role="button"><i class="fas fa-bars"></i></a>
+        </li>
+
+        @if (User.IsInRole("SuperAdmin") || User.IsInRole("ANB-UMCH"))
+        {
+            <li class="nav-item dropdown">
+                <a id="dropdownSubMenu1" href="#" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" class="nav-link dropdown-toggle">Данные</a>
+                <ul aria-labelledby="dropdownSubMenu1" class="dropdown-menu border-0 shadow">
+                    <li><a class="dropdown-item" asp-controller="Institutes" asp-action="Index">Институты</a></li>
+                    <li><a class="dropdown-item" asp-controller="Specialities" asp-action="Index">Специальности</a></li>
+                    <li><a class="dropdown-item" asp-controller="Groups" asp-action="Index">Группы</a></li>
+                    <li><a class="dropdown-item" asp-controller="Students" asp-action="Index">Слушатели/курсанты</a></li>
+                    <li><a class="dropdown-item" asp-controller="Departments" asp-action="Index">Кафедры</a></li>
+                    <li><a class="dropdown-item" asp-controller="Subjects" asp-action="Index">Предметы</a></li>
+                    <li><a class="dropdown-item" asp-controller="Themes" asp-action="Index">Темы занятий</a></li>
+                    <li><a class="dropdown-item" asp-controller="TypeOfExercises" asp-action="Index">Типы занятий</a></li>
+                    <li><a class="dropdown-item" asp-controller="Teachers" asp-action="Index">Преподаватели вне штата</a></li>
+                    <li><a class="dropdown-item" asp-controller="TeacherNoPCs" asp-action="Index">Преподаватели без навыков ПК</a></li>
+                </ul>
+            </li>
+        }
+
+        @if (User.IsInRole("SuperAdmin") || User.IsInRole("ANB-UMCH"))
+        {
+            <li class="nav-item dropdown">
+                <a id="dropdownSubMenu1" href="#" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" class="nav-link dropdown-toggle">Контроль</a>
+                <ul aria-labelledby="dropdownSubMenu1" class="dropdown-menu border-0 shadow">
+                    <li><a class="dropdown-item" asp-controller="Lessons" asp-action="Index">Занятия</a></li>
+                    <li><a class="dropdown-item" asp-controller="StatementLessons" asp-action="Index">Итоговые занятия</a></li>
+                    <li><a class="dropdown-item" asp-controller="Marks" asp-action="Index">Оценки</a></li>
+                    <li><a class="dropdown-item" asp-controller="StatementMarks" asp-action="Index">Итоговые оценки</a></li>
+                    <li><a class="dropdown-item" asp-controller="Journals" asp-action="Index">Журналы оценок</a></li>
+                    <li><a class="dropdown-item" asp-controller="Events" asp-action="Index">Действия на странице</a></li>
+                </ul>
+            </li>
+        }
+
+        @if (User.IsInRole("SuperAdmin") || User.IsInRole("ANB-UMCH") || User.IsInRole("ANB-HEAD") || User.IsInRole("ANB-CI") || User.IsInRole("ANB-IST") || User.IsInRole("ANB-ICDA") || User.IsInRole("User"))
+        {
+            <li class="nav-item dropdown">
+                <a id="dropdownSubMenu1" href="#" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" class="nav-link dropdown-toggle">Аналитика</a>
+                <ul aria-labelledby="dropdownSubMenu1" class="dropdown-menu border-0 shadow">
+                    <li><a class="dropdown-item" asp-controller="Statistics" asp-action="IndexInst">Институты</a></li>
+                    <li><a class="dropdown-item" asp-controller="Statistics" asp-action="IndexGroups">Группы</a></li>
+                    <li><a class="dropdown-item" asp-controller="Statistics" asp-action="IndexStudents">Слушатели/Курсанты</a></li>
+                    <li><a class="dropdown-item" asp-controller="Statistics" asp-action="Teachers">Преподаватель</a></li>
+                </ul>
+            </li>
+        }
+        @if (User.IsInRole("SuperAdmin") || User.IsInRole("ANB-UMCH") || User.IsInRole("ANB-HEAD") || User.IsInRole("ANB-CI") || User.IsInRole("ANB-IST") || User.IsInRole("ANB-ICDA") || User.IsInRole("User"))
+        {
+            <li class="nav-item dropdown">
+                <a id="dropdownSubMenu1" href="#" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" class="nav-link dropdown-toggle">Архив</a>
+                <ul aria-labelledby="dropdownSubMenu1" class="dropdown-menu border-0 shadow">
+                    <li><a class="dropdown-item" asp-controller="Archives" asp-action="IndexJournals">Журналы</a></li>
+                    <li><a class="dropdown-item" asp-controller="Archives" asp-action="IndexGroups">Группы</a></li>
+                    <li><a class="dropdown-item" asp-controller="Archives" asp-action="IndexStudents">Слушатели/Курсанты</a></li>
+                </ul>
+            </li>
+        }
+        <li class="nav-item">
+            <a class="nav-link" asp-controller="Specialities" asp-action="ChooseGroup">Итоговые оценки</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" asp-controller="Departments" asp-action="ChooseDepartment">Моя кафедра</a>
+        </li>
+    </ul>
+    <div class="collapse navbar-collapse text-right justify-content-end">
+        <a asp-controller="Groups" asp-action="ChooseSubject" class="text-decoration-none nav-link btn btn-outline-secondary">Создать потоковую лекцию</a>
+    </div>
+</nav>
+
+<script src="../../plugins/jquery/jquery.min.js"></script>
+<script src="../../plugins/bootstrap/js/bootstrap.bundle.min.js"></script>

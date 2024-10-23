@@ -1,0 +1,71 @@
+﻿@model Portal.Models.Theme
+
+@{
+    ViewData["Title"] = "Редактировать тему";
+}
+
+@await Html.PartialAsync("_NavMenuJournal")
+
+<div style="padding:7%">
+    <section class="content-header">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-sm-6">
+                    <h3>Редактировать тему</h3>
+                </div>
+            </div>
+        </div>
+    </section>
+    <section class="content">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-body">
+                            <div id="example1_wrapper" class="dataTables_wrapper dt-bootstrap4">
+                                <div class="row">
+                                    <div class="col-sm-12">
+                                        <form asp-action="EditTheme">
+                                            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                                            <input type="hidden" asp-for="ThemeID" />
+                                            <input type="hidden" asp-for="Arch" />
+                                            <div class="form-group">
+                                                <label asp-for="SubjectID" class="control-label">Предмет</label>
+                                                <select asp-for="SubjectID" class="form-control" asp-items="ViewBag.SubjectID"></select>
+                                                <span asp-validation-for="SubjectID" class="text-danger"></span>
+                                            </div>
+                                            <div class="form-group">
+                                                <label asp-for="Name" class="control-label">Тема</label>
+                                                <input asp-for="Name" class="form-control" />
+                                                <span asp-validation-for="Name" class="text-danger"></span>
+                                            </div>
+                                            <div class="form-group">
+                                                <label asp-for="ShortName" class="control-label">Тема (краткое/цифровое наименование)</label>
+                                                <input asp-for="ShortName" class="form-control" />
+                                                <span asp-validation-for="ShortName" class="text-danger"></span>
+                                            </div>
+                                            <div class="form-group">
+                                                <label asp-for="Time" class="control-label">Время</label>
+                                                <input asp-for="Time" class="form-control" />
+                                                <span asp-validation-for="Time" class="text-danger"></span>
+                                            </div>
+                                            <div class="form-group">
+                                                <input type="submit" value="Сохранить" class="btn btn-success" />
+                                                <a class="btn btn-primary" asp-controller="Subjects" asp-action="ChooseSubject" asp-route-id ="@ViewBag.ID">Назад</a>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

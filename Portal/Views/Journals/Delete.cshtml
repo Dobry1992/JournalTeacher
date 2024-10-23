@@ -1,0 +1,47 @@
+﻿@model Portal.Models.Journal
+
+@{
+    ViewData["Title"] = "Удалить журнал";
+}
+
+@await Html.PartialAsync("_NavMenuJournal")
+
+<div style="padding: 10%">
+    <section class="content-header">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-sm-6">
+                </div>
+            </div>
+        </div>
+    </section>
+    <section class="content mt-3">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-body">
+                            <div id="example1_wrapper" class="dataTables_wrapper dt-bootstrap4">
+                                <div class="row">
+                                    <div class="col-sm-12">
+                                        <div class="bg-danger text-center text-white">
+                                            <h4>Вы уверены что желаете удалить журнал?</h4>
+                                            <p>Удаление журнала повлечет за собой удаление всех связанных с ним данных.</p>
+                                        </div>
+                                        <form asp-action="Delete">
+                                            <input type="hidden" asp-for="JournalID" />
+                                            <label>Предмет: @Model.Subject.Name</label><br />
+                                            <label>Группа: @Model.Group.Name</label><br />
+                                            <input type="submit" value="Удалить" class="btn btn-danger" />
+                                            <a class="btn btn-primary" asp-controller="Journals" asp-action="Index">Назад</a>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>

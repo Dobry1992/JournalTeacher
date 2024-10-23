@@ -1,0 +1,84 @@
+﻿@model Portal.Models.StatementMark
+
+@{
+    ViewData["Title"] = "Оценить";
+}
+@await Html.PartialAsync("_NavMenuJournal")
+
+<div style="padding:10%;">
+    <section class="content-header">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-sm-6">
+                    <h3>Оценить</h3>
+                </div>
+            </div>
+        </div>
+    </section>
+    <section class="content">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-body">
+                            <div id="example1_wrapper" class="dataTables_wrapper dt-bootstrap4">
+                                <div class="row">
+                                    <div class="col-sm-12">
+                                        <form asp-action="Edit">
+                                            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                                            <input hidden asp-for="Date" />
+                                            <input hidden asp-for="StatementMarkID" />
+                                            <input hidden asp-for="GroupID" />
+                                            <input hidden asp-for="StatementLessonID" />
+                                            <input hidden asp-for="TypeOfExerciseID" />
+                                            <input hidden asp-for="SpecialityID" />
+                                            <input hidden asp-for="StudentID" />
+                                            <input hidden asp-for="HistoryOfMark" />
+                                            <input hidden asp-for="InstituteID" />
+                                            <div class="form-group">
+                                                <label asp-for="Value" class="control-label">Оценка</label>
+                                                <select asp-for="Value" class="form-control">
+                                                    <option value="1">1</option>
+                                                    <option value="2">2</option>
+                                                    <option value="3">3</option>
+                                                    <option value="4">4</option>
+                                                    <option value="5">5</option>
+                                                    <option value="6">6</option>
+                                                    <option value="7">7</option>
+                                                    <option value="8">8</option>
+                                                    <option value="9">9</option>
+                                                    <option value="10">10</option>
+                                                    <option value="Б">Б</option>
+                                                    <option value="НР">НР</option>
+                                                    <option value="О">О</option>
+                                                    <option value="КМ">КМ</option>
+                                                    <option value="Р">Р</option>
+                                                    <option value="НБ">НБ</option>
+                                                </select>
+                                                <span asp-validation-for="Value" class="text-danger"></span>
+                                            </div>
+                                            <div class="form-group">
+                                                <label asp-for="Comment" class="control-label">Замечание преподавателя</label>
+                                                <textarea asp-for="Comment" class="form-control" value=""></textarea>
+                                                <span asp-validation-for="Comment" class="text-danger"></span>
+                                            </div>
+                                            <div class="form-group">
+                                                <input type="submit" value="Оценить" class="btn btn-primary" />
+                                                <a class="btn btn-outline-primary" asp-controller="Journals" asp-action="Statement" asp-route-GroupID="@ViewBag.GroupID">Назад</a>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

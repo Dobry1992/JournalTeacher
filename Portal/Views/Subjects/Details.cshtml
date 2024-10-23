@@ -1,0 +1,98 @@
+﻿@model Portal.Models.Subject
+
+@{
+    ViewData["Title"] = "Информация о предмета";
+    int i = 1;
+    List<Theme> themes = new();
+    foreach (Theme theme in Model.Themes)
+    {
+        themes.Add(theme);
+    }
+    var OrderThemes = themes.OrderBy(s => s.Arch)
+        .ThenBy(s => s.Name);
+}
+
+@await Html.PartialAsync("_NavMenuJournal")
+
+<div>
+    <section class="content-header">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-sm-6">
+                    <h1 class="mb-3">Список тем</h1>
+                </div>
+            </div>
+        </div>
+    </section>
+    <section class="content">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-body">
+                            <div id="example1_wrapper" class="dataTables_wrapper dt-bootstrap4">
+                                <div class="row">
+                                    <div class="col-sm-12 table-wrap">
+                                        <h4 class="mb-3">Предмет - @Model.Name, кафедра - @Model.Department.Name</h4>
+                                        <table id="Table" class="table table-bordered dataTable dtr-inline" role="grid">
+                                            <thead class="thead-dark">
+                                                <tr role="row">
+                                                    <th class="sorting_asc">#</th>
+                                                    <th class="sorting_asc">Наименование</th>
+                                                    <th class="sorting">Часы изучения</th>
+                                                    <th class="sorting">Действие</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach (Theme theme in OrderThemes)
+                                                {
+                                                    @if (theme.Arch == false)
+                                                    {
+                                                        <tr role="row" class="odd bg-white">
+                                                            <td tabindex="0" class="sorting_1">@i</td>
+                                                            <td tabindex="0" class="sorting_1">@Html.DisplayFor(modelItem => theme.Name)</td>
+                                                            <td tabindex="0" class="sorting_1">@Html.DisplayFor(modelItem => theme.Time)</td>
+                                                            <td tabindex="0" class="sorting_1">
+                                                                <div class="container">
+                                                                    <a class="btn btn-warning" asp-controller="Themes" asp-action="Edit" asp-route-id="@theme.ThemeID"><i class="fa fa-file-edit"></i></a>
+                                                                    <a class="btn btn-secondary" asp-controller="Themes" asp-action="Archive" asp-route-id="@theme.ThemeID"><i class="fa fa-file-archive"></i></a>
+                                                                    <a class="btn btn-danger" asp-controller="Themes" asp-action="Delete" asp-route-id="@theme.ThemeID"><i class="fa fa-remove"></i></a>
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                    }
+                                                    else
+                                                    {
+                                                        <tr role="row" class="odd bg-gray">
+                                                            <td tabindex="0" class="sorting_1">@i</td>
+                                                            <td tabindex="0" class="sorting_1">@Html.DisplayFor(modelItem => theme.Name)</td>
+                                                            <td tabindex="0" class="sorting_1">@Html.DisplayFor(modelItem => theme.Time)</td>
+                                                            <td tabindex="0" class="sorting_1">
+                                                                <div class="container">
+                                                                    <a class="btn btn-warning" asp-controller="Themes" asp-action="Edit" asp-route-id="@theme.ThemeID"><i class="fa fa-file-edit"></i></a>
+                                                                    <a class="btn btn-success" asp-controller="Themes" asp-action="Archive" asp-route-id="@theme.ThemeID"><i class="fa fa-file-archive"></i></a>
+                                                                    <a class="btn btn-danger" asp-controller="Themes" asp-action="Delete" asp-route-id="@theme.ThemeID"><i class="fa fa-remove"></i></a>
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                    }
+                                                    i++;
+                                                }
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+
+@section scripts{
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}
+
+

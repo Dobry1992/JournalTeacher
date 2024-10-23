@@ -1,0 +1,65 @@
+﻿@model Portal.Models.Group
+
+@{
+    ViewData["Title"] = "Удаление группы";
+}
+
+@await Html.PartialAsync("_NavMenuJournal")
+
+<div style="padding:10%">
+    <section class="content-header">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-sm-6">
+                </div>
+            </div>
+        </div>
+    </section>
+    <section class="content mt-3">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-body">
+                            <div id="example1_wrapper" class="dataTables_wrapper dt-bootstrap4">
+                                <div class="row">
+                                    <div class="col-sm-12">
+                                        <div class="bg-danger text-center text-white">
+                                            <h4>Вы уверены что желаете удалить?</h4>
+                                            <p>Удаление группы повлечет за собой удаление всех входящих в данную группу слушателей/курсантов, а также связанных с ними данных.</p>
+                                        </div>
+                                        <dl class="row">
+                                            <dt class="col-sm-2">
+                                                Группа
+                                            </dt>
+                                            <dd class="col-sm-10">
+                                                @Html.DisplayFor(model => model.Name)
+                                            </dd>
+                                            <dt class="col-sm-2">
+                                                Начало обучение
+                                            </dt>
+                                            <dd class="col-sm-10">
+                                                @Model.DateEnter.ToShortDateString()
+                                            </dd>
+                                            <dt class="col-sm-2">
+                                                Конец обучение
+                                            </dt>
+                                            <dd class="col-sm-10">
+                                                @Model.DateExit.ToShortDateString()
+                                            </dd>
+                                        </dl>
+                                        <form asp-action="Delete">
+                                            <input type="hidden" asp-for="GroupID" />
+                                            <input type="submit" value="Удалить" class="btn btn-danger" />
+                                            <a class="btn btn-primary" asp-controller="Groups" asp-action="Index">Назад</a>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>

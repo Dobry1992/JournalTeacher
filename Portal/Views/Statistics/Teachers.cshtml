@@ -1,0 +1,344 @@
+﻿@model object
+
+@{
+    ViewData["Title"] = "Преподаватели";
+    int i = 1;
+}
+
+@await Html.PartialAsync("_NavMenuJournal")
+
+<section class="content-header">
+    <div class="container-fluid">
+    </div>
+</section>
+<section class="content">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-6">
+                <!-- STACKED BAR CHART -->
+                <div class="card card-light">
+                    <div class="card-header">
+                        <h3 class="card-title">Средние оценочные показатели "предмет-преподаватель"</h3>
+                        <div class="card-tools">
+                            <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                                <i class="fas fa-minus"></i>
+                            </button>
+                        </div>
+                        <form asp-action="Teachers" method="get">
+                            <input name="searchString_2" value=@ViewBag.SearchString_2 hidden>
+                            <input name="searchString_3" value=@ViewBag.SearchString_3 hidden>
+                            <div class="input-group mb-3">
+                                <select class="form-control" name="searchString_1">
+                                    @foreach (var subject in ViewBag.Subjects)
+                                    {
+                                        @if (subject.SubjectID.ToString() == ViewBag.SearchString_1)
+                                        {
+                                            <option selected value="@subject.SubjectID">@subject.Name</option>
+                                        }
+                                        else
+                                        {
+                                            <option value="@subject.SubjectID">@subject.Name</option>
+                                        }
+                                    }
+                                </select>
+                                <div class="input-group-append">
+                                    <button class="btn btn-success" type="submit"><i class="fas fa-search"></i></button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart">
+                            <canvas id="MarksSubject" style="min-height: 350px; height: 350px; max-height: 350px; max-width: 100%;"></canvas>
+                        </div>
+                    </div>
+                    <!-- /.card-body -->
+                </div>
+
+                <!-- STACKED BAR CHART -->
+                <div class="card card-light">
+                    <div class="card-header">
+                        <h3 class="card-title">Средние оценочные показатели "кафедра-преподаватель"</h3>
+                        <div class="card-tools">
+                            <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                                <i class="fas fa-minus"></i>
+                            </button>
+                        </div>
+                        <form asp-action="Teachers" method="get">
+                            <input name="searchString_1" value=@ViewBag.SearchString_1 hidden>
+                            <input name="searchString_3" value=@ViewBag.SearchString_3 hidden>
+                            <div class="input-group mb-3">
+                                <select class="form-control" name="searchString_2">
+                                    @foreach (var department in ViewBag.Departments)
+                                    {
+                                        @if (department.DepartmentID.ToString() == ViewBag.SearchString_2)
+                                        {
+                                            <option selected value="@department.DepartmentID">@department.Name</option>
+                                        }
+                                        else
+                                        {
+                                            <option value="@department.DepartmentID">@department.Name</option>
+                                        }
+                                    }
+                                </select>
+                                <div class="input-group-append">
+                                    <button class="btn btn-success" type="submit"><i class="fas fa-search"></i></button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart">
+                            <canvas id="MarksDepartments" style="min-height: 350px; height: 350px; max-height: 350px; max-width: 100%;"></canvas>
+                        </div>
+                    </div>
+                    <!-- /.card-body -->
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header border-transparent">
+                        <h3 class="card-title">Общие средние оценочные показатели преподавателей</h3>
+                        <div class="card-tools">
+                            <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                                <i class="fas fa-minus"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body p-2">
+                        <div class="table-responsive">
+                            <table class="table table-bordered dataTable hover compact table-sm" id="TableTeacher">
+                                <thead class="thead-light compact">
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Ф.И.О. преподавателя</th>
+                                        <th>Средний балл</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var t in ViewBag.TeacherRaiting)
+                                    {
+                                        <tr>
+                                            <td>@i</td>
+                                            <td>@t.Teacher</td>
+                                            <td>@t.Raiting.ToString()</td>
+                                        </tr>
+                                        i++;
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <!-- STACKED BAR CHART -->
+                <div class="card card-light">
+                    <div class="card-header">
+                        <h3 class="card-title">Средние оценочные показатели "группа-преподаватель"</h3>
+                        <div class="card-tools">
+                            <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                                <i class="fas fa-minus"></i>
+                            </button>
+                        </div>
+                        <form asp-action="Teachers" method="get">
+                            <input name="searchString_2" value=@ViewBag.SearchString_2 hidden>
+                            <input name="searchString_1" value=@ViewBag.SearchString_1 hidden>
+                            <div class="input-group mb-3">
+                                <select class="form-control" name="searchString_3">
+                                    @foreach (var group in ViewBag.Groups)
+                                    {
+                                        @if (group.GroupID.ToString() == ViewBag.SearchString_3)
+                                        {
+                                            <option selected value="@group.GroupID">@group.Name</option>
+                                        }
+                                        else
+                                        {
+                                            <option value="@group.GroupID">@group.Name</option>
+                                        }
+                                    }
+                                </select>
+                                <div class="input-group-append">
+                                    <button class="btn btn-success" type="submit"><i class="fas fa-search"></i></button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart">
+                            <canvas id="MarksGroup" style="min-height: 350px; height: 350px; max-height: 350px; max-width: 100%;"></canvas>
+                        </div>
+                    </div>
+                    <!-- /.card-body -->
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ChartJS -->
+<script src="~/plugins/chart.js/Chart.min.js"></script>
+<!-- PAGE SCRIPTS -->
+<script>
+    /*Преподаватель->Предмет*/
+    var obj_1 = @Html.Raw(Json.Serialize(ViewBag.TeachersSubViews));
+    var teachers_1 = [];
+    var sVal = [];
+    for (var key in obj_1) {
+        teachers_1.push(obj_1[key].fullName)
+        sVal.push(obj_1[key].subValue)
+    }
+
+    var areaChartData = {
+        labels: teachers_1,
+        datasets: [
+            {
+                label: '',
+                backgroundColor: 'rgba(194, 48, 14, 0.7)',
+                borderColor: 'rgba(194, 48, 14, 0.7)',
+                pointRadius: false,
+                pointColor: 'rgba(194, 48, 14, 0.7)',
+                pointStrokeColor: '#c1c7d1',
+                pointHighlightFill: '#c1c7d1',
+                pointHighlightStroke: 'rgba(220,220,220,1)',
+                data: sVal
+            }
+        ]
+    }
+    //---------------------
+    //- STACKED BAR CHART -
+    //---------------------
+    var stackedBarChartCanvas = $('#MarksSubject').get(0).getContext('2d')
+    var barChartData = jQuery.extend(true, {}, areaChartData)
+    var temp0 = areaChartData.datasets[0]
+    barChartData.datasets[0] = temp0
+    var stackedBarChartData = jQuery.extend(true, {}, barChartData)
+
+    var stackedBarChartOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+            xAxes: [{
+                stacked: true,
+            }],
+            yAxes: [{
+                stacked: true
+            }]
+        },
+
+    }
+
+    var stackedBarChart = new Chart(stackedBarChartCanvas, {
+        type: 'horizontalBar',
+        data: stackedBarChartData,
+        options: stackedBarChartOptions
+    })
+
+    /* Преподаватель->кафедра*/
+    var obj_2 = @Html.Raw(Json.Serialize(ViewBag.TeachersDepViews));
+    var teachers_2 = [];
+    var dVal = [];
+    for (var key in obj_2) {
+        teachers_2.push(obj_2[key].fullName)
+        dVal.push(obj_2[key].depValue)
+    }
+    var areaChartData_1 = {
+        labels: teachers_2,
+        datasets: [
+            {
+                label: '',
+                backgroundColor: 'rgba(36, 12, 249, 0.7)',
+                borderColor: 'rgba(36, 12, 249, 0.7)',
+                pointRadius: false,
+                pointColor: 'rgba(36, 12, 249, 0.7)',
+                pointStrokeColor: '#240CF9',
+                pointHighlightFill: '#240CF9',
+                pointHighlightStroke: 'rgba(220,220,220,1)',
+                data: dVal
+            }
+        ]
+    }
+    //---------------------
+    //- STACKED BAR CHART -
+    //---------------------
+    var stackedBarChartCanvas_1 = $('#MarksDepartments').get(0).getContext('2d')
+    var barChartData_1 = jQuery.extend(true, {}, areaChartData_1)
+    var temp1 = areaChartData_1.datasets[0]
+    barChartData_1.datasets[0] = temp1
+    var stackedBarChartData_1 = jQuery.extend(true, {}, barChartData_1)
+
+    var stackedBarChartOptions_1 = {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+            xAxes: [{
+                stacked: true,
+            }],
+            yAxes: [{
+                stacked: true
+            }]
+        },
+    }
+
+    var stackedBarChart_1 = new Chart(stackedBarChartCanvas_1, {
+        type: 'horizontalBar',
+        data: stackedBarChartData_1,
+        options: stackedBarChartOptions_1
+    })
+
+    /*Преподаватель->Группа*/
+    var obj_3 = @Html.Raw(Json.Serialize(ViewBag.TeachersGroupViews));
+    var teachers_3 = [];
+    var gVal = [];
+    for (var key in obj_3) {
+        teachers_3.push(obj_3[key].fullName)
+        gVal.push(obj_3[key].groupValue)
+    }
+    var areaChartData_2 = {
+        labels: teachers_3,
+        datasets: [
+            {
+                label: '',
+                backgroundColor: 'rgba(0, 128, 0, 0.7)',
+                borderColor: 'rgba(0, 128, 0, 0.7)',
+                pointRadius: false,
+                pointColor: 'rgba(0, 128, 0, 0.7)',
+                pointStrokeColor: '#c1c7d1',
+                pointHighlightFill: '#c1c7d1',
+                pointHighlightStroke: 'rgba(220,220,220,1)',
+                data: gVal
+            }
+        ]
+    }
+    //---------------------
+    //- STACKED BAR CHART -
+    //---------------------
+    var stackedBarChartCanvas_2 = $('#MarksGroup').get(0).getContext('2d')
+    var barChartData_2 = jQuery.extend(true, {}, areaChartData_2)
+    var temp2 = areaChartData_2.datasets[0]
+    barChartData_2.datasets[0] = temp2
+    var stackedBarChartData_2 = jQuery.extend(true, {}, barChartData_2)
+
+    var stackedBarChartOptions_2 = {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+            xAxes: [{
+                stacked: true,
+            }],
+            yAxes: [{
+                stacked: true
+            }]
+        },
+
+    }
+
+    var stackedBarChart_2 = new Chart(stackedBarChartCanvas_2, {
+        type: 'horizontalBar',
+        data: stackedBarChartData_2,
+        options: stackedBarChartOptions_2
+    })
+</script>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

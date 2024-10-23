@@ -1,0 +1,142 @@
+﻿@model Portal.Models.Student
+
+@{
+    ViewData["Title"] = "Отчисление слушателя/курсанта";
+}
+
+@await Html.PartialAsync("_NavMenuJournal")
+
+@if (Model.Status == true)
+{
+    <div style="padding:10%">
+        <section class="content-header">
+            <div class="container-fluid">
+                <div class="row">
+                    <div class="col-sm-6">
+                    </div>
+                </div>
+            </div>
+        </section>
+        <section class="content mt-3">
+            <div class="container-fluid">
+                <div class="row">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-body">
+                                <div id="example1_wrapper" class="dataTables_wrapper dt-bootstrap4">
+                                    <div class="row">
+                                        <div class="col-sm-12">
+                                            <div class="bg-secondary text-center text-white">
+                                                <h4>Вы уверены что желаете отчислить слушателя/курсанта?</h4>
+                                            </div>
+                                            <dl class="row">
+                                                <dt class="col-sm-2">
+                                                    Фамилия
+                                                </dt>
+                                                <dd class="col-sm-10">
+                                                    @Html.DisplayFor(model => model.LastName)
+                                                </dd>
+                                                <dt class="col-sm-2">
+                                                    Имя
+                                                </dt>
+                                                <dd class="col-sm-10">
+                                                    @Html.DisplayFor(model => model.Name)
+                                                </dd>
+                                                <dt class="col-sm-2">
+                                                    Отчество
+                                                </dt>
+                                                <dd class="col-sm-10">
+                                                    @Html.DisplayFor(model => model.Surname)
+                                                </dd>
+                                            </dl>
+                                            <form asp-action="SetStatus">
+                                                <input type="hidden" asp-for="StudentID" />
+                                                <input type="hidden" asp-for="Name" />
+                                                <input type="hidden" asp-for="Surname" />
+                                                <input type="hidden" asp-for="LastName" />
+                                                <input type="hidden" asp-for="PlaceOfBirth" />
+                                                <input type="hidden" asp-for="DateOfBirth" />
+                                                <input type="hidden" asp-for="Status" />
+                                                <input type="hidden" asp-for="GroupID" />
+                                                <input type="hidden" asp-for="InstituteID" />
+                                                <input type="submit" value="Отчислить" class="btn btn-secondary" />
+                                                <a class="btn btn-primary" asp-action="Index">Назад</a>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+}
+else
+{
+    <div style="padding:10%">
+        <section class="content-header">
+            <div class="container-fluid">
+                <div class="row">
+                    <div class="col-sm-6">
+                    </div>
+                </div>
+            </div>
+        </section>
+        <section class="content mt-3">
+            <div class="container-fluid">
+                <div class="row">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-body">
+                                <div id="example1_wrapper" class="dataTables_wrapper dt-bootstrap4">
+                                    <div class="row">
+                                        <div class="col-sm-12">
+                                            <div class="bg-success text-center text-white">
+                                                <h4>Вы уверены что желаете восстановить слушателя/курсанта?</h4>
+                                            </div>
+                                            <dl class="row">
+                                                <dt class="col-sm-2">
+                                                    Фамилия
+                                                </dt>
+                                                <dd class="col-sm-10">
+                                                    @Html.DisplayFor(model => model.LastName)
+                                                </dd>
+                                                <dt class="col-sm-2">
+                                                    Имя
+                                                </dt>
+                                                <dd class="col-sm-10">
+                                                    @Html.DisplayFor(model => model.Name)
+                                                </dd>
+                                                <dt class="col-sm-2">
+                                                    Отчество
+                                                </dt>
+                                                <dd class="col-sm-10">
+                                                    @Html.DisplayFor(model => model.Surname)
+                                                </dd>
+                                            </dl>
+                                            <form asp-action="SetStatus">
+                                                <input type="hidden" asp-for="StudentID" />
+                                                <input type="hidden" asp-for="Name" />
+                                                <input type="hidden" asp-for="Surname" />
+                                                <input type="hidden" asp-for="LastName" />
+                                                <input type="hidden" asp-for="PlaceOfBirth" />
+                                                <input type="hidden" asp-for="DateOfBirth" />
+                                                <input type="hidden" asp-for="Status" />
+                                                <input type="hidden" asp-for="GroupID" />
+                                                <input type="hidden" asp-for="InstituteID" />
+                                                <input type="submit" value="Восстановить" class="btn btn-success" />
+                                                <a class="btn btn-primary" asp-action="Index">Назад</a>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+}

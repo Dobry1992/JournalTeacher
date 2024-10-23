@@ -1,0 +1,48 @@
+﻿@model Portal.ViewModel.SetSubjectModel
+
+@{
+    ViewData["Title"] = "Темы занятий";
+    string[] colors = { "primary", "success", "info", "warning", "danger", "gradient-navy", "gradient-olive", "gradient-lime", "gradient-teal", "gradient-yellow", "indigo" };
+    int i = 0;
+}
+
+@await Html.PartialAsync("_NavMenuJournal")
+
+<section class="content-header">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-sm-6">
+            </div>
+        </div>
+    </div>
+</section>
+
+
+@foreach (var departmemt in Model.Departments)
+{
+    if (i == colors.Length) i = 0;
+    if (departmemt.Arch == false && (User.IsInRole(departmemt.Role) || User.IsInRole("SuperAdmin") || User.IsInRole("ANB-UMCH") || User.IsInRole("ANB-HEAD")))
+    {
+        <section class="content">
+            <div class="container-fluid">
+                <h4 class="mb-3 text-center bg-@colors[i] headGroup p-2 rounded">@Html.DisplayFor(dep => departmemt.Name)</h4>
+                <div class="d-flex flex-row flex-wrap">
+                    @foreach (var subject in Model.Subjects)
+                    {
+                        @if (subject.Arch == false && subject.DepartmentID == departmemt.DepartmentID)
+                        {
+                            <a asp-controller="Journals" asp-action="Journal" asp-route-GroupID="@ViewBag.GroupID" asp-route-SubjectID="@subject.SubjectID" class="groups d-block p-4 mr-3 mb-3 text-decoration-none rounded shadow-lg bg-@colors[i]">
+                                <h6 class="text-center">@subject.Name</h6>
+                            </a>
+                        }
+                    }
+                </div>
+            </div>
+        </section>
+        i++;
+    }
+}
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

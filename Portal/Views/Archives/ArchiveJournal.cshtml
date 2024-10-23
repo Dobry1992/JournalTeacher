@@ -1,0 +1,82 @@
+﻿@model IEnumerable<Portal.Models.LessonArhive>
+
+@{
+    ViewData["Title"] = "Журнал";
+    int i = 1;
+}
+
+@await Html.PartialAsync("_NavMenuJournal")
+
+<div>
+    <section class="content-header" style="padding:15px 15px !important">
+        <div class="container-fluid">
+            <div class="row">
+            </div>
+        </div>
+    </section>
+    <section class="content">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-body">
+                            <div id="example1_wrapper" class="dataTables_wrapper dt-bootstrap4">
+                                <div class="row">
+                                    <div class="col-sm-12">
+                                        <div class="p-2">
+                                            <h6 class="mb-3 text-center bg-warning headGroup p-2 rounded">Группа: @ViewBag.Group.Name,<br />предмет: @ViewBag.Subject.Name</h6>
+                                            <div class="table-wrap">
+                                                <table class="table table-bordered compact" id="JournalTable">
+                                                    <thead class="thead-dark compact">
+                                                        <tr role="row">
+                                                            <th class="align-middle text-center p-1 fix">#</th>
+                                                            <th class="align-middle text-center p-1 fix">Ф.И.О.</th>
+                                                            @foreach (var lesson in Model)
+                                                            {
+                                                                <th class="align-middle text-center p-0 m-0">
+                                                                    <span class="rotate-sm-90">@lesson.TypeOfExercise.Name<br />@lesson.Theme.ShortName<br />@lesson.Date.ToShortDateString()</span>
+                                                                </th>
+                                                            }
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody class="bg-white compact">
+                                                        @foreach (var student in ViewBag.Students)
+                                                        {
+                                                            <tr>
+                                                                <td class="align-middle text-center p-1 bg-light fix">@i</td>
+                                                                <td class="align-middle text-center p-1 bg-light fix" style="white-space:nowrap">@student.LastName @student.Name @student.Surname</td>
+                                                                @foreach (var mark in ViewBag.Marks)
+                                                                {
+                                                                    if (mark.Mark.StudentArhiveID == student.StudentArhiveID)
+                                                                    {
+                                                                        <td class="align-middle text-center p-0 @mark.Property">
+                                                                            @mark.Mark.Value
+                                                                        </td>
+                                                                    }
+                                                                }
+                                                            </tr>
+                                                            i++;
+                                                        }
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+
+@section Scripts {
+    <script src="~/js/journal.js"></script>
+    <script>
+        $(function () {
+            $('[data-toggle="tooltip"]').tooltip();
+        });
+    </script>
+}

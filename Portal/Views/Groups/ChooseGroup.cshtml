@@ -1,0 +1,67 @@
+﻿@model Portal.Models.Lesson
+
+@{
+    ViewData["Title"] = "Создать потоковую лекцию";
+}
+
+@await Html.PartialAsync("_NavMenuJournal")
+
+<div style="padding:10%">
+    <section class="content-header">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-sm-6 m-auto">
+                    <h3 class="bg-gradient-yellow p-2 rounded text-center">Создать потоковую лекцию</h3>
+                </div>
+            </div>
+        </div>
+    </section>
+    <section class="content">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-6 m-auto">
+                    <div class="card">
+                        <div class="card-body">
+                            <form asp-action="ChooseGroup">
+                                <input asp-for="SubjectID" hidden />
+                                <div class="form-group">
+                                    <label asp-for="ThemeID" class="control-label">Тема занятия</label>
+                                    <select asp-for="ThemeID" asp-items="ViewBag.ThemeID" class="form-control"></select>
+                                </div>
+                                <div class="form-group">
+                                    <label asp-for="TypeOfExerciseID" class="control-label">Тип занятия</label>
+                                    <select asp-for="TypeOfExerciseID" class="form-control" asp-items="ViewBag.TypeOfExerciseID"></select>
+                                </div>
+                                <div class="form-group">
+                                    <label asp-for="Date" class="control-label">Дата</label>
+                                    <input asp-for="Date" class="form-control" />
+                                    <span asp-validation-for="Date" class="text-danger"></span>
+                                </div>
+                                <div class="form-group">
+                                    <label asp-for="Comment" class="control-label">Комментарий преподавателя</label>
+                                    <textarea asp-for="Comment" class="form-control"></textarea>
+                                    <span asp-validation-for="Comment" class="text-danger"></span>
+                                </div>
+                                @foreach (var group in ViewBag.Groups)
+                                {
+                                    <div class="form-check">
+                                        <input type="checkbox" value="@group.GroupID" name="groupsId" class="form-check-input" />
+                                        <label class="form-check-label">@group.Name.ToString()</label>
+                                        <br />
+                                    </div>
+                                }
+                                <div class="form-group mt-2">
+                                    <input type="submit" value="Создать" class="btn btn-success form-control" />
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

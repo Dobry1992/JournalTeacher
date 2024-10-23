@@ -1,0 +1,91 @@
+﻿@model IEnumerable<Portal.Models.Subject>
+
+@{
+    ViewData["Title"] = "Предметы";
+    int i = 1;
+}
+
+@await Html.PartialAsync("_NavMenuJournal")
+
+<div>
+    <section class="content-header">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-sm-6">
+                    <h3 class="mb-1">Предметы</h3>
+                </div>
+            </div>
+        </div>
+    </section>
+    <section class="content">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-body">
+                            <div id="example1_wrapper" class="dataTables_wrapper dt-bootstrap4">
+                                <div class="row">
+                                    <div class="col-sm-12 table-wrap">
+                                        <a asp-action="Create" class="btn btn-primary mb-3">Добавить предмет</a>
+                                        <table id="Table" class="table table-bordered dataTable dtr-inline table-sm compact" role="grid">
+                                            <thead class="thead-dark">
+                                                <tr role="row">
+                                                    <th class="sorting_asc">#</th>
+                                                    <th class="sorting">Предмет</th>
+                                                    <th class="sorting">Кафедра</th>
+                                                    <th class="sorting fix">Действие</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach (var item in Model)
+                                                {
+                                                    @if (item.Arch == true)
+                                                    {
+                                                        <tr role="row" class="odd bg-gray">
+                                                            <td tabindex="0" class="sorting_1">@i</td>
+                                                            <td tabindex="0" class="sorting_1">@Html.DisplayFor(modelItem => item.Name)</td>
+                                                            <td tabindex="0" class="sorting_1">@Html.DisplayFor(modelItem => item.Department.Name)</td>
+                                                            <td tabindex="0" class="sorting_1 fix">
+                                                                <div class="container">
+                                                                    <a title="Редактировать" class="btn btn-warning btn-sm" asp-controller="Subjects" asp-action="Edit" asp-route-id="@item.SubjectID"><i class="fa fa-file-edit"></i></a>
+                                                                    <a title="Иформация" class="btn btn-info btn-sm" asp-controller="Subjects" asp-action="Details" asp-route-id="@item.SubjectID"><i class="fa fa-info"></i></a>
+                                                                    <a title="Разархивировать" class="btn btn-success btn-sm" asp-controller="Subjects" asp-action="Archive" asp-route-id="@item.SubjectID"><i class="fa fa-file-archive"></i></a>
+                                                                    <a title="Удалить" class="btn btn-danger btn-sm" asp-controller="Subjects" asp-action="Delete" asp-route-id="@item.SubjectID"><i class="fa fa-remove"></i></a>
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                    }
+                                                    else
+                                                    {
+                                                        <tr role="row" class="odd bg-white">
+                                                            <td tabindex="0" class="sorting_1">@i</td>
+                                                            <td tabindex="0" class="sorting_1">@Html.DisplayFor(modelItem => item.Name)</td>
+                                                            <td tabindex="0" class="sorting_1">@Html.DisplayFor(modelItem => item.Department.Name)</td>
+                                                            <td tabindex="0" class="sorting_1 fix">
+                                                                <div class="container">
+                                                                    <a title="Редактировать" class="btn btn-warning btn-sm" asp-controller="Subjects" asp-action="Edit" asp-route-id="@item.SubjectID"><i class="fa fa-file-edit"></i></a>
+                                                                    <a title="Иформация" class="btn btn-info btn-sm" asp-controller="Subjects" asp-action="Details" asp-route-id="@item.SubjectID"><i class="fa fa-info"></i></a>
+                                                                    <a title="Добавить в архив" class="btn btn-secondary btn-sm" asp-controller="Subjects" asp-action="Archive" asp-route-id="@item.SubjectID"><i class="fa fa-file-archive"></i></a>
+                                                                    <a title="Удалить" class="btn btn-danger btn-sm" asp-controller="Subjects" asp-action="Delete" asp-route-id="@item.SubjectID"><i class="fa fa-remove"></i></a>
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                    }
+                                                    i++;
+                                                }
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+
+@section scripts{
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

@@ -1,0 +1,110 @@
+﻿@model Portal.Models.Department
+
+@{
+    ViewData["Title"] = "Добавить в архив";
+}
+
+@await Html.PartialAsync("_NavMenuJournal")
+
+
+@if (Model.Arch == false)
+{
+    <div style="padding:10%">
+        <section class="content-header">
+            <div class="container-fluid">
+                <div class="row">
+                    <div class="col-sm-6">
+                    </div>
+                </div>
+            </div>
+        </section>
+        <section class="content mt-3">
+            <div class="container-fluid">
+                <div class="row">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-body">
+                                <div id="example1_wrapper" class="dataTables_wrapper dt-bootstrap4">
+                                    <div class="row">
+                                        <div class="col-sm-12">
+                                            <div class="bg-secondary text-center text-white">
+                                                <h4>Вы уверены что желаете добавить в архив подразделение?</h4>
+                                            </div>
+                                            <dl class="row">
+                                                <dt class="col-sm-2">
+                                                    Кафедра
+                                                </dt>
+                                                <dd class="col-sm-10">
+                                                    @Html.DisplayFor(model => model.Name)
+                                                </dd>
+                                            </dl>
+                                            <form asp-action="Archive">
+                                                <input type="hidden" asp-for="DepartmentID" />
+                                                <input type="hidden" asp-for="Arch" />
+                                                <input type="hidden" asp-for="Name" />
+                                                <input type="hidden" asp-for="InstituteID" />
+                                                <input type="hidden" asp-for="Role" />
+                                                <input type="submit" value="Добавить в архив" class="btn btn-secondary" />
+                                                <a class="btn btn-primary" asp-controller="Departments" asp-action="Index">Назад</a>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+}
+else
+{
+    <div style="padding:10%">
+        <section class="content-header">
+            <div class="container-fluid">
+                <div class="row">
+                    <div class="col-sm-6">
+                    </div>
+                </div>
+            </div>
+        </section>
+        <section class="content mt-3">
+            <div class="container-fluid">
+                <div class="row">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-body">
+                                <div id="example1_wrapper" class="dataTables_wrapper dt-bootstrap4">
+                                    <div class="row">
+                                        <div class="col-sm-12">
+                                            <div class="bg-success text-center text-white">
+                                                <h4>Вы уверены что желаете разархивировать подразделение?</h4>
+                                            </div>
+                                            <dl class="row">
+                                                <dt class="col-sm-2">
+                                                    Кафедра
+                                                </dt>
+                                                <dd class="col-sm-10">
+                                                    @Html.DisplayFor(model => model.Name)
+                                                </dd>
+                                            </dl>
+                                            <form asp-action="Archive">
+                                                <input type="hidden" asp-for="DepartmentID" />
+                                                <input type="hidden" asp-for="Arch" />
+                                                <input type="hidden" asp-for="Name" />
+                                                <input type="hidden" asp-for="Role" />
+                                                <input type="submit" value="Разархивировать" class="btn btn-success" />
+                                                <a class="btn btn-primary" asp-controller="Departments" asp-action="Index">Назад</a>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+}

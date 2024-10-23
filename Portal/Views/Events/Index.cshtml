@@ -1,0 +1,69 @@
+﻿@model IEnumerable<Portal.Models.Event>
+
+@{
+    ViewData["Title"] = "События";
+    int i = 1;
+}
+
+@await Html.PartialAsync("_NavMenuJournal")
+
+<div style="padding:7%">
+    <section class="content-header">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-sm-6">
+                    <h2>Список событий</h2>
+                </div>
+            </div>
+        </div>
+    </section>
+    <section class="content">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-body">
+                            <form asp-action="Index" method="get" class="form-inline mb-3">
+                                <div class="form-group m-auto">
+                                    <label class="mr-2" for="date">Дата:</label>
+                                    <input class="form-control mr-2" type="date" name="date" />
+                                    <input type="submit" value="Поиск" class="btn btn-primary mr-2" />
+                                </div>
+                            </form>
+                            <div id="example1_wrapper" class="dataTables_wrapper dt-bootstrap4">
+                                <div class="row">
+                                    <div class="col-sm-12">
+                                        <table class="table table-bordered compact dataTable hover table-sm" role="grid" id="EventsTable">
+                                            <thead class="thead-dark">
+                                                <tr role="row">
+                                                    <th class="sorting_asc">#</th>
+                                                    <th class="sorting_asc">Событие</th>
+                                                    <th class="sorting_asc">Преподаватель</th>
+                                                    <th class="sorting_asc">Дата</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach (var item in Model)
+                                                {
+                                                    <tr role="row" class="odd bg-white">
+                                                        <td tabindex="0" class="sorting_1">@i</td>
+                                                        <td tabindex="0" class="sorting_1">@item.Log</td>
+                                                        <td tabindex="0" class="sorting_1">@item.Teacher</td>
+                                                        <td tabindex="0" class="sorting_1">@item.Date</td>
+                                                    </tr>
+                                                    i++;
+                                                }
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+
+<script src="~/js/Events.js"></script>

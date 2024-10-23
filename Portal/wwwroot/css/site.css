@@ -1,0 +1,347 @@
+﻿.bg {
+    background-image: url(../images/Logo.PNG);
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: 70%;
+    background-color: white;
+    background-attachment: fixed;
+}
+
+.content {
+    opacity: 0.98;
+}
+
+a.navbar-brand {
+    white-space: normal;
+    text-align: center;
+    word-break: break-all;
+}
+
+.btn-primary {
+    color: #fff;
+    background-color: #1b6ec2;
+    border-color: #1861ac;
+}
+
+.nav-pills .nav-link.active, .nav-pills .show > .nav-link {
+    color: #fff;
+    background-color: #1b6ec2;
+    border-color: #1861ac;
+}
+
+.border-top {
+    border-top: 1px solid #e5e5e5;
+}
+
+.border-bottom {
+    border-bottom: 1px solid #e5e5e5;
+}
+
+.box-shadow {
+    box-shadow: 0 .25rem .75rem rgba(0, 0, 0, .05);
+}
+
+button.accept-policy {
+    font-size: 1rem;
+    line-height: inherit;
+}
+
+html {
+    position: relative;
+    min-height: 100%;
+    font-size: 14px;
+}
+
+body {
+    margin-bottom: 60px;
+}
+
+.footer {
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    white-space: nowrap;
+    line-height: 60px;
+}
+
+.headGroup {
+    opacity: 0.85;
+}
+
+.groups:hover {
+    transition: 1s !important;
+}
+
+.groups:not(:hover) {
+    transition: 1s !important;
+}
+
+.table-wrap {
+    overflow: auto;
+    width: 100%;
+}
+
+.fix {
+    position: sticky;
+    left: 0;
+    z-index: 2;
+    background-color: white;
+}
+
+.tableMarkK {
+    background-color: deepskyblue;
+}
+
+.tableMarkK:hover {
+    background-color: cornflowerblue;
+    transition: 0.5s;
+}
+
+.tableMark {
+    background-color: lightgrey;
+}
+
+.tableMark:hover {
+    background-color: bisque;
+    transition: 0.5s;
+}
+
+.tableMarkSet {
+    background-color: white;
+}
+
+.tableMarkSet:hover {
+    background-color: burlywood;
+    transition: 0.5s;
+}
+
+.tableMarkEKZ {
+    background-color: khaki;
+}
+
+.tableMarkEKZ:hover {
+    background-color: antiquewhite;
+    transition: 0.5s;
+}
+
+.tableMarkIO {
+    background-color: darksalmon;
+}
+
+.tableMarkIO:hover {
+    background-color: indianred;
+    transition: 0.5s;
+}
+
+.rotate-sm-90 {
+    font-size: 1rem;
+    writing-mode: vertical-lr;
+    transform: rotate(180deg);
+}
+
+.gallery-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    background-color: #fff;
+    box-shadow: 0 0 3px 0 rgba(0, 0, 0, 0.3);
+    width: 80%;
+    margin: 0 auto;
+    padding: 2%;
+    border-radius: 10px;
+}
+
+.gallery-item {
+    flex: 25%;
+    opacity: .85;
+    cursor: pointer;
+}
+
+.gallery-item:hover {
+    opacity: 1;
+}
+
+.gallery-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.gallery-content {
+    font-size: .8em;
+}
+
+.lightbox {
+    position: fixed;
+    display: none;
+    background-color: rgba(0, 0, 0, 0.8);
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    top: 0;
+    left: 0;
+}
+
+.lightbox-content {
+    position: relative;
+    width: 70%;
+    height: 70%;
+    margin: 8% 5% 10% 20%;
+}
+
+.lightbox-content img {
+    border-radius: 7px;
+    box-shadow: 0 0 3px 0 rgba(225, 225, 225, .25);
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.lightbox-prev,
+.lightbox-next {
+    position: absolute;
+    background-color: rgba(0, 0, 0, 0.8);
+    color: #fff;
+    padding: 7px;
+    top: 45%;
+    cursor: pointer;
+}
+
+.lightbox-prev {
+    left: 0;
+}
+
+.lightbox-next {
+    right: 0;
+}
+
+.lightbox-prev:hover,
+.lightbox-next:hover {
+    opacity: .8;
+}
+
+.input-file {
+    position: relative;
+    display: inline-block;
+}
+
+.input-file span {
+    position: relative;
+    display: inline-block;
+    cursor: pointer;
+    outline: none;
+    text-decoration: none;
+    font-size: 14px;
+    vertical-align: middle;
+    color: rgb(255 255 255);
+    text-align: center;
+    border-radius: 4px;
+    background-color: #419152;
+    line-height: 22px;
+    height: 40px;
+    padding: 10px 20px;
+    box-sizing: border-box;
+    border: none;
+    margin: 0;
+    transition: background-color 0.2s;
+}
+
+.input-file input[type=file] {
+    position: absolute;
+    z-index: -1;
+    opacity: 0;
+    display: block;
+    width: 0;
+    height: 0;
+}
+
+.input-file input[type=file]:focus + span {
+    box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25);
+}
+
+.input-file:hover span {
+    background-color: #59be6e;
+}
+
+.input-file:active span {
+    background-color: #2E703A;
+}
+
+.input-file input[type=file]:disabled + span {
+    background-color: #eee;
+}
+
+.markDR {
+    background-color: red;
+    color: white;
+}
+
+.markDR:hover {
+    background-color: orangered;
+    transition: 0.5s;
+}
+
+.markPP {
+    background-color: white;
+}
+
+.markPP:hover {
+    background-color: wheat;
+    transition: 0.5s;
+}
+
+.markGE {
+    background-color: lightgreen;
+}
+
+.markGE:hover {
+    background-color: springgreen;
+    transition: 0.5s;
+}
+
+@media (min-width: 768px) {
+    html {
+        font-size: 16px;
+    }
+}
+
+@media (max-width: 1400px) {
+    .lightbox-content {
+        margin: 7% 5% 10% 26%;
+    }
+}
+
+@media (max-width: 992px) {
+    .lightbox-content {
+        margin: 10% auto;
+    }
+}
+
+@media (max-width: 767px) {
+    .gallery-container {
+        width: 100%;
+    }
+
+    .gallery-item {
+        flex-basis: 49.80%;
+        margin-bottom: 3px;
+    }
+
+    .lightbox-content {
+        width: 80%;
+        height: 60%;
+        margin: 15% auto;
+    }
+}
+
+@media (max-width: 480px) {
+    .gallery-item {
+        flex-basis: 100%;
+        margin-bottom: 1px;
+    }
+
+    .lightbox-content {
+        width: 90%;
+        margin: 20% auto;
+    }
+}

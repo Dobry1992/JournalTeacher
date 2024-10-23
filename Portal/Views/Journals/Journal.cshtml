@@ -1,0 +1,218 @@
+﻿@model IEnumerable<Portal.ViewModel.JournalLessons>
+
+@{
+    ViewData["Title"] = "Журнал";
+    int i = 1;
+    int j = 1;
+}
+
+@await Html.PartialAsync("_NavMenuJournal")
+
+@if (ViewBag.CountFlag == 0)
+{
+    <div style="padding:15%">
+        <section class="content-header">
+            <div class="container-fluid">
+                <div class="row">
+                    <div class="col-sm-6">
+                    </div>
+                </div>
+            </div>
+        </section>
+        <section class="content">
+            <div class="container-fluid">
+                <div class="row">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-body bg-warning" style="opacity:0.8">
+                                <div id="example1_wrapper" class="dataTables_wrapper dt-bootstrap4">
+                                    <div class="row">
+                                        <div class="col-sm-12 table-wrap">
+                                            <div class="text-center p-2">
+                                                <h2 class="">Журнал не сформирован!</h2>
+                                                <p class="font-italic" style="font-size:larger">
+                                                    Журнал оценок для выбранных Вами группы и предмета не сформирован.<br>
+                                                    Для его формирования обратитесь в УМЧ.
+                                                </p>
+                                                @if (User.IsInRole("ANB-UMCH") || User.IsInRole("SuperAdmin"))
+                                                {
+                                                    <a class="btn btn-danger text-white" asp-route-SubjectID="@ViewBag.SubjectID" asp-route-GroupID="@ViewBag.GroupID" asp-controller="Journals" asp-action="Create">Сформировать журнал</a>
+                                                }
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+}
+else if (User.IsInRole("SuperAdmin") || User.IsInRole("ANB-UMCH") || User.IsInRole("ANB-HEAD") || User.IsInRole(ViewBag.Department.Role))
+{
+    <div>
+        <section class="content-header" style="padding:15px 15px !important">
+            <div class="container-fluid">
+                <div class="row">
+                </div>
+            </div>
+        </section>
+        <section class="content">
+            <div class="container-fluid">
+                <div class="row">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-body">
+                                <div id="example1_wrapper" class="dataTables_wrapper dt-bootstrap4">
+                                    <div class="row">
+                                        <div class="col-sm-12">
+                                            <div class="p-2">
+                                                <h6 class="mb-3 text-center bg-warning headGroup p-2 rounded">Группа: @ViewBag.Group.Name,<br />предмет: @ViewBag.Subject.Name</h6>
+                                                <div class="btn-group mr-2 mb-3 border rounded" role="group" aria-label="Занятия">
+                                                    <a class="btn btn-light text-dark p-2" asp-route-GroupID="@ViewBag.GroupID" asp-route-SubjectID="@ViewBag.SubjectID" asp-controller="Lessons" asp-action="Create">Занятие</a>
+                                                    <a class="btn btn-danger text-white p-2" asp-route-GroupID="@ViewBag.GroupID" asp-route-SubjectID="@ViewBag.SubjectID" asp-controller="Lessons" asp-action="CreateF">Экзамен/Зачёт</a>
+                                                    <a class="btn btn-primary text-white p-2" asp-route-GroupID="@ViewBag.GroupID" asp-route-SubjectID="@ViewBag.SubjectID" asp-controller="Lessons" asp-action="CreateK">Курсовой проект/курсовая работа</a>
+                                                </div>
+                                                <a class="btn btn-outline-warning text-dark p-2 mb-3 mr-2" asp-action="Final" asp-route-GroupID="@ViewBag.GroupID" asp-route-SubjectID="@ViewBag.SubjectID">Итоги обучения</a>
+                                                <div class="btn-group mr-2 mb-3 border rounded" role="group" aria-label="Ведомости">
+                                                    <a class="btn btn-outline-success" asp-controller="Print" asp-action="PrintJournal" asp-route-subjectID="@ViewBag.SubjectID" asp-route-groupID="@ViewBag.GroupID">Экспорт</a>
+                                                    <button type="button" class="btn btn-outline-danger" data-toggle="modal" data-target="#modal-content">Экзаменационная ведомость</button>
+                                                </div>
+                                                <div class="table-wrap" id="sd">
+                                                    <table class="table table-bordered compact table-sm" id="JournalTable">
+                                                        <thead class="thead-dark compact">
+                                                            <tr role="row">
+                                                                <th class="align-middle text-center p-1 fix">#</th>
+                                                                <th class="align-middle text-center p-1 fix">Ф.И.О.</th>
+                                                                @foreach (var lesson in Model)
+                                                                {
+                                                                    <th class="align-middle text-center p-0 m-0">
+                                                                        <a class="btn btn-outline-danger text-white border-0 p-1 m-0" data-toggle="tooltip" id="btn-tooltip" data-placement="left" data-html="true" data-title="Подпись: @lesson.Lesson.Signature" asp-controller="@lesson.Controller" asp-action="@lesson.Action" asp-route-id="@lesson.Lesson.LessonID" asp-route-SubjectID="@ViewBag.SubjectID" asp-route-GroupID="@ViewBag.GroupID"><span class="rotate-sm-90">@lesson.Lesson.TypeOfExercise.Name<br />@lesson.Lesson.Theme.ShortName<br />@lesson.Lesson.Date.ToShortDateString()</span></a>
+                                                                    </th>
+                                                                }
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody class="bg-white compact">
+                                                            @foreach (var student in ViewBag.Students)
+                                                            {
+                                                                <tr>
+                                                                    <td class="align-middle text-center p-1 bg-light fix">@i</td>
+                                                                    <td class="align-middle text-center p-1 bg-light fix" style="white-space:nowrap">@student.LastName @student.Name @student.Surname</td>
+                                                                    @foreach (var mark in ViewBag.Marks)
+                                                                    {
+                                                                        if (mark.Mark.StudentID == student.StudentID)
+                                                                        {
+                                                                            <td class="align-middle text-center p-0 @mark.Property">
+                                                                                <a asp-controller="@mark.Controller" asp-action="@mark.Action" asp-route-MarkID="@mark.Mark.MarkID" asp-route-SubjectID="@ViewBag.SubjectID" asp-route-GroupID="@ViewBag.GroupID" data-toggle="tooltip" id="btn-tooltip" data-placement="left" class="btn border-0 text-center align-middle p-3" data-html="true" data-title="Подпись: @mark.Mark.SignatureOfTeacher<br>История:<br> @mark.Mark.HistoryOfMark" style="width:100%;">
+                                                                                    @mark.Mark.Value
+                                                                                </a>
+                                                                            </td>
+                                                                        }
+                                                                    }
+                                                                </tr>
+                                                                i++;
+                                                            }
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+    <!-- Модальное окно -->
+    <div class="modal fade" id="modal-content" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalLabel">Выберете ведомость</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <table class="table table-bordered compact table-sm">
+                        <thead class="thead-dark">
+                            <tr role="row">
+                                <th class="align-middle text-center p-1 fix">#</th>
+                                <th class="align-middle text-center p-1 fix">Зачёт/экзамен</th>
+                                <th class="align-middle text-center p-1 fix">Дата</th>
+                                <th class="align-middle text-center p-1 fix"></th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white compact">
+                            @foreach (var l in ViewBag.StatementLessons)
+                            {
+                                <tr>
+                                    <td class="align-middle text-center p-1 bg-light fix">@j</td>
+                                    <td class="align-middle text-center p-1 bg-light fix">@l.TypeOfExercise.Name</td>
+                                    <td class="align-middle text-center p-1 bg-light fix">@l.Date.ToShortDateString()</td>
+                                    <td class="align-middle text-center p-1 bg-light fix"><a class="btn btn-warning" asp-controller="Print" asp-action="PrintStatement" asp-route-id="@l.LessonID" target="_blank">Выбрать</a></td>
+                                </tr>
+                                j++;
+                            }
+                        </tbody>
+                    </table>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-danger" data-dismiss="modal">Закрыть</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <div style="padding:20%">
+        <section class="content-header">
+            <div class="container-fluid">
+            </div>
+        </section>
+        <section class="content">
+            <div class="card mb-3" style="max-width: 1000px;">
+                <div class="row no-gutters">
+                    <div class="col-md-4">
+                        <img src="~/images/rejected.jpg" class="w-100 h-100">
+                    </div>
+                    <div class="col-md-8">
+                        <div class="card-body">
+                            <h3 class="card-title text-bold">Отказ в доступе.</h3>
+                            <p class="card-text">Уважаемые пользователь, Вам отказано в доступе к данному журналу.</p>
+                            <p class="card-text"><small class="text-muted">@DateTime.Now.ToLongTimeString()</small></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+}
+
+@section Scripts {
+    <script>
+        $('#modal-content').on('shown.bs.modal', function () { })
+    </script>
+    <script src="~/js/journal.js"></script>
+    <script>
+        $(function () {
+            $('[data-toggle="tooltip"]').tooltip();
+        });
+    </script>
+    <script>
+        window.addEventListener('DOMContentLoaded', function () {
+            var div = document.querySelector('#sd');
+            var scroll = localStorage.getItem('scroll') || 0;
+            div.scrollLeft = scroll;
+            div.addEventListener('scroll', function () {
+                localStorage.setItem('scroll', div.scrollLeft);
+            })
+        });
+    </script>
+}

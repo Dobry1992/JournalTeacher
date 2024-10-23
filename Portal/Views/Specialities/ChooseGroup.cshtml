@@ -1,0 +1,47 @@
+﻿@model IEnumerable<Portal.Models.Speciality>
+
+@{
+    ViewData["Title"] = "Учебные группы";
+    string[] colors = { "primary", "success", "info", "warning", "danger", "gradient-navy", "gradient-olive", "gradient-lime", "gradient-teal", "gradient-yellow", "indigo" };
+    int i = 0;
+}
+
+@await Html.PartialAsync("_NavMenuJournal")
+
+<section class="content-header">
+    <div class="container-fluid">
+        <h3 class="text-gray headGroup text-left mb-3">Журнал итоговых оценок группы</h3>
+    </div>
+</section>
+@foreach (var item in Model)
+{
+    if (i == colors.Length)
+        i = 0;
+    @if (item.Arch == false)
+    {
+        <section class="content">
+            <div class="container-fluid">
+                <h4 class="mb-3 text-center bg-@colors[i] headGroup p-2 rounded">Специальность: @Html.DisplayFor(modelItem => item.Name), срок обучения: @Html.DisplayFor(modelItem => item.TimeOFStudy) мес.</h4>
+                <div class="d-flex flex-row">
+                    @foreach (var groupItem in item.Groups)
+                    {
+                        @if (groupItem.DateExit > DateTime.Now)
+                        {
+                            <a asp-controller="Journals" asp-action="Statement" asp-route-GroupID="@groupItem.GroupID" class="groups d-block p-4 mr-3 mb-3 text-decoration-none rounded shadow-lg bg-@colors[i]">
+                                <p class="text-center">
+                                    <span class="text-xl">@Html.DisplayFor(modelItem => groupItem.Name)</span><br />
+                                    <span>@groupItem.DateEnter.ToShortDateString() - @groupItem.DateExit.ToShortDateString()</span>
+                                </p>
+                            </a>
+                        }
+                    }
+                </div>
+            </div>
+        </section>
+        i++;
+    }
+}
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

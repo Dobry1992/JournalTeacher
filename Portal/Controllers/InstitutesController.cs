@@ -1,0 +1,828 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using Portal.Data;
+using Portal.Models;
+using Portal.Models.Model;
+using Portal.ViewModel;
+using Portal.ViewModel.Raiting;
+
+namespace Portal
+{
+    public class InstitutesController : Controller
+    {
+        private readonly AcademyContext _context;
+
+        public InstitutesController(AcademyContext context)
+        {
+            _context = context;
+        }
+
+        public async Task<IActionResult> Start()
+        {
+            var institutes = _context.Institutes
+                .Include(s => s.Specialities)
+                    .ThenInclude(g => g.Groups)
+                .AsNoTracking()
+                .OrderBy(i => i.Name);
+
+            var groupsArhive = _context.Groups
+                .Include(s => s.Students)
+                    .ThenInclude(s => s.Marks)
+                .Include(s => s.Students)
+                    .ThenInclude(s => s.StatementMarks)
+                .Include(l => l.Lessons)
+                .Include(l => l.StatementLessons)
+                .Include(j => j.Journals)
+                .Where(g => g.DateExit.AddMonths(1) <= DateTime.Now);
+
+            List<ArhiveLesson> lessons = new();
+            List<ArhiveStatementLesson> statementLessons = new();
+
+            if (groupsArhive != null)
+            {
+                foreach (Group group in groupsArhive)
+                {
+                    GroupArhive ga = new();
+                    ga.Name = group.Name;
+                    ga.DateEnter = group.DateEnter;
+                    ga.DateExit = group.DateExit;
+                    ga.InstituteID = group.InstituteID;
+                    ga.SpecialityID = group.SpecialityID;
+                    _context.GroupArhives.Add(ga);
+                    _context.SaveChanges();
+
+                    foreach (Student student in group.Students)
+                    {
+                        StudentArhive sa = new();
+                        sa.Name = student.Name;
+                        sa.Surname = student.Surname;
+                        sa.LastName = student.LastName;
+                        sa.PlaceOfBirth = student.PlaceOfBirth;
+                        sa.DateOfBirth = student.DateOfBirth;
+                        sa.Status = false;
+                        sa.InstituteID = student.InstituteID;
+                        sa.GroupArhiveID = ga.GroupArhiveID;
+                        _context.StudentArhives.Add(sa);
+                        _context.SaveChanges();
+
+                        foreach (Mark mark in student.Marks)
+                        {
+                            LessonArhive la = new();
+                            Lesson lesson = _context.Lessons.Find(mark.LessonID);
+
+                            if (lessons.FirstOrDefault(l => l.LessonID == lesson.LessonID) == null)
+                            {
+                                la.Date = lesson.Date;
+                                la.Comment = lesson.Comment;
+                                la.Signature = lesson.Signature;
+                                la.FlagF = lesson.FlagF;
+                                la.SubjectID = lesson.SubjectID;
+                                la.ThemeID = lesson.ThemeID;
+                                la.GroupArhiveID = ga.GroupArhiveID;
+                                la.TypeOfExerciseID = lesson.TypeOfExerciseID;
+                                _context.LessonArhives.Add(la);
+                                _context.SaveChanges();
+
+                                ArhiveLesson al = new();
+                                al.LessonArhive = la;
+                                al.LessonID = lesson.LessonID;
+                                lessons.Add(al);
+                            }
+                            else
+                            {
+                                ArhiveLesson al = lessons.Find(l => l.LessonID == lesson.LessonID);
+                                la = al.LessonArhive;
+                            }
+
+                            MarkArhive ma = new();
+                            ma.Value = mark.Value;
+                            ma.Date = mark.Date;
+                            ma.Comment = mark.Comment;
+                            ma.SignatureOfTeacher = mark.SignatureOfTeacher;
+                            ma.HistoryOfMark = mark.HistoryOfMark;
+                            ma.FlagF = mark.FlagF;
+                            ma.InstituteID = mark.InstituteID;
+                            ma.SubjectID = mark.SubjectID;
+                            ma.GroupID = ga.GroupArhiveID;
+                            ma.TypeOfExerciseID = mark.TypeOfExerciseID;
+                            ma.DepartmentID = mark.DepartmentID;
+                            ma.SpecialityID = mark.SpecialityID;
+                            ma.ThemeID = mark.ThemeID;
+                            ma.StudentArhiveID = sa.StudentArhiveID;
+                            ma.LessonID = la.LessonArhiveID;
+                            _context.MarkArhives.Add(ma);
+                        }
+
+                        foreach (StatementMark mark in student.StatementMarks)
+                        {
+                            StatementLessonArhive la = new();
+                            StatementLesson lesson = _context.StatementLessons.Find(mark.StatementLessonID);
+
+                            if (statementLessons.FirstOrDefault(l => l.StatementLessonID == lesson.StatementLessonID) == null)
+                            {
+                                la.Date = lesson.Date;
+                                la.Comment = lesson.Comment;
+                                la.Signature = lesson.Signature;
+                                la.GroupArhiveID = ga.GroupArhiveID;
+                                la.TypeOfExerciseID = lesson.TypeOfExerciseID;
+                                _context.StatementLessonArhives.Add(la);
+                                _context.SaveChanges();
+
+                                ArhiveStatementLesson al = new();
+                                al.StatementLesson = la;
+                                al.StatementLessonID = lesson.StatementLessonID;
+                                statementLessons.Add(al);
+                            }
+                            else
+                            {
+                                ArhiveStatementLesson al = statementLessons.Find(l => l.StatementLessonID == lesson.StatementLessonID);
+                                la = al.StatementLesson;
+                            }
+
+                            StatementMarkArhive ma = new();
+                            ma.Value = mark.Value;
+                            ma.Date = mark.Date;
+                            ma.Comment = mark.Comment;
+                            ma.SignatureOfTeacher = mark.SignatureOfTeacher;
+                            ma.HistoryOfMark = mark.HistoryOfMark;
+                            ma.InstituteID = mark.InstituteID;
+                            ma.GroupID = ga.GroupArhiveID;
+                            ma.TypeOfExerciseID = mark.TypeOfExerciseID;
+                            ma.SpecialityID = mark.SpecialityID;
+                            ma.StudentArhiveID = sa.StudentArhiveID;
+                            ma.StatementLessonID = la.StatementLessonArhiveID;
+                            _context.StatementMarkArhives.Add(ma);
+                        }
+                    }
+
+                    foreach (Journal journal in group.Journals)
+                    {
+                        JournalArhive ja = new();
+                        ja.Comment = journal.Comment;
+                        ja.GroupArhiveID = ga.GroupArhiveID;
+                        ja.SubjectID = journal.SubjectID;
+                        ja.Date = journal.Date;
+                        _context.JournalArhives.Add(ja);
+                        _context.SaveChanges();
+                    }
+
+                    _context.Groups.Remove(group);
+                }
+            }
+
+            await _context.SaveChangesAsync();
+
+            return View(await institutes.ToListAsync());
+        }
+
+        [Authorize(Roles = "SuperAdmin, ANB-UMCH")]
+        public async Task<IActionResult> Index()
+        {
+            return View(await _context.Institutes
+                .OrderBy(i => i.Arch)
+                    .ThenBy(i => i.Name)
+                .ToListAsync());
+        }
+
+        [Authorize(Roles = "SuperAdmin, ANB-UMCH, ANB-HEAD, ANB-CI, ANB-ICDA, ANB-IST, User")]
+        public async Task<IActionResult> Details(int? id)
+        {
+            if (id == null)
+            {
+                return NotFound();
+            }
+
+            var institute = await _context.Institutes.FindAsync(id);
+
+            //Расчёт среднего бала за текущий семестр.
+            var date = DateTime.Now.AddYears(-1);
+            var typeSZ = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Семинарское занятие");
+            var typePZ = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Практическое занятие");
+            var typeLZ = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Лабораторное занятие");
+            var typeL = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Лекция");
+            var typeKM = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Контрольное мероприятие");
+            var typeGPZ = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Городское практическое занятие");
+            List<double> marksAverage = new();
+            IQueryable<Mark> marks;
+            List<Mark> marksDouble = new();
+            if (DateTime.Now.Month.ToString() == "9" || DateTime.Now.Month.ToString() == "10" || DateTime.Now.Month.ToString() == "11" || DateTime.Now.Month.ToString() == "12")
+            {
+                marks = _context.Marks.Where(m => m.InstituteID == id && (m.TypeOfExerciseID == typeKM.TypeOfExerciseID || m.TypeOfExerciseID == typeGPZ.TypeOfExerciseID || m.TypeOfExerciseID == typeSZ.TypeOfExerciseID || m.TypeOfExerciseID == typePZ.TypeOfExerciseID || m.TypeOfExerciseID == typeLZ.TypeOfExerciseID || m.TypeOfExerciseID == typeL.TypeOfExerciseID) && m.Date.Year == DateTime.Now.Year
+                    && (m.Date.Month.ToString() == "9" || m.Date.Month.ToString() == "10" || m.Date.Month.ToString() == "11" || m.Date.Month.ToString() == "12"));
+                if (marks != null)
+                {
+                    foreach (var mark in marks)
+                    {
+                        if (double.TryParse(mark.Value, out var m))
+                        {
+                            marksAverage.Add(m);
+                            marksDouble.Add(mark);
+                        }
+                    }
+                }
+            }
+            else
+            {
+                marks = _context.Marks.Where(m => m.InstituteID == id && (m.TypeOfExerciseID == typeKM.TypeOfExerciseID || m.TypeOfExerciseID == typeGPZ.TypeOfExerciseID || m.TypeOfExerciseID == typeSZ.TypeOfExerciseID || m.TypeOfExerciseID == typePZ.TypeOfExerciseID || m.TypeOfExerciseID == typeLZ.TypeOfExerciseID || m.TypeOfExerciseID == typeL.TypeOfExerciseID) && ((m.Date.Year == DateTime.Now.Year && (m.Date.Month.ToString() == "1" || m.Date.Month.ToString() == "2" || m.Date.Month.ToString() == "3" || m.Date.Month.ToString() == "4" || m.Date.Month.ToString() == "5" || m.Date.Month.ToString() == "6" || m.Date.Month.ToString() == "7" || m.Date.Month.ToString() == "8") || m.Date.Year == date.Year && (m.Date.Month.ToString() == "9" || m.Date.Month.ToString() == "10" || m.Date.Month.ToString() == "11" || m.Date.Month.ToString() == "12"))));
+                if (marks != null)
+                {
+                    foreach (var mark in marks)
+                    {
+                        if (double.TryParse(mark.Value, out var m))
+                        {
+                            marksAverage.Add(m);
+                            marksDouble.Add(mark);
+                        }
+                    }
+                }
+            }
+            double raiting = marksAverage.Sum() / marksAverage.Count;
+
+            //Количество обучающихся
+            var students = _context.Students
+                .Include(s => s.Group)
+                .Where(s => s.InstituteID == id && s.Status == true)
+                .AsNoTracking();
+            int studentNumber = students.Count();
+
+            //Рейтинг учащихся
+            List<StudentRaiting> studentRaitings = new();
+            foreach (var student in students)
+            {
+                StudentRaiting studentRaiting = new();
+                studentRaiting.SubjectRaitings = new List<SubjectRaiting>();
+                studentRaiting.Student = student;
+
+                List<Mark> msds = new();
+                msds = marksDouble.Where(m => m.StudentID == student.StudentID).ToList();
+                List<double> marksValue = new();
+                foreach (var mark in msds)
+                {
+                    if (double.TryParse(mark.Value, out var m))
+                    {
+                        marksValue.Add(m);
+                    }
+                }
+                if (marksValue.Count != 0)
+                {
+                    double raitingStudent = Math.Round(marksValue.Sum() / marksValue.Count, 2);
+                    studentRaiting.CommonRaiting = raitingStudent;
+                }
+
+                var subGrMarks = from mark in msds
+                                 group mark by mark.SubjectID;
+
+                foreach (var mark in subGrMarks)
+                {
+                    SubjectRaiting subjectRaiting = new();
+                    subjectRaiting.SubjectID = mark.Key;
+
+                    List<double> mds = new();
+                    foreach (var m in mark)
+                    {
+                        if (double.TryParse(m.Value, out double number))
+                        {
+                            mds.Add(number);
+                        }
+                    }
+
+                    subjectRaiting.Raiting = Math.Round(mds.Sum() / mds.Count, 2);
+                    studentRaiting.SubjectRaitings.Add(subjectRaiting);
+                }
+
+                List<double> rmds = new();
+                foreach (var r in studentRaiting.SubjectRaitings)
+                {
+                    rmds.Add(r.Raiting);
+                }
+
+                studentRaiting.Raiting = Math.Round(rmds.Sum() / rmds.Count, 2);
+                studentRaiting.Group = student.Group;
+
+                studentRaitings.Add(studentRaiting);
+            }
+
+            //Кол-во групп
+            var groups = _context.Groups.Where(g => g.InstituteID == id && g.DateExit > DateTime.Now);
+
+            //Кол-во специальностей
+            var specialities = _context.Specialities.Where(s => s.InstituteID == id && s.Arch == false);
+
+            //Рейтинг учебных групп
+            List<InstGroupRaiting> groupsRaiting = new();
+            foreach (var group in groups)
+            {
+                List<double> marksValue = new();
+                var marksGroup = marks.Where(m => m.GroupID == group.GroupID);
+                foreach (var mark in marksGroup)
+                {
+                    if (double.TryParse(mark.Value, out var m))
+                    {
+                        marksValue.Add(m);
+                    }
+                }
+                if (marksValue.Count != 0)
+                {
+                    double raitingGroup = marksValue.Sum() / marksValue.Count;
+                    InstGroupRaiting instGroupR = new();
+                    instGroupR.Group = group;
+                    instGroupR.Raiting = Math.Round(raitingGroup, 2);
+                    groupsRaiting.Add(instGroupR);
+                }
+            }
+
+            //Оценочные показатели института
+            Dictionary<int, int> marksNumber = new();
+            Dictionary<int, decimal> marksPercent = new();
+            for (int i = 1; i <= 10; i++)
+            {
+                if (marksAverage.Count != 0)
+                {
+                    decimal n1 = marksAverage.Where(x => x == i).Count();
+                    decimal n2 = marksAverage.Count;
+                    decimal mp = n1 / n2 * 100;
+                    marksPercent.Add(i, Math.Round(mp, 3));
+                }
+                marksNumber.Add(i, marksAverage.Where(x => x == i).Count());
+            }
+
+            //Средняя месячная успеваемость
+            Dictionary<string, string> raitingTime = new();
+            var septemberMarks = marks.Where(m => m.Date.Month.ToString() == "9");
+            List<double> sepMarks = new();
+            foreach (var m in septemberMarks)
+            {
+                if (double.TryParse(m.Value, out var mark))
+                {
+                    sepMarks.Add(mark);
+                }
+            }
+            if (sepMarks.Count != 0)
+            {
+                raitingTime.Add("Сентябрь", (Math.Round(sepMarks.Sum() / sepMarks.Count, 2)).ToString().Replace(",", "."));
+            }
+            else
+            {
+                raitingTime.Add("Сентябрь", "0");
+            }
+
+
+            var octoberMarks = marks.Where(m => m.Date.Month.ToString() == "10");
+            List<double> octMarks = new();
+            foreach (var m in octoberMarks)
+            {
+                if (double.TryParse(m.Value, out var mark))
+                {
+                    octMarks.Add(mark);
+                }
+            }
+            if (octMarks.Count != 0)
+            {
+                raitingTime.Add("Октябрь", (Math.Round(octMarks.Sum() / octMarks.Count, 2)).ToString().ToString().Replace(",", "."));
+            }
+            else
+            {
+                raitingTime.Add("Октябрь", "0");
+            }
+
+
+            var novemberMarks = marks.Where(m => m.Date.Month.ToString() == "11");
+            List<double> novMarks = new();
+            foreach (var m in novemberMarks)
+            {
+                if (double.TryParse(m.Value, out var mark))
+                {
+                    novMarks.Add(mark);
+                }
+            }
+            if (novMarks.Count != 0)
+            {
+                raitingTime.Add("Ноябрь", (Math.Round(novMarks.Sum() / novMarks.Count, 2)).ToString().Replace(",", "."));
+            }
+            else
+            {
+                raitingTime.Add("Ноябрь", "0");
+            }
+
+
+            var decemberMarks = marks.Where(m => m.Date.Month.ToString() == "12");
+            List<double> decMarks = new();
+            foreach (var m in decemberMarks)
+            {
+                if (double.TryParse(m.Value, out var mark))
+                {
+                    decMarks.Add(mark);
+                }
+            }
+            if (decMarks.Count != 0)
+            {
+                raitingTime.Add("Декабрь", (Math.Round(decMarks.Sum() / decMarks.Count, 2)).ToString().Replace(",", "."));
+            }
+            else
+            {
+                raitingTime.Add("Декабрь", "0");
+            }
+
+            var januaryMarks = marks.Where(m => m.Date.Month.ToString() == "1");
+            List<double> janMarks = new();
+            foreach (var m in januaryMarks)
+            {
+                if (double.TryParse(m.Value, out var mark))
+                {
+                    janMarks.Add(mark);
+                }
+            }
+            if (janMarks.Count != 0)
+            {
+                raitingTime.Add("Январь", (Math.Round(janMarks.Sum() / janMarks.Count, 2)).ToString().Replace(",", "."));
+            }
+            else
+            {
+                raitingTime.Add("Январь", "0");
+            }
+
+            var februaryMarks = marks.Where(m => m.Date.Month.ToString() == "2");
+            List<double> febMarks = new();
+            foreach (var m in februaryMarks)
+            {
+                if (double.TryParse(m.Value, out var mark))
+                {
+                    febMarks.Add(mark);
+                }
+            }
+            if (febMarks.Count != 0)
+            {
+                raitingTime.Add("Февраль", (Math.Round(febMarks.Sum() / febMarks.Count, 2)).ToString().Replace(",", "."));
+            }
+            else
+            {
+                raitingTime.Add("Февраль", "0");
+            }
+
+            var marchMarks = marks.Where(m => m.Date.Month.ToString() == "3");
+            List<double> marMarks = new();
+            foreach (var m in marchMarks)
+            {
+                if (double.TryParse(m.Value, out var mark))
+                {
+                    marMarks.Add(mark);
+                }
+            }
+            if (marMarks.Count != 0)
+            {
+                raitingTime.Add("Март", (Math.Round(marMarks.Sum() / marMarks.Count, 2)).ToString().Replace(",", "."));
+            }
+            else
+            {
+                raitingTime.Add("Март", "0");
+            }
+
+            var aprilMarks = marks.Where(m => m.Date.Month.ToString() == "4");
+            List<double> aprMarks = new();
+            foreach (var m in aprilMarks)
+            {
+                if (double.TryParse(m.Value, out var mark))
+                {
+                    aprMarks.Add(mark);
+                }
+            }
+            if (aprMarks.Count != 0)
+            {
+                raitingTime.Add("Апрель", (Math.Round(aprMarks.Sum() / aprMarks.Count, 2)).ToString().Replace(",", "."));
+            }
+            else
+            {
+                raitingTime.Add("Апрель", "0");
+            }
+
+            var mayMarks = marks.Where(m => m.Date.Month.ToString() == "5");
+            List<double> mMarks = new();
+            foreach (var m in mayMarks)
+            {
+                if (double.TryParse(m.Value, out var mark))
+                {
+                    mMarks.Add(mark);
+                }
+            }
+            if (mMarks.Count != 0)
+            {
+                raitingTime.Add("Май", (Math.Round(mMarks.Sum() / mMarks.Count, 2)).ToString().Replace(",", "."));
+            }
+            else
+            {
+                raitingTime.Add("Май", "0");
+            }
+
+            var juneMarks = marks.Where(m => m.Date.Month.ToString() == "6");
+            List<double> junMarks = new();
+            foreach (var m in juneMarks)
+            {
+                if (double.TryParse(m.Value, out var mark))
+                {
+                    junMarks.Add(mark);
+                }
+            }
+            if (junMarks.Count != 0)
+            {
+                raitingTime.Add("Июнь", (Math.Round(junMarks.Sum() / junMarks.Count, 2)).ToString().Replace(",", "."));
+            }
+            else
+            {
+                raitingTime.Add("Июнь", "0");
+            }
+
+            var julyMarks = marks.Where(m => m.Date.Month.ToString() == "7");
+            List<double> julMarks = new();
+            foreach (var m in julyMarks)
+            {
+                if (double.TryParse(m.Value, out var mark))
+                {
+                    julMarks.Add(mark);
+                }
+            }
+            if (julMarks.Count != 0)
+            {
+                raitingTime.Add("Июль", (Math.Round(julMarks.Sum() / julMarks.Count, 2)).ToString().Replace(",", "."));
+            }
+            else
+            {
+                raitingTime.Add("Июль", "0");
+            }
+
+            var augustMarks = marks.Where(m => m.Date.Month.ToString() == "8");
+            List<double> augMarks = new();
+            foreach (var m in augustMarks)
+            {
+                if (double.TryParse(m.Value, out var mark))
+                {
+                    augMarks.Add(mark);
+                }
+            }
+            if (augMarks.Count != 0)
+            {
+                raitingTime.Add("Август", (Math.Round(augMarks.Sum() / augMarks.Count)).ToString().Replace(",", "."));
+            }
+            else
+            {
+                raitingTime.Add("Август", "0");
+            }
+
+            //Учебный год
+            string yearsStudy = "";
+            if (DateTime.Now.Month.ToString() == "9" || DateTime.Now.Month.ToString() == "10" || DateTime.Now.Month.ToString() == "11" || DateTime.Now.Month.ToString() == "12")
+            {
+                DateTime dateTimePlus = DateTime.Now.AddYears(1);
+                yearsStudy = DateTime.Now.Year + "/" + dateTimePlus.Year;
+            }
+            else
+            {
+                DateTime dateTimeMinus = DateTime.Now.AddYears(-1);
+                yearsStudy = dateTimeMinus.Year + "/" + DateTime.Now.Year;
+            }
+
+            if (institute == null)
+            {
+                return NotFound();
+            }
+
+            var bestStudent = studentRaitings.OrderByDescending(s => s.CommonRaiting).FirstOrDefault();
+            if (bestStudent == null)
+            {
+                InstStudRaiting i = new();
+                i.Raiting = 0;
+                ViewBag.BestStudent = i;
+            }
+            else
+            {
+                ViewBag.BestStudent = bestStudent;
+            }
+            var worseStudent = studentRaitings.OrderByDescending(s => s.CommonRaiting).LastOrDefault();
+            if (worseStudent == null)
+            {
+                InstStudRaiting i = new();
+                i.Raiting = 0;
+                ViewBag.WorseStudent = i;
+            }
+            else
+            {
+                ViewBag.WorseStudent = worseStudent;
+            }
+            var bestGroup = groupsRaiting.OrderByDescending(g => g.Raiting).FirstOrDefault();
+            if (bestGroup == null)
+            {
+                InstStudRaiting i = new();
+                i.Raiting = 0;
+                ViewBag.BestGroup = i;
+            }
+            else
+            {
+                ViewBag.BestGroup = bestGroup;
+            }
+            var worseGroup = groupsRaiting.OrderByDescending(g => g.Raiting).LastOrDefault();
+            if (worseGroup == null)
+            {
+                InstStudRaiting i = new();
+                i.Raiting = 0;
+                ViewBag.WorseGroup = i;
+            }
+            else
+            {
+                ViewBag.WorseGroup = worseGroup;
+            }
+
+            ViewBag.Raiting = Math.Round(raiting, 2);
+            ViewBag.Students = studentNumber;
+            ViewBag.Groups = groups.Count();
+            ViewBag.Specialities = specialities.Count();
+            ViewBag.StudentsRaiting = studentRaitings.OrderByDescending(s => s.CommonRaiting);
+            ViewBag.GroupsRaiting = groupsRaiting.OrderByDescending(g => g.Raiting);
+            ViewBag.MarksNumber = marksNumber;
+            ViewBag.MarksPercent = marksPercent;
+            ViewBag.TimeRaiting = raitingTime;
+            ViewBag.Year = yearsStudy;
+
+            return View(institute);
+        }
+
+        [Authorize(Roles = "SuperAdmin, ANB-UMCH")]
+        public IActionResult Create()
+        {
+            return View();
+        }
+
+        [Authorize(Roles = "SuperAdmin, ANB-UMCH")]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Create([Bind("InstituteID,Arch,Name,Role")] Institute institute)
+        {
+            if (ModelState.IsValid)
+            {
+                _context.Add(institute);
+                await _context.SaveChangesAsync();
+                return RedirectToAction(nameof(Index));
+            }
+            return View(institute);
+        }
+
+        [Authorize(Roles = "SuperAdmin, ANB-UMCH")]
+        public async Task<IActionResult> Edit(int? id)
+        {
+            if (id == null)
+            {
+                return NotFound();
+            }
+
+            var institute = await _context.Institutes.FindAsync(id);
+            if (institute == null)
+            {
+                return NotFound();
+            }
+            return View(institute);
+        }
+
+        [Authorize(Roles = "SuperAdmin, ANB-UMCH")]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Edit(int id, [Bind("InstituteID,Arch,Name,Role")] Institute institute)
+        {
+            if (id != institute.InstituteID)
+            {
+                return NotFound();
+            }
+
+            if (ModelState.IsValid)
+            {
+                try
+                {
+                    _context.Update(institute);
+                    await _context.SaveChangesAsync();
+                }
+                catch (DbUpdateConcurrencyException)
+                {
+                    if (!InstituteExists(institute.InstituteID))
+                    {
+                        return NotFound();
+                    }
+                    else
+                    {
+                        throw;
+                    }
+                }
+                return RedirectToAction(nameof(Index));
+            }
+            return View(institute);
+        }
+
+        [Authorize(Roles = "SuperAdmin, ANB-UMCH")]
+        public async Task<IActionResult> Delete(int? id)
+        {
+            if (id == null)
+            {
+                return NotFound();
+            }
+
+            var institute = await _context.Institutes
+                .FirstOrDefaultAsync(m => m.InstituteID == id);
+            if (institute == null)
+            {
+                return NotFound();
+            }
+
+            return View(institute);
+        }
+
+        [Authorize(Roles = "SuperAdmin, ANB-UMCH")]
+        [HttpPost, ActionName("Delete")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteConfirmed(int id)
+        {
+            var institute = await _context.Institutes.FindAsync(id);
+            _context.Institutes.Remove(institute);
+            await _context.SaveChangesAsync();
+            return RedirectToAction(nameof(Index));
+        }
+
+        [Authorize(Roles = "SuperAdmin, ANB-UMCH")]
+        public async Task<IActionResult> Archive(int? id)
+        {
+            if (id == null)
+            {
+                return NotFound();
+            }
+
+            var institute = await _context.Institutes
+                .FirstOrDefaultAsync(d => d.InstituteID == id);
+
+            if (institute == null)
+            {
+                return NotFound();
+            }
+
+            return View(institute);
+        }
+
+        [Authorize(Roles = "SuperAdmin, ANB-UMCH")]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Archive(int id, [Bind("InstituteID,Name,Arch,Role")] Institute institute)
+        {
+            if (id != institute.InstituteID)
+            {
+                return NotFound();
+            }
+
+            if (ModelState.IsValid)
+            {
+                try
+                {
+                    var specialities = _context.Specialities
+                        .Where(s => s.InstituteID == institute.InstituteID);
+
+                    if (institute.Arch == true)
+                    {
+                        institute.Arch = false;
+                        foreach (var speciality in specialities)
+                        {
+                            speciality.Arch = false;
+                            _context.Specialities.Update(speciality);
+                        }
+                    }
+                    else
+                    {
+                        institute.Arch = true;
+                        foreach (var speciality in specialities)
+                        {
+                            speciality.Arch = true;
+                            _context.Specialities.Update(speciality);
+                        }
+                    }
+                    _context.Update(institute);
+                    await _context.SaveChangesAsync();
+                }
+                catch
+                {
+                    if (!InstituteExists(institute.InstituteID))
+                    {
+                        return NotFound();
+                    }
+                    else
+                    {
+                        throw;
+                    }
+                }
+                return RedirectToAction(nameof(Index));
+            }
+            return View(institute);
+        }
+
+        private bool InstituteExists(int id)
+        {
+            return _context.Institutes.Any(e => e.InstituteID == id);
+        }
+    }
+}

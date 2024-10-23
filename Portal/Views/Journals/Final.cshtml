@@ -1,0 +1,138 @@
+﻿@model IEnumerable<Portal.Models.Model.ResultStudent>
+
+@{
+    ViewData["Title"] = "Результаты обучения";
+    int i = 1;
+    int j = 1;
+    int k = 1;
+}
+
+@await Html.PartialAsync("_NavMenuJournal")
+
+<section class="content-header">
+    <div class="container-fluid">
+    </div>
+</section>
+<section class="content" style="padding:8%">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header border-transparent">
+                        <h3 class="card-title">Результаты обучения</h3>
+                        <div class="card-tools">
+                            <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                                <i class="fas fa-minus"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body p-2">
+                        <div class="table-responsive">
+                            <table class="table table-bordered dataTable hover compact" id="TableTeacher">
+                                <thead class="thead-light compact">
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Слушатель/курсант</th>
+                                        <th>Средний балл</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var student in Model)
+                                    {
+                                        <tr>
+                                            <td>@i</td>
+                                            <td>@student.Student.LastName @student.Student.Name @student.Student.Surname</td>
+                                            <td>@student.Value.ToString()</td>
+                                        </tr>
+                                        i++;
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header border-transparent bg-success">
+                        <h3 class="card-title">Претенденты на "автомат"</h3>
+                        <div class="card-tools">
+                            <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                                <i class="fas fa-minus"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body p-2">
+                        <div class="table-responsive">
+                            <table class="table table-bordered dataTable hover compact" id="TableTeacher">
+                                <thead class="thead-light compact">
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Слушатель/курсант</th>
+                                        <th>Средний балл</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var student in Model)
+                                    {
+                                        @if (student.Value >= 8)
+                                        {
+                                            <tr>
+                                                <td>@j</td>
+                                                <td>@student.Student.LastName @student.Student.Name @student.Student.Surname</td>
+                                                <td>@student.Value.ToString()</td>
+                                            </tr>
+                                            j++;
+                                        }
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-header border-transparent bg-danger">
+                        <h3 class="card-title">Недопущенные к итоговому контролю</h3>
+                        <div class="card-tools">
+                            <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                                <i class="fas fa-minus"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body p-2">
+                        <div class="table-responsive">
+                            <table class="table table-bordered dataTable hover compact" id="TableTeacher">
+                                <thead class="thead-light compact">
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Слушатель/курсант</th>
+                                        <th>Средний балл</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var student in Model)
+                                    {
+                                        @if (student.Value < 4)
+                                        {
+                                            <tr>
+                                                <td>@k</td>
+                                                <td>@student.Student.LastName @student.Student.Name @student.Student.Surname</td>
+                                                <td>@student.Value.ToString()</td>
+                                            </tr>
+                                            k++;
+                                        }
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

@@ -1,0 +1,246 @@
+﻿@model Portal.Models.StudentArhive
+
+@{
+    ViewData["Title"] = "Профиль";
+    int i = 1;
+    int j = 1;
+}
+
+@await Html.PartialAsync("_NavMenuJournal")
+
+<section class="content-header">
+    <div class="container-fluid">
+    </div>
+</section>
+
+<section class="content">
+    <div class="container-fluid">
+        <h3 class="mb-3 text-center bg-gray-light headGroup p-2 rounded shadow">@Model.LastName @Model.Name @Model.Surname<br>@Model.DateOfBirth.ToShortDateString()</h3>
+        <div class="row">
+            <div class="col-12 col-sm-6 col-md-3">
+                <div class="info-box">
+                    <span class="info-box-icon bg-info elevation-1"><i class="fas fa-info"></i></span>
+                    <div class="info-box-content">
+                        <span class="info-box-text text-center">Текущий средний балл</span>
+                        <span class="info-box-number text-center">@ViewBag.Raiting.ToString()</span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-sm-6 col-md-3">
+                <div class="info-box mb-3">
+                    <span class="info-box-icon bg-warning elevation-1"><i class="fas fa-institution"></i></span>
+                    <div class="info-box-content">
+                        <span class="info-box-number text-center">
+                            <a class="text-decoration-none stretched-link text-dark" asp-controller="Institutes" asp-action="Details" asp-route-id="@Model.InstituteID">@ViewBag.Institute.Name</a>
+                        </span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-sm-6 col-md-3">
+                <div class="info-box mb-3">
+                    <span class="info-box-icon bg-success elevation-1"><i class="fas fa-users"></i></span>
+                    <div class="info-box-content">
+                        <span class="info-box-text text-center">Группа</span>
+                        <span class="info-box-number text-center">
+                            <a class="text-decoration-none stretched-link text-success" asp-controller="Archives" asp-action="ArchiveGroup" asp-route-id="@Model.GroupArhiveID">@ViewBag.Group.Name</a>
+                        </span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-sm-6 col-md-3">
+                <div class="info-box mb-3">
+                    <span class="info-box-icon bg-danger elevation-1"><i class="fas fa-user"></i></span>
+                    <div class="info-box-content">
+                        @if (@Model.Status == true)
+                        {
+                            <span class="info-box-text text-center">Статус: обучается</span>
+                        }
+                        else
+                        {
+                            <span class="info-box-text text-center">Статус: отчислен</span>
+                        }
+                        <span class="info-box-text text-center">Дата поступления: @ViewBag.Group.DateEnter.ToShortDateString()</span>
+                        <span class="info-box-text text-center">Дата окончания: @ViewBag.Group.DateExit.ToShortDateString()</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card bg-light">
+                    <div class="card-header">
+                        <h3 class="card-title">Диаграмма оценок</h3>
+                        <div class="card-tools">
+                            <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                                <i class="fas fa-minus"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <div class="chart-responsive">
+                                    <canvas id="pieChart" height="200"></canvas>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <ul class="chart-legend clearfix">
+                                    @if (ViewBag.StudentRaiting.Count != 0)
+                                    {
+                                        <li><i class="fas fa-circle" style="color: #006400"></i> 10 <span>(@ViewBag.StudentRaiting[9].Percent %)</span></li>
+                                        <li><i class="fas fa-circle" style="color: #00FF00"></i> 9 <span>(@ViewBag.StudentRaiting[8].Percent %)</span></li>
+                                        <li><i class="fas fa-circle" style="color: #0000FF"></i> 8 <span>(@ViewBag.StudentRaiting[7].Percent %)</span></li>
+                                        <li><i class="fas fa-circle" style="color: #00BFFF"></i> 7 <span>(@ViewBag.StudentRaiting[6].Percent %)</span></li>
+                                        <li><i class="fas fa-circle" style="color: #DAA520"></i> 6 <span>(@ViewBag.StudentRaiting[5].Percent %)</span></li>
+                                        <li><i class="fas fa-circle" style="color: #FFD700"></i> 5 <span>(@ViewBag.StudentRaiting[4].Percent %)</span></li>
+                                        <li><i class="fas fa-circle" style="color: #FFA500"></i> 4 <span>(@ViewBag.StudentRaiting[3].Percent %)</span></li>
+                                        <li><i class="fas fa-circle" style="color: #FF4500"></i> 3 <span>(@ViewBag.StudentRaiting[2].Percent %)</span></li>
+                                        <li><i class="fas fa-circle" style="color: #FF0000"></i> 2 <span>(@ViewBag.StudentRaiting[1].Percent %)</span></li>
+                                        <li><i class="fas fa-circle" style="color: #8B0000"></i> 1 <span>(@ViewBag.StudentRaiting[0].Percent %)</span></li>
+                                    }
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-header border-transparent">
+                        <h3 class="card-title">Итоговые результаты слушателей/курсантов</h3>
+                        <div class="card-tools">
+                            <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                                <i class="fas fa-minus"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body p-2">
+                        <div class="table-responsive">
+                            <table class="table table-bordered dataTable hover" id="TableGroup">
+                                <thead class="thead-dark">
+                                    <tr>
+                                        <th class="text-center">#</th>
+                                        <th class="text-center">Оценка</th>
+                                        <th class="text-center">Тип</th>
+                                        <th class="text-center">Дата</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var mark in ViewBag.FinalMarks)
+                                    {
+                                        <tr class="text-center">
+                                            <td>@j</td>
+                                            <td>@mark.Mark.Value</td>
+                                            <td>@mark.Type.Name</td>
+                                            <td>@mark.Mark.Date.ToShortDateString()</td>
+                                        </tr>
+                                        j++;
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="info-box mb-3 bg-success">
+                    <div class="info-box-content">
+                        <span class="info-box-text mb-1">Специальность:</span>
+                        <span class="p-1 text-wrap">@ViewBag.Speciality.Name</span>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-header border-transparent">
+                        <h3 class="card-title">Результаты слушателей/курсантов</h3>
+                        <div class="card-tools">
+                            <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                                <i class="fas fa-minus"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body p-2">
+                        <div class="table-responsive">
+                            <table class="table table-bordered dataTable hover" id="TableTeacher">
+                                <thead class="thead-dark">
+                                    <tr>
+                                        <th class="text-center">#</th>
+                                        <th class="text-center">Предмет</th>
+                                        <th class="text-center">Средний балл</th>
+                                        <th class="text-center">Итоговый контроль</th>
+                                        <th class="text-center">Итоговая оценка</th>
+                                        <th class="text-center">Курсовой проект/работа</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var subject in ViewBag.SubjectFinals)
+                                    {
+                                        <tr class="text-center">
+                                            <td>@i</td>
+                                            <td>@subject.Subject.ShortName</td>
+                                            <td>@subject.Value.ToString()</td>
+                                            <td class="text-dark bg-gradient-yellow">
+                                                @foreach (var m in subject.ControlMarks)
+                                                {@m.Value<br />}
+                                            </td>
+                                            <td class="text-white bg-gradient-red">
+                                                @foreach (var m in subject.FinalMarks)
+                                                {@m.Value<br />}
+                                            </td>
+                                            <td class="text-white bg-gradient-blue">
+                                                @foreach (var m in subject.ValueK)
+                                                {@m.Value<br />}
+                                            </td>
+                                        </tr>
+                                        i++;
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ChartJS -->
+<script src="~/plugins/chart.js/Chart.min.js"></script>
+<!-- PAGE SCRIPTS -->
+<script>
+    $(function () {
+        'use strict'
+        var pieChartCanvas = $('#pieChart').get(0).getContext('2d')
+        var pieData = {
+            labels: [
+                '10',
+                '9',
+                '8',
+                '7',
+                '6',
+                '5',
+                '4',
+                '3',
+                '2',
+                '1'
+            ],
+            datasets: [
+                {
+                    data: [@ViewBag.StudentRaiting[9].Count, @ViewBag.StudentRaiting[8].Count, @ViewBag.StudentRaiting[7].Count, @ViewBag.StudentRaiting[6].Count, @ViewBag.StudentRaiting[5].Count, @ViewBag.StudentRaiting[4].Count, @ViewBag.StudentRaiting[3].Count, @ViewBag.StudentRaiting[2].Count, @ViewBag.StudentRaiting[1].Count, @ViewBag.StudentRaiting[0].Count],
+                    backgroundColor: ['#006400', '#00FF00', '#0000FF', '#00BFFF', '#DAA520', '#FFD700', '#FFA500', '#FF4500', '#FF0000', '#8B0000'],
+                }
+            ]
+        }
+        var pieOptions = {
+            legend: {
+                display: false
+            }
+        }
+        var pieChart = new Chart(pieChartCanvas, {
+            type: 'doughnut',
+            data: pieData,
+            options: pieOptions
+        })
+    })
+</script>
+
+@section scripts{
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

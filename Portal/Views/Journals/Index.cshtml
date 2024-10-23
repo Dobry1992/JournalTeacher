@@ -1,0 +1,72 @@
+﻿@model IEnumerable<Portal.Models.Journal>
+
+@{
+    ViewData["Title"] = "Журналы оценок";
+    int i = 1;
+}
+
+@await Html.PartialAsync("_NavMenuJournal")
+
+<div style="padding:7%">
+    <section class="content-header">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-sm-6">
+                    <h2>Список журналов</h2>
+                </div>
+            </div>
+        </div>
+    </section>
+    <section class="content">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-body">
+                            <div id="example1_wrapper" class="dataTables_wrapper dt-bootstrap4">
+                                <div class="row">
+                                    <div class="col-sm-12">
+                                        <a class="btn btn-primary mb-3" asp-controller="Journals" asp-action="CreateJournal">Создать журнал</a>
+                                        <table class="table table-bordered table-sm compact dataTable hover" role="grid" id="Table">
+                                            <thead class="thead-dark">
+                                                <tr role="row">
+                                                    <th class="sorting_asc">#</th>
+                                                    <th class="sorting_asc">Группа</th>
+                                                    <th class="sorting_asc">Предмет</th>
+                                                    <th class="sorting_asc">Комментарий</th>
+                                                    <th class="sorting_asc">Дата создания</th>
+                                                    <th class="sorting_asc">Действие</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach (var item in Model)
+                                                {
+                                                    <tr role="row" class="odd bg-white">
+                                                        <td tabindex="0" class="sorting_1">@i</td>
+                                                        <td tabindex="0" class="sorting_1">@item.Group.Name</td>
+                                                        <td tabindex="0" class="sorting_1">@item.Subject.Name</td>
+                                                        <td tabindex="0" class="sorting_1">@item.Comment</td>
+                                                        <td tabindex="0" class="sorting_1">@item.Date.ToShortDateString()</td>
+                                                        <td tabindex="0" class="sorting_1">
+                                                            <div class="container">
+                                                                <a title="Удалить" class="btn btn-danger btn-sm" asp-controller="Journals" asp-action="Delete" asp-route-id="@item.JournalID"><i class="fa fa-remove"></i></a>
+                                                                <a title="Перейти" class="btn btn-success btn-sm" asp-controller="Journals" asp-action="Journal" asp-route-GroupID="@item.GroupID" asp-route-SubjectID="@item.SubjectID"><i class="fa fa-angle-left"></i></a>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                    i++;
+                                                }
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+
+<script src="~/js/data_table.js"></script>

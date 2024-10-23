@@ -1,0 +1,159 @@
+﻿@model Portal.Models.Lesson
+
+@{
+    ViewData["Title"] = "Создать занятие";
+}
+
+@await Html.PartialAsync("_NavMenuJournal")
+
+<div style="padding:7%">
+    <section class="content-header">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-sm-6">
+                    <h2>Создать курсовой проект/курсовую работу</h2>
+                </div>
+            </div>
+        </div>
+    </section>
+    <section class="content">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-body">
+                            <div id="example1_wrapper" class="dataTables_wrapper dt-bootstrap4">
+                                <div class="row">
+                                    <div class="col-sm-12">
+                                        @if (User.IsInRole("ICDA-writer"))
+                                        {
+                                            <form asp-action="CreateK">
+                                                <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                                                <input asp-for="GroupID" hidden />
+                                                <input asp-for="SubjectID" hidden />
+                                                <div class="form-group" hidden>
+                                                    <label asp-for="ThemeID" class="control-label">Тема занятия:</label>
+                                                    <select asp-for="ThemeID" class="form-control" asp-items="ViewBag.ThemeID"></select>
+                                                </div>
+                                                <div class="form-group">
+                                                    <label asp-for="TypeOfExerciseID" class="control-label">Тип занятия:</label>
+                                                    <select asp-for="TypeOfExerciseID" class="form-control" asp-items="ViewBag.TypeOfExerciseID"></select>
+                                                </div>
+                                                <div class="form-group">
+                                                    <label asp-for="Signature" class="control-label">Преподаватель:</label>
+                                                    <select asp-for="Signature" class="form-control">
+                                                        @if (ViewBag.Teachers != null)
+                                                        {
+                                                            @foreach (var teacher in ViewBag.Teachers)
+                                                            {
+                                                                <option value="@teacher.FamilyName @teacher.Name @teacher.Surname">@teacher.FamilyName @teacher.Name @teacher.Surname</option>
+                                                            }
+                                                        }
+                                                    </select>
+                                                    <span asp-validation-for="Signature" class="text-danger"></span>
+                                                </div>
+                                                <div class="form-group">
+                                                    <label asp-for="Comment" class="control-label">Комментарий преподавателя:</label>
+                                                    <textarea asp-for="Comment" class="form-control"></textarea>
+                                                    <span asp-validation-for="Comment" class="text-danger"></span>
+                                                </div>
+                                                <div class="form-group">
+                                                    <label asp-for="Date" class="control-label">Дата:</label>
+                                                    <input asp-for="Date" class="form-control" />
+                                                    <span asp-validation-for="Date" class="text-danger"></span>
+                                                </div>
+                                                <div class="form-group">
+                                                    <input type="submit" value="Создать" class="btn btn-primary" />
+                                                    <a class="btn btn-outline-primary" asp-controller="Journals" asp-action="Journal" asp-route-GroupID="@ViewBag.GroupID" asp-route-SubjectID="@ViewBag.SubjectID">Назад</a>
+                                                </div>
+                                            </form>
+                                        }
+                                        else if (User.IsInRole("K-8Writer"))
+                                        {
+                                            <form asp-action="CreateK">
+                                                <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                                                <input asp-for="GroupID" hidden />
+                                                <input asp-for="SubjectID" hidden />
+                                                <div class="form-group" hidden>
+                                                    <label asp-for="ThemeID" class="control-label">Тема занятия:</label>
+                                                    <select asp-for="ThemeID" class="form-control" asp-items="ViewBag.ThemeID"></select>
+                                                </div>
+                                                <div class="form-group">
+                                                    <label asp-for="TypeOfExerciseID" class="control-label">Тип занятия:</label>
+                                                    <select asp-for="TypeOfExerciseID" class="form-control" asp-items="ViewBag.TypeOfExerciseID"></select>
+                                                </div>
+                                                <div class="form-group">
+                                                    <label asp-for="Signature" class="control-label">Преподаватель:</label>
+                                                    <select asp-for="Signature" class="form-control">
+                                                        @if (ViewBag.TeachersNoPC != null)
+                                                        {
+                                                            <option value="@ViewBag.UserName">@ViewBag.UserName</option>
+                                                            @foreach (var teacher in ViewBag.TeachersNoPC)
+                                                            {
+                                                                <option value="@teacher.LastName @teacher.Name @teacher.Surname">@teacher.LastName @teacher.Name @teacher.Surname</option>
+                                                            }
+                                                        }
+                                                    </select>
+                                                    <span asp-validation-for="Signature" class="text-danger"></span>
+                                                </div>
+                                                <div class="form-group">
+                                                    <label asp-for="Comment" class="control-label">Комментарий преподавателя:</label>
+                                                    <textarea asp-for="Comment" class="form-control"></textarea>
+                                                    <span asp-validation-for="Comment" class="text-danger"></span>
+                                                </div>
+                                                <div class="form-group">
+                                                    <label asp-for="Date" class="control-label">Дата:</label>
+                                                    <input asp-for="Date" class="form-control" />
+                                                    <span asp-validation-for="Date" class="text-danger"></span>
+                                                </div>
+                                                <div class="form-group">
+                                                    <input type="submit" value="Создать" class="btn btn-primary" />
+                                                    <a class="btn btn-outline-primary" asp-controller="Journals" asp-action="Journal" asp-route-GroupID="@ViewBag.GroupID" asp-route-SubjectID="@ViewBag.SubjectID">Назад</a>
+                                                </div>
+                                            </form>
+                                        }
+                                        else
+                                        {
+                                            <form asp-action="CreateK">
+                                                <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                                                <input asp-for="GroupID" hidden />
+                                                <input asp-for="SubjectID" hidden />
+                                                <div class="form-group" hidden>
+                                                    <label asp-for="ThemeID" class="control-label">Тема занятия:</label>
+                                                    <select asp-for="ThemeID" class="form-control" asp-items="ViewBag.ThemeID"></select>
+                                                </div>
+                                                <div class="form-group">
+                                                    <label asp-for="TypeOfExerciseID" class="control-label">Тип занятия:</label>
+                                                    <select asp-for="TypeOfExerciseID" class="form-control" asp-items="ViewBag.TypeOfExerciseID"></select>
+                                                </div>
+                                                <div class="form-group">
+                                                    <label asp-for="Comment" class="control-label">Комментарий преподавателя:</label>
+                                                    <textarea asp-for="Comment" class="form-control"></textarea>
+                                                    <span asp-validation-for="Comment" class="text-danger"></span>
+                                                </div>
+                                                <div class="form-group">
+                                                    <label asp-for="Date" class="control-label">Дата:</label>
+                                                    <input asp-for="Date" class="form-control" />
+                                                    <span asp-validation-for="Date" class="text-danger"></span>
+                                                </div>
+                                                <div class="form-group">
+                                                    <input type="submit" value="Создать" class="btn btn-primary" />
+                                                    <a class="btn btn-outline-primary" asp-controller="Journals" asp-action="Journal" asp-route-GroupID="@ViewBag.GroupID" asp-route-SubjectID="@ViewBag.SubjectID">Назад</a>
+                                                </div>
+                                            </form>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}
+
