@@ -125,6 +125,40 @@
                     </div>
                     <!-- /.card-body -->
                 </div>
+
+                <div class="card bg-light">
+                    <div class="card-header">
+                        <h3 class="card-title">Оценка посещаемости</h3>
+                        <div class="card-tools">
+                            <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                                <i class="fas fa-minus"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-7">
+                                <div class="chart-responsive">
+                                    <canvas id="attendance" height="150"></canvas>
+                                </div>
+                            </div>
+                            <div class="col-md-5">
+                                <ul class="chart-legend clearfix">
+                                    @if (ViewBag.MarksPercent.Count != 0)
+                                    {
+                                        <li><i class="fas fa-circle" style="color: #00FF00"></i> Присутствие <span>(@ViewBag.AttendancePercent["Присутствие"] %)</span></li>
+                                        <li><i class="fas fa-circle" style="color: #FFA500"></i> Болезнь <span>(@ViewBag.AttendancePercent["Болезнь"] %)</span></li>
+                                        <li><i class="fas fa-circle" style="color: #dbe028"></i> Наряд <span>(@ViewBag.AttendancePercent["Наряд"] %)</span></li>
+                                        <li><i class="fas fa-circle" style="color: #b8f60d"></i> Отпуск <span>(@ViewBag.AttendancePercent["Отпуск"] %)</span></li>
+                                        <li><i class="fas fa-circle" style="color: #0000FF"></i> Коммандировка <span>(@ViewBag.AttendancePercent["Коммандировка"] %)</span></li>
+                                        <li><i class="fas fa-circle" style="color: #00BFFF"></i> Рапорт <span>(@ViewBag.AttendancePercent["Отсутствие по мотивированный рапорт"] %)</span></li>
+                                        <li><i class="fas fa-circle" style="color: #e83513"></i> Отсутствие без причины <span>(@ViewBag.AttendancePercent["Отсутствие без уважительной причины"] %)</span></li>
+                                    }
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 <!-- /.card -->
                 <div class="card">
                     <div class="card-header border-transparent">
@@ -151,21 +185,33 @@
                                 <tbody>
                                     @foreach (var subject in ViewBag.SubjectFinals)
                                     {
-                                        <tr class="text-center">
+                                        <tr class="text-center" style="font-size:small;">
                                             <td>@k</td>
                                             <td>@subject.Subject.ShortName</td>
                                             <td>@subject.Value.ToString()</td>
                                             <td class="text-dark bg-gradient-yellow">
                                                 @foreach (var m in subject.ControlMarks)
-                                                {@m.Value<br />}
+                                                {
+                                                    @m.Value
+
+                                                    <br />
+                                                }
                                             </td>
                                             <td class="text-white bg-gradient-red">
                                                 @foreach (var m in subject.FinalMarks)
-                                                {@m.Value<br />}
+                                                {
+                                                    @m.Value
+
+                                                    <br />
+                                                }
                                             </td>
                                             <td class="text-white bg-gradient-blue">
                                                 @foreach (var m in subject.ValueK)
-                                                {@m.Value<br />}
+                                                {
+                                                    @m.Value
+
+                                                    <br />
+                                                }
                                             </td>
                                         </tr>
                                         k++;
@@ -473,7 +519,7 @@
         })
 
 
-         //---------------------
+        //---------------------
         //- RADAR CHART -
         //---------------------
         var obj = @Html.Raw(Json.Serialize(ViewBag.Test));
@@ -533,8 +579,43 @@
             options: chartOptions
         })
     })
+
+    // Оценка посещвемости
+    $(function () {
+        'use strict'
+        var pieChartCanvas_1 = $('#attendance').get(0).getContext('2d')
+        var pieData_1 = {
+            labels: [
+                'Болезнь',
+                'Наряд',
+                'Отпуск',
+                'Коммандировка',
+                'Отсутствие по мотивированному рапорту',
+                'Отсутствие без уважительной причины',
+                'Присутствие'
+            ],
+            datasets: [
+                {
+                    data: [@ViewBag.Attendance["Болезнь"], @ViewBag.Attendance["Наряд"], @ViewBag.Attendance["Отпуск"], @ViewBag.Attendance["Коммандировка"], @ViewBag.Attendance["Отсутствие по мотивированный рапорт"], @ViewBag.Attendance["Отсутствие без уважительной причины"], @ViewBag.Attendance["Присутствие"]],
+                    backgroundColor: ['#FFA500', '#dbe028', '#b8f60d', '#0000FF', '#00BFFF', '#e83513', '#00FF00'],
+                }
+            ]
+        }
+        var pieOptions_1 = {
+            legend: {
+                display: false
+            }
+        }
+        var pieChart_1 = new Chart(pieChartCanvas_1, {
+            type: 'pie',
+            data: pieData_1,
+            options: pieOptions_1
+        })
+    })
 </script>
 
-@section scripts{
-    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+@section scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
 }

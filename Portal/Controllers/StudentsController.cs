@@ -132,6 +132,48 @@ namespace Portal.Controllers
                 marksNumber.Add(i, marksAverage.Where(x => x == i).Count());
             }
 
+            //Оценка посещаемости
+            int b = 0, nr = 0, o = 0, km = 0, r = 0, nb = 0, num = 0;
+            double bp = 0, nrp = 0, op = 0, kmp = 0, rp = 0, nbp = 0, nump = 0;
+            double mNumber = student.Marks.Count;
+            foreach (var mark in student.Marks)
+            {
+                if (mark.Value == "Б") b++;
+                else if (mark.Value == "НР") nr++;
+                else if (mark.Value == "О") o++;
+                else if (mark.Value == "КМ") km++;
+                else if (mark.Value == "Р") r++;
+                else if (mark.Value == "НБ") nb++;
+                else num++;
+            }
+            Dictionary<string, int> attendanceNumber = new Dictionary<string, int>()
+            {
+                {"Болезнь", b},
+                {"Наряд", nr},
+                {"Отпуск", o},
+                {"Коммандировка", km},
+                {"Отсутствие по мотивированный рапорт", r},
+                {"Отсутствие без уважительной причины", nb},
+                {"Присутствие", num}
+            };
+            bp = ((double)b / mNumber) * 100;
+            nrp = ((double)nr / mNumber) * 100;
+            op = ((double)o / mNumber) * 100;
+            kmp = ((double)km / mNumber) * 100;
+            rp = ((double)r / mNumber) * 100;
+            nbp = ((double)nb / mNumber) * 100;
+            nump = ((double)num / mNumber) * 100;
+            Dictionary<string, double> attendancePercent = new Dictionary<string, double>()
+            {
+                {"Болезнь", Math.Round(bp, 2)},
+                {"Наряд", Math.Round(nrp, 2)},
+                {"Отпуск", Math.Round(op, 2) },
+                {"Коммандировка", Math.Round(kmp, 2)},
+                {"Отсутствие по мотивированный рапорт", Math.Round(rp, 2)},
+                {"Отсутствие без уважительной причины", Math.Round(nbp, 2)},
+                {"Присутствие", Math.Round(nump, 2)}
+            };
+
             //Текущий средний балл за предмет по месяцам
             int subjectID = 0;
             var subjects = _context.Subjects;
@@ -603,7 +645,7 @@ namespace Portal.Controllers
                         val.Add(m);
                     }
                 }
-                
+
                 if (val.Count != 0)
                 {
                     double valRaiting = Math.Round(val.Sum() / val.Count, 2);
@@ -678,6 +720,8 @@ namespace Portal.Controllers
                 markSubjectFinals.Add(msf);
             }
 
+            ViewBag.AttendancePercent = attendancePercent;
+            ViewBag.Attendance = attendanceNumber;
             ViewBag.SubjectFinals = markSubjectFinals;
             ViewBag.FinalMarks = finalMarks.OrderBy(m => m.Mark.Date);
             ViewBag.NegativeMarks = negativeMarks;
