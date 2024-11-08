@@ -35,8 +35,10 @@ namespace Portal
                 Group group = await _context.Groups.FindAsync(journal.GroupID);
                 groups.Add(group);
             }
+            List<Theme> themes = new();
+            themes = _context.Themes.Where(t => t.SubjectID == SubjectID && t.Name != "Контрольное занятие").ToList();
+            ViewBag.Themes = themes;
 
-            ViewData["ThemeID"] = new SelectList(_context.Themes.Where(t => t.SubjectID == SubjectID && t.Name != "Контрольное занятие"), "ThemeID", "Name");
             ViewData["TypeOfExerciseID"] = new SelectList(_context.Types.Where(t => t.Name == "Семинарское занятие" || t.Name == "Практическое занятие"
                || t.Name == "Лабораторное занятие" || t.Name == "Лекция"), "TypeOfExerciseID", "Name");
             ViewBag.SubjectID = SubjectID;
@@ -140,8 +142,10 @@ namespace Portal
 
                 return View("Success");
             }
+            List<Theme> themes = new();
+            themes = _context.Themes.Where(t => t.SubjectID == SubjectID && t.Name != "Контрольное занятие").ToList();
+            ViewBag.Themes = themes;
 
-            ViewData["ThemeID"] = new SelectList(_context.Themes.Where(t => t.SubjectID == SubjectID && t.Name != "Контрольное занятие"), "ThemeID", "Name");
             ViewData["TypeOfExerciseID"] = new SelectList(_context.Types.Where(t => t.Name == "Семинарское занятие" || t.Name == "Практическое занятие"
                 || t.Name == "Лабораторное занятие" || t.Name == "Лекция"), "TypeOfExerciseID", "Name");
             return View(lesson);

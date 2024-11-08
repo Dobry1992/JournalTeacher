@@ -78,24 +78,22 @@
                             <table class="table table-bordered dataTable hover table-sm compact" id="Table">
                                 <thead class="thead-dark">
                                     <tr>
-                                        <th class="text-center">#</th>
-                                        <th class="text-center fixed fix">Ф.И.О.</th>
-                                        <th class="text-center">Ср. балл "общий"</th>
-                                        <th class="text-center">Ср. балл "по предметам"</th>
-                                        <th class="text-center">Группа</th>
-                                        <th class="text-center"></th>
+                                        <th class="text-center align-middle">#</th>
+                                        <th class="text-center fixed fix align-middle">Ф.И.О.</th>
+                                        <th class="text-center align-middle">Ср. балл "общий"</th>
+                                        <th class="text-center align-middle">Ср. балл "по предметам"</th>
+                                        <th class="text-center align-middle">Группа</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     @foreach (var student in ViewBag.StudentsRaiting)
                                     {
-                                        <tr class="text-center">
-                                            <td>@i</td>
-                                            <td class="fix fixed">@student.Student.LastName @student.Student.Name[0]. @student.Student.Surname[0].</td>
-                                            <td>@student.CommonRaiting</td>
-                                            <td>@student.Raiting</td>
-                                            <td>@student.Group.Name.ToString()</td>
-                                            <td><a class="btn btn-success btn-sm" title="Перейти" asp-controller="Students" asp-action="Details" asp-route-id="@student.Student.StudentID"><i class="fas fa-arrow-alt-circle-left"></i></a></td>
+                                        <tr class="text-center" style="font-size:small;">
+                                            <td class="align-middle">@i</td>
+                                            <td class="fix fixed"><a class="nav-link text-dark" asp-controller="Students" asp-action="Details" asp-route-id="@student.Student.StudentID">@student.Student.LastName @student.Student.Name[0]. @student.Student.Surname[0].</a></td>
+                                            <td class="align-middle">@student.CommonRaiting.ToString().Replace(",", ".")</td>
+                                            <td class="align-middle">@student.Raiting.ToString().Replace(",", ".")</td>
+                                            <td><a class="nav-link text-dark" asp-controller="Groups" asp-action="DetailsGroup" asp-route-id="@student.Group.GroupID">@student.Group.Name.ToString()</a></td>
                                         </tr>
                                         i++;
                                     }
@@ -123,18 +121,16 @@
                                         <th class="text-center">Группа</th>
                                         <th class="text-center">Год поступления</th>
                                         <th class="text-center">Средний балл</th>
-                                        <th class="text-center"></th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     @foreach (var group in ViewBag.GroupsRaiting)
                                     {
-                                        <tr class="text-center">
-                                            <td>@j</td>
-                                            <td>@group.Group.Name</td>
-                                            <td>@group.Group.DateEnter.Year.ToString()</td>
-                                            <td>@group.Raiting.ToString()</td>
-                                            <td><a class="btn btn-success btn-sm" title="Перейти" asp-controller="Groups" asp-action="DetailsGroup" asp-route-id="@group.Group.GroupID"><i class="fas fa-arrow-alt-circle-left"></i></a></td>
+                                        <tr class="text-center" style="font-size:small;">
+                                            <td class="align-middle">@j</td>
+                                            <td class="align-middle"><a class="nav-link text-dark" asp-controller="Groups" asp-action="DetailsGroup" asp-route-id="@group.Group.GroupID">@group.Group.Name</a></td>
+                                            <td class="align-middle">@group.Group.DateEnter.Year.ToString()</td>
+                                            <td>@group.Raiting.ToString().Replace(",", ".")</td>
                                         </tr>
                                         j++;
                                     }

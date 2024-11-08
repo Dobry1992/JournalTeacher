@@ -639,7 +639,7 @@ namespace Portal
             ViewBag.Students = studentNumber;
             ViewBag.Groups = groups.Count();
             ViewBag.Specialities = specialities.Count();
-            ViewBag.StudentsRaiting = studentRaitings.OrderByDescending(s => s.CommonRaiting);
+            ViewBag.StudentsRaiting = studentRaitings.OrderByDescending(s => s.Raiting);
             ViewBag.GroupsRaiting = groupsRaiting.OrderByDescending(g => g.Raiting);
             ViewBag.MarksNumber = marksNumber;
             ViewBag.MarksPercent = marksPercent;

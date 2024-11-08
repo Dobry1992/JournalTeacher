@@ -25,8 +25,16 @@
                             <form asp-action="ChooseGroup">
                                 <input asp-for="SubjectID" hidden />
                                 <div class="form-group">
-                                    <label asp-for="ThemeID" class="control-label">Тема занятия</label>
-                                    <select asp-for="ThemeID" asp-items="ViewBag.ThemeID" class="form-control"></select>
+                                    <label asp-for="ThemeID" class="control-label">Тема занятия:</label>
+                                    <select asp-for="ThemeID" class="form-control">
+                                        @if (ViewBag.Themes != null)
+                                        {
+                                            @foreach (Theme theme in ViewBag.Themes)
+                                            {
+                                                <option value="@theme.ThemeID">@theme.ShortName @theme.Name</option>
+                                            }
+                                        }
+                                    </select>
                                 </div>
                                 <div class="form-group">
                                     <label asp-for="TypeOfExerciseID" class="control-label">Тип занятия</label>

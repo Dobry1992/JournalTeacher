@@ -119,18 +119,16 @@
                                         <th class="text-center">Ф.И.О.</th>
                                         <th class="text-center">Средний балл</th>
                                         <th class="text-center">Количество оценок</th>
-                                        <th class="text-center"></th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     @foreach (var student in ViewBag.GroupRaiting)
                                     {
-                                        <tr class="text-center">
-                                            <td>@i</td>
-                                            <td>@student.Student.LastName @student.Student.Name[0]. @student.Student.Surname[0].</td>
-                                            <td>@student.Raiting</td>
-                                            <td>@student.NumberOfMark</td>
-                                            <td><a class="btn btn-success btn-sm" title="Перейти" asp-controller="Students" asp-action="Details" asp-route-id="@student.Student.StudentID"><i class="fas fa-arrow-alt-circle-left text-white"></i></a></td>
+                                        <tr class="text-center" style="font-size:small;">
+                                            <td class="align-middle">@i</td>
+                                            <td><a class="nav-link text-dark" asp-controller="Students" asp-action="Details" asp-route-id="@student.Student.StudentID">@student.Student.LastName @student.Student.Name[0]. @student.Student.Surname[0].</a></td>
+                                            <td class="align-middle">@student.Raiting.ToString().Replace(",", ".")</td>
+                                            <td class="align-middle">@student.NumberOfMark</td>
                                         </tr>
                                         i++;
                                     }
