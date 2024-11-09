@@ -43,14 +43,14 @@ namespace Portal
             if (date_1.ToShortDateString() != "01.01.0001")
             {
                 lessons = lessons
-                    .Where(l => l.Date.Year >= date_1.Date.Year && l.Date.Month >= date_1.Date.Month && l.Date.Day >= date_1.Day)
+                    .Where(l => l.Date >= date_1)
                     .ToList();
             }
 
             if (date_2.ToShortDateString() != "01.01.0001")
             {
                 lessons = lessons
-                    .Where(l => l.Date.Year <= date_2.Date.Year && l.Date.Month <= date_2.Date.Month && l.Date.Day <= date_2.Day)
+                    .Where(l => l.Date <= date_2)
                     .ToList();
             }
 
