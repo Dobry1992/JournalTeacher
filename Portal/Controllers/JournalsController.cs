@@ -111,7 +111,7 @@ namespace Portal
             var group = await _context.Groups.FindAsync(GroupID);
             var subject = await _context.Subjects.FindAsync(SubjectID);
             var department = await _context.Departments.FindAsync(subject.DepartmentID);
-            var journals = _context.Journals.Where(j => j.GroupID == GroupID && j.SubjectID == SubjectID).AsNoTracking();
+            var journals = await _context.Journals.Where(j => j.GroupID == GroupID && j.SubjectID == SubjectID).AsNoTracking().ToListAsync();
 
             if (!journals.Any())
             {
@@ -121,7 +121,7 @@ namespace Portal
                 return View();
             }
 
-            var lessons = _context.Lessons
+            var lessons = await _context.Lessons
                 .Where(l => l.Theme.SubjectID == SubjectID && l.GroupID == GroupID)
                 .OrderBy(l => l.Date)
                 .Include(l => l.TypeOfExercise)
@@ -130,21 +130,24 @@ namespace Portal
                 .Include(l => l.Group)
                     .ThenInclude(g => g.Students)
                         .ThenInclude(s => s.Marks)
-                .AsNoTracking();
+                .AsNoTracking()
+                .ToListAsync();
 
-            var students = _context.Students
+            var students = await _context.Students
                 .Where(s => s.GroupID == GroupID && s.Status == true)
                 .OrderBy(s => s.LastName)
                 .Include(s => s.Marks)
                     .ThenInclude(m => m.Theme)
                 .Include(s => s.Group)
                     .ThenInclude(g => g.Lessons)
-                .AsNoTracking();
+                .AsNoTracking()
+                .ToListAsync();
 
-            var marks = _context.Marks
+            var marks = await _context.Marks
                 .Where(m => m.SubjectID == SubjectID && m.GroupID == GroupID)
                 .OrderBy(m => m.Date)
-                .AsNoTracking();
+                .AsNoTracking()
+                .ToListAsync();
 
             var typeOfExerciseEKZ = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Экзамен");
             var typeOfExersiceDZ = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Дифференцированный зачёт");
@@ -155,8 +158,7 @@ namespace Portal
 
             var statementLessons = lessons
                 .Where(l => l.TypeOfExerciseID == typeOfExerciseEKZ.TypeOfExerciseID || l.TypeOfExerciseID == typeOfExersiceDZ.TypeOfExerciseID || l.TypeOfExerciseID == typeOfExersiceZ.TypeOfExerciseID)
-                .OrderBy(l => l.Date)
-                .AsNoTracking();
+                .OrderBy(l => l.Date);
 
             foreach (var student in students)
             {
@@ -166,7 +168,7 @@ namespace Portal
                     foreach (var studMarkIO in studMarksIO)
                     {
                         var studMarksF = marks.Where(m => m.FlagF == studMarkIO.FlagF && m.StudentID == student.StudentID && m.TypeOfExerciseID != typeOfExersiceKP.TypeOfExerciseID && m.TypeOfExerciseID != typeOfExersiceKR.TypeOfExerciseID && m.TypeOfExerciseID != typeOfExersiceIO.TypeOfExerciseID && m.TypeOfExerciseID != typeOfExerciseEKZ.TypeOfExerciseID && m.TypeOfExerciseID != typeOfExersiceDZ.TypeOfExerciseID && m.TypeOfExerciseID != typeOfExersiceZ.TypeOfExerciseID);
-                        var studMarkEKZ = await marks.FirstOrDefaultAsync(m => m.FlagF == studMarkIO.FlagF && m.StudentID == student.StudentID && (m.TypeOfExerciseID == typeOfExerciseEKZ.TypeOfExerciseID || m.TypeOfExerciseID == typeOfExersiceDZ.TypeOfExerciseID || m.TypeOfExerciseID == typeOfExersiceZ.TypeOfExerciseID));
+                        var studMarkEKZ = marks.FirstOrDefault(m => m.FlagF == studMarkIO.FlagF && m.StudentID == student.StudentID && (m.TypeOfExerciseID == typeOfExerciseEKZ.TypeOfExerciseID || m.TypeOfExerciseID == typeOfExersiceDZ.TypeOfExerciseID || m.TypeOfExerciseID == typeOfExersiceZ.TypeOfExerciseID));
                         //Экзамен (Дифференцированный зачёт)
                         if (studMarkEKZ.TypeOfExerciseID == typeOfExerciseEKZ.TypeOfExerciseID || studMarkEKZ.TypeOfExerciseID == typeOfExersiceDZ.TypeOfExerciseID)
                         {
