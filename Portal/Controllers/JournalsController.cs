@@ -126,20 +126,12 @@ namespace Portal
                 .OrderBy(l => l.Date)
                 .Include(l => l.TypeOfExercise)
                 .Include(l => l.Theme)
-                    .ThenInclude(t => t.Subject)
-                .Include(l => l.Group)
-                    .ThenInclude(g => g.Students)
-                        .ThenInclude(s => s.Marks)
                 .AsNoTracking()
                 .ToListAsync();
 
             var students = await _context.Students
                 .Where(s => s.GroupID == GroupID && s.Status == true)
                 .OrderBy(s => s.LastName)
-                .Include(s => s.Marks)
-                    .ThenInclude(m => m.Theme)
-                .Include(s => s.Group)
-                    .ThenInclude(g => g.Lessons)
                 .AsNoTracking()
                 .ToListAsync();
 
