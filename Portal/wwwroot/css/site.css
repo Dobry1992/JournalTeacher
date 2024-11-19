@@ -145,7 +145,7 @@ body {
     justify-content: center;
     background-color: #fff;
     box-shadow: 0 0 3px 0 rgba(0, 0, 0, 0.3);
-    width: 80%;
+    width: 95%;
     margin: 0 auto;
     padding: 2%;
     border-radius: 10px;
@@ -297,6 +297,12 @@ body {
 .markGE:hover {
     background-color: springgreen;
     transition: 0.5s;
+}
+
+.birthday {
+    left: 62%;
+    overflow-y:auto;
+    max-height:80%;
 }
 
 @media (min-width: 768px) {
