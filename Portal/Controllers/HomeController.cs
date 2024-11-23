@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Portal.Data;
 using Portal.Models;
+using Portal.Models.Election;
 using Portal.Repository;
 using System;
 using System.Diagnostics;
@@ -115,6 +116,84 @@ namespace Portal.Controllers
         {
             var schedule = await _academyContext.Schedules.FirstOrDefaultAsync();
             return File(schedule.File, "application/pdf");
+        }
+
+        public IActionResult IndexElection()
+        {
+            var username = User.Identity.Name;
+            using (var context = new PrincipalContext(ContextType.Domain, AD.root))
+            {
+                try
+                {
+                    var user = UserPrincipal.FindByIdentity(context, username);
+
+                    if (user != null)
+                    {
+                        ViewBag.FullName = user.DisplayName;
+                    }
+                }
+                catch
+                {
+                    ViewBag.FullName = username;
+                }
+            }
+
+            var news = _context.ElectionArticles
+                .Include(n => n.Images)
+                .OrderByDescending(n => n.Date);
+            return View(news);
+        }
+
+        [Authorize(Roles = "SuperAdmin, Journalist")]
+        public IActionResult CreateElectionArticle()
+        {
+            var username = User.Identity.Name;
+            using (var context = new PrincipalContext(ContextType.Domain, AD.root))
+            {
+                try
+                {
+                    var user = UserPrincipal.FindByIdentity(context, username);
+
+                    if (user != null)
+                    {
+                        ViewBag.FullName = user.DisplayName;
+                    }
+                }
+                catch
+                {
+                    ViewBag.FullName = username;
+                }
+            }
+            return View();
+        }
+
+        [Authorize(Roles = "SuperAdmin, Journalist")]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> CreateElectionArticle([Bind("ElectionArticleID,Title,Text,Date")] ElectionArticle electionArticle, IFormFileCollection files)
+        {
+            if (ModelState.IsValid)
+            {
+                _context.Add(electionArticle);
+                await _context.SaveChangesAsync();
+                foreach (var file in files)
+                {
+                    string path = "/images/news/" + file.FileName;
+                    using (var fileStream = new FileStream(_appEnvironment.WebRootPath + path, FileMode.Create))
+                    {
+                        await file.CopyToAsync(fileStream);
+                    }
+                    ElectionImage img = new()
+                    {
+                        ElectionArticleID = electionArticle.ElectionArticleID,
+                        Title = electionArticle.Title,
+                        Path = path
+                    };
+                    _context.Add(img);
+                }
+                await _context.SaveChangesAsync();
+            }
+            return RedirectToAction("Index", "Home");
         }
 
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
