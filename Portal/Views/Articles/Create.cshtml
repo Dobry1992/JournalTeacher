@@ -9,15 +9,17 @@
         <li class="nav-item">
             <a class="nav-link" data-widget="pushmenu" href="#" role="button"><i class="fas fa-bars"></i></a>
         </li>
-        <li class="nav-item d-none d-sm-inline-block">
-            <a asp-controller="Home" asp-action="Index" class="nav-link">@ViewBag.FullName</a>
-        </li>
         @if (User.IsInRole("SuperAdmin") || User.IsInRole("Journalist"))
         {
             <li class="nav-item d-none d-sm-inline-block">
                 <a asp-controller="Articles" asp-action="Create" class="nav-link text-info"></a>
             </li>
         }
+    </ul>
+    <ul class="navbar-nav ml-auto">
+        <li class="nav-item">
+            <a asp-controller="Home" asp-action="Index" class="nav-link text-right">@ViewBag.FullName</a>
+        </li>
     </ul>
 </nav>
 
