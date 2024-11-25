@@ -9,30 +9,6 @@
         <li class="nav-item">
             <a class="nav-link" data-widget="pushmenu" href="#" role="button"><i class="fas fa-bars"></i></a>
         </li>
-        @if (User.IsInRole("SuperAdmin") || User.IsInRole("Journalist") || User.IsInRole("ANB-UMCH"))
-        {
-            <li class="nav-item dropdown">
-                <a id="dropdownSubMenu1" href="#" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" class="nav-link dropdown-toggle">Информация</a>
-                <ul aria-labelledby="dropdownSubMenu1" class="dropdown-menu border-0 shadow">
-                    <li><a class="dropdown-item" asp-controller="Articles" asp-action="Create">Добавить новость</a></li>
-                    <li><a class="dropdown-item" asp-controller="" asp-action="">Добавить меню в столовой</a></li>
-                    <li><a class="dropdown-item" asp-controller="Home" asp-action="Create">Загрузить расписание</a></li>
-                    <li><a class="dropdown-item" asp-controller="Birthdays" asp-action="Index">Дни Рождения</a></li>
-                    <li><a class="dropdown-item" asp-controller="Home" asp-action="CreateElectionArticle">Добавить информацию о Выборах 2025</a></li>
-                </ul>
-            </li>
-        }
-        <li class="nav-item d-none d-sm-inline-block">
-            <a asp-controller="Home" asp-action="GetSchedule" class="nav-link" target="_blank">Расписание</a>
-        </li>
-        <li class="nav-item d-none d-sm-inline-block">
-            <a asp-controller="Home" asp-action="IndexElection" class="nav-link text-success">Выборы 2025</a>
-        </li>
-    </ul>
-    <ul class="navbar-nav ml-auto">
-        <li class="nav-item">
-            <a asp-controller="Home" asp-action="Index" class="nav-link text-right">@ViewBag.FullName</a>
-        </li>
     </ul>
 </nav>
 
@@ -56,7 +32,7 @@
                                 <div class="row">
                                     <div class="col-sm-12">
                                         <a class="btn btn-primary mb-3" asp-controller="Birthdays" asp-action="Create">Добавить День Рождения</a>
-                                        <table class="table table-bordered table-sm compact dataTable hover" role="grid" id="Table">
+                                        <table class="table table-bordered table-sm compact dataTable hover" role="grid" id="Birth">
                                             <thead class="thead-dark">
                                                 <tr role="row">
                                                     <th class="sorting_asc">#</th>
@@ -93,4 +69,9 @@
     </section>
 </div>
 
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}
 <script src="~/js/data_table.js"></script>

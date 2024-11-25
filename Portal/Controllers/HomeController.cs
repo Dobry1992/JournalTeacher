@@ -64,6 +64,9 @@ namespace Portal.Controllers
             }
             ViewBag.Birthdays = birthdays;
 
+            var menus = _context.Menus.First();
+            ViewBag.Menus = menus;
+
             var news = _context.Articles
                 .Include(n => n.Images)
                 .OrderByDescending(n => n.DateOfNews);
