@@ -52,6 +52,18 @@ namespace Portal.Controllers
                 }
             }
 
+            var birthdays = _context.Birthdays
+                .Where(b => b.Date.Year == DateTime.Now.Year && b.Date.Month == DateTime.Now.Month && b.Date.Day == DateTime.Now.Day)
+                .ToList();
+
+            ViewBag.BNumber = birthdays.Count();
+            if (birthdays.Any())
+            {
+                ViewBag.FirstBirthday = birthdays.First();
+                birthdays.Remove(birthdays.First());
+            }
+            ViewBag.Birthdays = birthdays;
+
             var news = _context.Articles
                 .Include(n => n.Images)
                 .OrderByDescending(n => n.DateOfNews);

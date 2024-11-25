@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Portal.Models;
+using Portal.Models.Birthday;
 using Portal.Models.Election;
 
 namespace Portal.Data
@@ -12,7 +13,7 @@ namespace Portal.Data
 
         public DbSet<Article> Articles { get; set; }
         public DbSet<Image> Images { get; set; }
-
+        public DbSet<Birthday> Birthdays { get; set; }
         public DbSet<ElectionArticle> ElectionArticles { get; set; }
         public DbSet<ElectionImage> ElectionImages { get; set; }
 
@@ -22,6 +23,7 @@ namespace Portal.Data
             modelBuilder.Entity<Image>().ToTable("Images");
             modelBuilder.Entity<ElectionArticle>().ToTable("ElectionArticles");
             modelBuilder.Entity<ElectionImage>().ToTable("ElectionImages");
+            modelBuilder.Entity<Birthday>().ToTable("Birthdays");
         }
     }
 }
