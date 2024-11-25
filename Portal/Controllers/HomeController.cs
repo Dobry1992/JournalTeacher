@@ -175,6 +175,13 @@ namespace Portal.Controllers
             if (ModelState.IsValid)
             {
                 _context.Add(electionArticle);
+                Article article = new()
+                {
+                    Title = electionArticle.Title,
+                    Text = electionArticle.Text,
+                    DateOfNews = electionArticle.Date
+                };
+                _context.Add(article);
                 await _context.SaveChangesAsync();
                 foreach (var file in files)
                 {
@@ -189,6 +196,13 @@ namespace Portal.Controllers
                         Title = electionArticle.Title,
                         Path = path
                     };
+                    Image imgage = new()
+                    {
+                        ArticleID = article.ArticleID,
+                        Title = article.Title,
+                        Path = path
+                    };
+                    _context.Add(imgage);
                     _context.Add(img);
                 }
                 await _context.SaveChangesAsync();
