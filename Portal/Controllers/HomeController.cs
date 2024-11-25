@@ -196,10 +196,128 @@ namespace Portal.Controllers
             return RedirectToAction("Index", "Home");
         }
 
+        [Authorize(Roles = "SuperAdmin, Journalist")]
+        public async Task<IActionResult> EditElection(int? id)
+        {
+            if (id == null)
+            {
+                return NotFound();
+            }
+
+            var article = await _context.ElectionArticles.FindAsync(id);
+            if (article == null)
+            {
+                return NotFound();
+            }
+
+            var username = User.Identity.Name;
+            using (var context = new PrincipalContext(ContextType.Domain, AD.root))
+            {
+                try
+                {
+                    var user = UserPrincipal.FindByIdentity(context, username);
+
+                    if (user != null)
+                    {
+                        ViewBag.FullName = user.DisplayName;
+                    }
+                }
+                catch
+                {
+                    ViewBag.FullName = username;
+                }
+            }
+            return View(article);
+        }
+
+        [Authorize(Roles = "SuperAdmin, Journalist")]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> EditElection(int id, [Bind("ElectionArticleID,Title,Text,Date")] ElectionArticle article)
+        {
+            if (id != article.ElectionArticleID)
+            {
+                return NotFound();
+            }
+
+            if (ModelState.IsValid)
+            {
+                try
+                {
+                    _context.Update(article);
+                    await _context.SaveChangesAsync();
+                }
+                catch (DbUpdateConcurrencyException)
+                {
+                    if (!ArticleExists(article.ElectionArticleID))
+                    {
+                        return NotFound();
+                    }
+                    else
+                    {
+                        throw;
+                    }
+                }
+            }
+            return RedirectToAction("Index", "Home");
+        }
+
+        [Authorize(Roles = "SuperAdmin, Journalist")]
+        public async Task<IActionResult> DeleteElection(int? id)
+        {
+            if (id == null)
+            {
+                return NotFound();
+            }
+
+            var article = await _context.ElectionArticles
+                .FirstOrDefaultAsync(m => m.ElectionArticleID == id);
+            if (article == null)
+            {
+                return NotFound();
+            }
+
+            var username = User.Identity.Name;
+            using (var context = new PrincipalContext(ContextType.Domain, AD.root))
+            {
+                try
+                {
+                    var user = UserPrincipal.FindByIdentity(context, username);
+
+                    if (user != null)
+                    {
+                        ViewBag.FullName = user.DisplayName;
+                    }
+                }
+                catch
+                {
+                    ViewBag.FullName = username;
+                }
+            }
+
+            return View(article);
+        }
+
+        [Authorize(Roles = "SuperAdmin, Journalist")]
+        [HttpPost, ActionName("DeleteElection")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteElectionConfirmed(int id)
+        {
+            var article = await _context.ElectionArticles.FindAsync(id);
+            _context.ElectionArticles.Remove(article);
+            await _context.SaveChangesAsync();
+            return RedirectToAction("Index", "Home");
+        }
+
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
         public IActionResult Error()
         {
             return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+        }
+
+        private bool ArticleExists(int id)
+        {
+            return _context.ElectionArticles.Any(e => e.ElectionArticleID == id);
         }
     }
 }

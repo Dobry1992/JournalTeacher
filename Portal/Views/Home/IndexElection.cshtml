@@ -57,8 +57,8 @@
                             @if (User.IsInRole("SuperAdmin") || User.IsInRole("Journalist"))
                             {
                                 <div class="btn-group mb-2" role="group">
-                                    <a asp-controller="" asp-action="Edit" type="button" class="btn btn-warning btn-sm" asp-route-id="@n.ElectionArticleID"><i class="fas fa-edit"></i></a>
-                                    <a asp-controller="" asp-action="Delete" type="button" class="btn btn-danger btn-sm" asp-route-id="@n.ElectionArticleID"><i class="fa fa-remove"></i></a>
+                                    <a asp-controller="Home" asp-action="EditElection" type="button" class="btn btn-warning btn-sm" asp-route-id="@n.ElectionArticleID"><i class="fas fa-edit"></i></a>
+                                    <a asp-controller="" asp-action="DeleteElection" type="button" class="btn btn-danger btn-sm" asp-route-id="@n.ElectionArticleID"><i class="fa fa-remove"></i></a>
                                 </div>
                             }
                         </div>
