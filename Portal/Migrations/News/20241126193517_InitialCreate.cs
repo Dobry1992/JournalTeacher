@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 namespace Portal.Migrations.News
 {
-    public partial class Election : Migration
+    public partial class InitialCreate : Migration
     {
         protected override void Up(MigrationBuilder migrationBuilder)
         {
@@ -23,6 +23,22 @@ namespace Portal.Migrations.News
                 });
 
             migrationBuilder.CreateTable(
+                name: "Birthdays",
+                columns: table => new
+                {
+                    BirthdayID = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Title = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    Path = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    Date = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    DateBirth = table.Column<DateTime>(type: "datetime2", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Birthdays", x => x.BirthdayID);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "ElectionArticles",
                 columns: table => new
                 {
@@ -35,6 +51,20 @@ namespace Portal.Migrations.News
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_ElectionArticles", x => x.ElectionArticleID);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Menus",
+                columns: table => new
+                {
+                    MenuID = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Title = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    Path = table.Column<string>(type: "nvarchar(max)", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Menus", x => x.MenuID);
                 });
 
             migrationBuilder.CreateTable(
@@ -93,10 +123,16 @@ namespace Portal.Migrations.News
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
+                name: "Birthdays");
+
+            migrationBuilder.DropTable(
                 name: "ElectionImages");
 
             migrationBuilder.DropTable(
                 name: "Images");
+
+            migrationBuilder.DropTable(
+                name: "Menus");
 
             migrationBuilder.DropTable(
                 name: "ElectionArticles");

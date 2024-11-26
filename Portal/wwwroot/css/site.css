@@ -305,6 +305,36 @@ body {
     max-height:80%;
 }
 
+.banner {
+    background-color: #2d2d2d;
+    color: white;
+    font-weight: normal;
+}
+
+@media (min-width: 2300px) {
+    .birthday {
+        left: 60%;
+    }
+}
+
+@media (min-width: 2400px) {
+    .birthday {
+        left: 59%;
+    }
+}
+
+@media (min-width: 2100px) {
+    .birthday {
+        left: 61%;
+    }
+}
+
+@media (min-width: 2560px) {
+    .birthday {
+        left: 57%;
+    }
+}
+
 @media (min-width: 768px) {
     html {
         font-size: 16px;

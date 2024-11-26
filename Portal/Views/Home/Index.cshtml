@@ -16,7 +16,7 @@
                 <a id="dropdownSubMenu1" href="#" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" class="nav-link dropdown-toggle">Информация</a>
                 <ul aria-labelledby="dropdownSubMenu1" class="dropdown-menu border-0 shadow">
                     <li><a class="dropdown-item" asp-controller="Articles" asp-action="Create">Добавить новость</a></li>
-                    <li><a class="dropdown-item" asp-controller="Menus" asp-action="Create">Добавить меню в столовой</a></li>
+                    <li><a class="dropdown-item" asp-controller="Menus" asp-action="Create">Загрузить меню в столовой</a></li>
                     <li><a class="dropdown-item" asp-controller="Home" asp-action="Create">Загрузить расписание</a></li>
                     <li><a class="dropdown-item" asp-controller="Birthdays" asp-action="Index">Дни Рождения</a></li>
                     <li><a class="dropdown-item" asp-controller="Home" asp-action="CreateElectionArticle">Добавить информацию о Выборах 2025</a></li>
@@ -27,7 +27,7 @@
             <a asp-controller="Home" asp-action="GetSchedule" class="nav-link" target="_blank">Расписание</a>
         </li>
         <li class="nav-item d-none d-sm-inline-block">
-            <a asp-controller="Home" asp-action="IndexElection" class="nav-link text-success">Выборы 2025</a>
+            <a asp-controller="Home" asp-action="IndexElection" class="nav-link text-success"><span class="text-danger">ВЫБОРЫ</span> 2025</a>
         </li>
     </ul>
     <ul class="navbar-nav ml-auto">
@@ -74,9 +74,9 @@
             }
         </div>
         <div class="col-md-5 position-fixed birthday w-auto">
-            <h5 class="bg-gradient-secondary p-2">Дни Рождения</h5>
             @if (ViewBag.BNumber != 0)
             {
+                <h6 class="banner p-2">Дни Рождения</h6>
                 <div id="carouselExampleIndicators" class="carousel slide mb-4" data-ride="carousel">
                     <ol class="carousel-indicators">
                         <li data-target="#carouselExampleIndicators" data-slide-to="0" class="active"></li>
@@ -107,10 +107,13 @@
                 </div>
             }
             <div class="carousel-inner">
-                <h5 class="bg-gradient-secondary p-2">Меню столовой</h5>
-                <div class="carousel-item active">
-                    <img src="~/images/news/map.jpg" class="d-block w-100 h-100">
-                </div>
+                @if (ViewBag.FlagMenu)
+                {
+                    <h6 class="banner p-2">Меню столовой</h6>
+                    <div class="carousel-item active">
+                        <img src="@ViewBag.Menu.Path" class="d-block w-100 h-100">
+                    </div>
+                }
             </div>
         </div>
     </div>

@@ -38,6 +38,7 @@
 
   <ItemGroup>
     <Folder Include="wwwroot\images\news\" />
+    <Folder Include="wwwroot\images\menus\" />
   </ItemGroup>
 
   <ItemGroup>

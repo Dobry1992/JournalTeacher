@@ -10,8 +10,8 @@ using Portal.Data;
 namespace Portal.Migrations.News
 {
     [DbContext(typeof(NewsContext))]
-    [Migration("20241125214405_AddMenu")]
-    partial class AddMenu
+    [Migration("20241126193517_InitialCreate")]
+    partial class InitialCreate
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
@@ -140,8 +140,8 @@ namespace Portal.Migrations.News
                         .HasColumnType("int")
                         .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
 
-                    b.Property<byte[]>("File")
-                        .HasColumnType("varbinary(max)");
+                    b.Property<string>("Path")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Title")
                         .HasColumnType("nvarchar(max)");

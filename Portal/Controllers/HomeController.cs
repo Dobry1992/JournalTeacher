@@ -64,8 +64,14 @@ namespace Portal.Controllers
             }
             ViewBag.Birthdays = birthdays;
 
-            var menus = _context.Menus.First();
-            ViewBag.Menus = menus;
+            var menus = _context.Menus;
+            bool flagMenu = false;
+            if (menus.Any())
+            {
+                ViewBag.Menu = menus.First();
+                flagMenu = true;
+            }
+            ViewBag.FlagMenu = flagMenu;
 
             var news = _context.Articles
                 .Include(n => n.Images)

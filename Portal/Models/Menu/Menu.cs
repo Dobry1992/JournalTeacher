@@ -7,6 +7,6 @@ namespace Portal.Models.Menu
         [Key]
         public int MenuID { get; set; }
         public string Title { get; set; }
-        public byte[] File { get; set; }
+        public string Path { get; set; }
     }
 }

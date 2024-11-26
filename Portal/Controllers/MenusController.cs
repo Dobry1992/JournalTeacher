@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Portal.Data;
+using Portal.Models.Birthday;
 using Portal.Models.Menu;
 using Portal.Repository;
 using System.DirectoryServices.AccountManagement;
@@ -62,13 +63,13 @@ namespace Portal.Controllers
 
                 foreach (var file in files)
                 {
-                    byte[] fileData = null;
-                    using (var binaryReader = new BinaryReader(file.OpenReadStream()))
+                    string path = "/images/menus/" + file.FileName;
+                    using (var fileStream = new FileStream(_appEnvironment.WebRootPath + path, FileMode.Create))
                     {
-                        fileData = binaryReader.ReadBytes((int)file.Length);
+                        await file.CopyToAsync(fileStream);
                     }
-                    menu.File = fileData;
-                    _context.Menus.Add(menu);
+                    menu.Path = path;
+                    _context.Add(menu);
                 }
                 await _context.SaveChangesAsync();
             }
