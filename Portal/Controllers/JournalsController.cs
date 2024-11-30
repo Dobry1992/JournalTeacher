@@ -70,7 +70,6 @@ namespace Portal
             var group = await _context.Groups.FindAsync(GroupID);
             var inst = await _context.Institutes.FindAsync(group.InstituteID);
 
-
             var lessons = _context.StatementLessons.Where(l => l.GroupID == GroupID && (l.TypeOfExerciseID == typeDR.TypeOfExerciseID || l.TypeOfExerciseID == typeGE.TypeOfExerciseID
                 || l.TypeOfExerciseID == typeS.TypeOfExerciseID || l.TypeOfExerciseID == typePP.TypeOfExerciseID || l.TypeOfExerciseID == typeUP.TypeOfExerciseID
                 || l.TypeOfExerciseID == typeDP.TypeOfExerciseID || l.TypeOfExerciseID == typeMR.TypeOfExerciseID))
@@ -257,6 +256,16 @@ namespace Portal
                                     studMarkEKZ.Value = "Н/Д";
                                     _context.Marks.Update(studMarkEKZ);
                                     studMarkIO.Value = "Н/Д";
+                                    _context.Marks.Update(studMarkIO);
+                                }
+                                else if (studMarkEKZ.Value == "З")
+                                {
+                                    studMarkIO.Value = "Зачтено";
+                                    _context.Marks.Update(studMarkIO);
+                                }
+                                else if (studMarkEKZ.Value == "НЗ")
+                                {
+                                    studMarkIO.Value = "Незачтено";
                                     _context.Marks.Update(studMarkIO);
                                 }
                                 else
