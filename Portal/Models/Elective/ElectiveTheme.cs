@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 
 namespace Portal.Models.Elective
 {
@@ -12,5 +13,6 @@ namespace Portal.Models.Elective
         public bool Archive { get; set; }
         public int ElectiveID { get; set; }
         public Elective Elective { get; set; }
+        public ICollection<ElectiveLesson> Lessons { get; set; }
     }
 }

@@ -5,7 +5,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace Portal.Models.Elective
 {
-    [Index("SubjectID", "Date", "FlagF")]
+    [Index("Date", "FlagF")]
     public class ElectiveLesson
     {
         [Key]

@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Portal.Models;
+using Portal.Models.Elective;
 
 namespace Portal.Data
 {
@@ -33,6 +34,13 @@ namespace Portal.Data
         public DbSet<Teacher> Teachers { get; set; }
         public DbSet<TeacherNoPC> TeacherNoPCs { get; set; }
         public DbSet<Schedule> Schedules { get; set; }
+        public DbSet<Elective> Electives { get; set; }
+        public DbSet<ElectiveTheme> ElectiveThemes { get; set; }
+        public DbSet<ElectiveType> ElectiveTypes { get; set; }
+        public DbSet<ElectiveLesson> ElectiveLessons { get; set; }
+        public DbSet<ElectiveMark> ElectiveMarks { get; set; }
+        public DbSet<El_Stud_Link> El_Stud_Links { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<Group>().ToTable("Groups");
@@ -60,6 +68,12 @@ namespace Portal.Data
             modelBuilder.Entity<Teacher>().ToTable("Teachers");
             modelBuilder.Entity<TeacherNoPC>().ToTable("TeacherNoPCs");
             modelBuilder.Entity<Schedule>().ToTable("Schedules");
+            modelBuilder.Entity<Elective>().ToTable("Electives");
+            modelBuilder.Entity<ElectiveTheme>().ToTable("ElectiveThemes");
+            modelBuilder.Entity<ElectiveType>().ToTable("ElectiveTypes");
+            modelBuilder.Entity<ElectiveLesson>().ToTable("ElectiveLessons");
+            modelBuilder.Entity<ElectiveMark>().ToTable("ElectiveMarks");
+            modelBuilder.Entity<El_Stud_Link>().ToTable("El_Stud_Links");
         }
     }
 }
