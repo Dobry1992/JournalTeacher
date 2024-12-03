@@ -10,8 +10,8 @@ using Portal.Data;
 namespace Portal.Migrations
 {
     [DbContext(typeof(AcademyContext))]
-    [Migration("20240919191245_Schedule")]
-    partial class Schedule
+    [Migration("20241203184935_Initial")]
+    partial class Initial
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
@@ -43,6 +43,173 @@ namespace Portal.Migrations
                     b.HasKey("DepartmentID");
 
                     b.ToTable("Departments");
+                });
+
+            modelBuilder.Entity("Portal.Models.Elective.El_Stud_Link", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
+
+                    b.Property<int>("ElectiveID")
+                        .HasColumnType("int");
+
+                    b.Property<int>("StudentID")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ElectiveID");
+
+                    b.ToTable("El_Stud_Links");
+                });
+
+            modelBuilder.Entity("Portal.Models.Elective.Elective", b =>
+                {
+                    b.Property<int>("ElectiveID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
+
+                    b.Property<int>("DepartmentID")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ShortName")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("ElectiveID");
+
+                    b.ToTable("Electives");
+                });
+
+            modelBuilder.Entity("Portal.Models.Elective.ElectiveLesson", b =>
+                {
+                    b.Property<int>("ElectiveLessonID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
+
+                    b.Property<string>("Comment")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("Date")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("DepartmentID")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ElectiveThemeID")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ElectiveTypeID")
+                        .HasColumnType("int");
+
+                    b.Property<int>("FlagF")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Signature")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("ElectiveLessonID");
+
+                    b.HasIndex("ElectiveThemeID");
+
+                    b.HasIndex("ElectiveTypeID");
+
+                    b.HasIndex("Date", "FlagF");
+
+                    b.ToTable("ElectiveLessons");
+                });
+
+            modelBuilder.Entity("Portal.Models.Elective.ElectiveMark", b =>
+                {
+                    b.Property<int>("ElectiveMarkID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
+
+                    b.Property<string>("Comment")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("Date")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("ElectiveLessonID")
+                        .HasColumnType("int");
+
+                    b.Property<int>("FlagF")
+                        .HasColumnType("int");
+
+                    b.Property<string>("HistoryOfMark")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("SignatureOfTeacher")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("StudentID")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Value")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("ElectiveMarkID");
+
+                    b.HasIndex("ElectiveLessonID");
+
+                    b.HasIndex("Date", "FlagF");
+
+                    b.ToTable("ElectiveMarks");
+                });
+
+            modelBuilder.Entity("Portal.Models.Elective.ElectiveTheme", b =>
+                {
+                    b.Property<int>("ElectiveThemeID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
+
+                    b.Property<bool>("Archive")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("ElectiveID")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ShortName")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("ElectiveThemeID");
+
+                    b.HasIndex("ElectiveID");
+
+                    b.ToTable("ElectiveThemes");
+                });
+
+            modelBuilder.Entity("Portal.Models.Elective.ElectiveType", b =>
+                {
+                    b.Property<int>("ElectiveTypeID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
+
+                    b.Property<bool>("Archive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("ElectiveTypeID");
+
+                    b.ToTable("ElectiveTypes");
                 });
 
             modelBuilder.Entity("Portal.Models.Event", b =>
@@ -835,6 +1002,58 @@ namespace Portal.Migrations
                     b.ToTable("TypeOfExercise");
                 });
 
+            modelBuilder.Entity("Portal.Models.Elective.El_Stud_Link", b =>
+                {
+                    b.HasOne("Portal.Models.Elective.Elective", "Elective")
+                        .WithMany("StudLinks")
+                        .HasForeignKey("ElectiveID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Elective");
+                });
+
+            modelBuilder.Entity("Portal.Models.Elective.ElectiveLesson", b =>
+                {
+                    b.HasOne("Portal.Models.Elective.ElectiveTheme", "Theme")
+                        .WithMany("Lessons")
+                        .HasForeignKey("ElectiveThemeID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Portal.Models.Elective.ElectiveType", "Type")
+                        .WithMany("Lessons")
+                        .HasForeignKey("ElectiveTypeID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Theme");
+
+                    b.Navigation("Type");
+                });
+
+            modelBuilder.Entity("Portal.Models.Elective.ElectiveMark", b =>
+                {
+                    b.HasOne("Portal.Models.Elective.ElectiveLesson", "ElectiveLesson")
+                        .WithMany("Marks")
+                        .HasForeignKey("ElectiveLessonID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ElectiveLesson");
+                });
+
+            modelBuilder.Entity("Portal.Models.Elective.ElectiveTheme", b =>
+                {
+                    b.HasOne("Portal.Models.Elective.Elective", "Elective")
+                        .WithMany("Themes")
+                        .HasForeignKey("ElectiveID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Elective");
+                });
+
             modelBuilder.Entity("Portal.Models.Group", b =>
                 {
                     b.HasOne("Portal.Models.Speciality", "Speciality")
@@ -1105,6 +1324,28 @@ namespace Portal.Migrations
             modelBuilder.Entity("Portal.Models.Department", b =>
                 {
                     b.Navigation("Subjects");
+                });
+
+            modelBuilder.Entity("Portal.Models.Elective.Elective", b =>
+                {
+                    b.Navigation("StudLinks");
+
+                    b.Navigation("Themes");
+                });
+
+            modelBuilder.Entity("Portal.Models.Elective.ElectiveLesson", b =>
+                {
+                    b.Navigation("Marks");
+                });
+
+            modelBuilder.Entity("Portal.Models.Elective.ElectiveTheme", b =>
+                {
+                    b.Navigation("Lessons");
+                });
+
+            modelBuilder.Entity("Portal.Models.Elective.ElectiveType", b =>
+                {
+                    b.Navigation("Lessons");
                 });
 
             modelBuilder.Entity("Portal.Models.Group", b =>

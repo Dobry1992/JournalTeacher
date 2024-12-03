@@ -32,10 +32,16 @@ namespace Portal.Controllers
 
         public async Task<IActionResult> ChooseDepartment()
         {
+            var electives = await _context.Electives
+                .OrderBy(e => e.Name)
+                .ToListAsync();
+
             var departments = _context.Departments
                 .OrderBy(d => d.Arch)
                     .ThenBy(d => d.Name)
                 .Include(sub => sub.Subjects);
+
+            ViewBag.Electives = electives;
             return View(await departments.ToListAsync());
         }
 

@@ -77,6 +77,9 @@ namespace Portal.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("ShortName")
+                        .HasColumnType("nvarchar(max)");
+
                     b.HasKey("ElectiveID");
 
                     b.ToTable("Electives");
