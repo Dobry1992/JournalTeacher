@@ -1,36 +1,66 @@
 ﻿@model Portal.Models.Elective.Elective
 
 @{
-    ViewData["Title"] = "Details";
+    ViewData["Title"] = "Факультатив";
 }
 
-<h1>Details</h1>
+@await Html.PartialAsync("_NavMenuJournal")
 
-<div>
-    <h4>Elective</h4>
-    <hr />
-    <dl class="row">
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.Name)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.Name)
-        </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.ShortName)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.ShortName)
-        </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.DepartmentID)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.DepartmentID)
-        </dd>
-    </dl>
+<div style="padding:10%">
+    <section class="content-header">
+        <div class="container-fluid">
+        </div>
+    </section>
+    <section class="content">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-body">
+                            <h6 class="mb-3 text-center bg-warning headGroup p-2 rounded">Факультатив: @Model.Name</h6>
+                            <div id="example1_wrapper" class="dataTables_wrapper dt-bootstrap4">
+                                <div class="row">
+                                    <div class="col-sm-12 table-wrap">
+                                        <a asp-controller="ElectiveThemes" asp-action="Create" asp-route-id="@Model.ElectiveID" class="btn btn-primary mb-3">Добавить тему</a>
+                                        <table id="Table" class="table table-striped dataTable dtr-inline compact" role="grid">
+                                            <thead class="thead-light">
+                                                <tr role="row">
+                                                    <th class="sorting">Номер, вид занятия</th>
+                                                    <th class="sorting">Номер темы</th>
+                                                    <th class="sorting">Действие</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach (var item in Model.Themes.OrderBy(t => t.ShortName))
+                                                {
+                                                    @if (item.Name != "Контрольное занятие")
+                                                    {
+                                                        <tr role="row" class="odd bg-light">
+                                                            <td tabindex="0" class="sorting_1">@Html.DisplayFor(modelItem => item.Name)</td>
+                                                            <td tabindex="0" class="sorting_1">@item.ShortName</td>
+                                                            <td tabindex="0" class="sorting_1">
+                                                                <div class="container">
+                                                                    <a title="Редактировать" class="btn btn-warning" asp-controller="ElectiveThemes" asp-action="Edit" asp-route-id="@item.ElectiveThemeID" asp-route-ElectiveID="@Model.ElectiveID"><i class="fa fa-file-edit"></i></a>
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                    }
+                                                }
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
 </div>
-<div>
-    <a asp-action="Edit" asp-route-id="@Model.ElectiveID">Edit</a> |
-    <a asp-action="Index">Back to List</a>
-</div>
+
+@section scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

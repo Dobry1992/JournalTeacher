@@ -29,7 +29,7 @@
                                 {
                                     if (elective.DepartmentID == department.DepartmentID)
                                     {
-                                        <a asp-controller="Subjects" asp-action="ChooseSubject" asp-route-id="@elective.ElectiveID" class="list-group-item list-group-item-action border-top bg-warning">@elective.Name</a>
+                                        <a asp-controller="Electives" asp-action="Details" asp-route-id="@elective.ElectiveID" class="list-group-item list-group-item-action border-top bg-warning">@elective.Name</a>
                                     }
                                 }
                             </div>
