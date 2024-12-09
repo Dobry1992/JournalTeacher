@@ -21,7 +21,7 @@
                             <div id="example1_wrapper" class="dataTables_wrapper dt-bootstrap4">
                                 <div class="row">
                                     <div class="col-sm-12 table-wrap">
-                                        <a asp-controller="ElectiveThemes" asp-action="Create" asp-route-id="@Model.ElectiveID" class="btn btn-primary mb-3">Добавить тему</a>
+                                        <a asp-controller="ElectiveThemes" asp-action="Create" asp-route-id="@Model.ElectiveID" asp-route-departmentID ="@Model.DepartmentID" class="btn btn-primary mb-3">Добавить тему</a>
                                         <table id="Table" class="table table-striped dataTable dtr-inline compact" role="grid">
                                             <thead class="thead-light">
                                                 <tr role="row">
@@ -40,7 +40,7 @@
                                                             <td tabindex="0" class="sorting_1">@item.ShortName</td>
                                                             <td tabindex="0" class="sorting_1">
                                                                 <div class="container">
-                                                                    <a title="Редактировать" class="btn btn-warning" asp-controller="ElectiveThemes" asp-action="Edit" asp-route-id="@item.ElectiveThemeID" asp-route-ElectiveID="@Model.ElectiveID"><i class="fa fa-file-edit"></i></a>
+                                                                    <a title="Редактировать" class="btn btn-warning" asp-controller="ElectiveThemes" asp-action="Edit" asp-route-id="@item.ElectiveThemeID" asp-route-electiveID="@Model.ElectiveID"><i class="fa fa-file-edit"></i></a>
                                                                 </div>
                                                             </td>
                                                         </tr>

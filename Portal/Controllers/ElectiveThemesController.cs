@@ -17,33 +17,37 @@ namespace Portal.Controllers
             _context = context;
         }
 
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(int id)
         {
-            var academyContext = _context.ElectiveThemes.Include(e => e.Elective);
-            return View(await academyContext.ToListAsync());
+            var electiveThemes = _context.ElectiveThemes
+                .Where(e => e.ElectiveID == id)
+                .Include(e => e.Elective);
+            return View(await electiveThemes.ToListAsync());
         }
 
-        public IActionResult Create()
+        public IActionResult Create(int? id)
         {
-            ViewData["ElectiveID"] = new SelectList(_context.Electives, "ElectiveID", "Name");
+            ViewData["ElectiveID"] = new SelectList(_context.Electives.Where(e => e.ElectiveID == id), "ElectiveID", "Name");
+            ViewBag.Id = id;
             return View();
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("ElectiveThemeID,Name,ShortName,Archive,ElectiveID")] ElectiveTheme electiveTheme)
+        public async Task<IActionResult> Create([Bind("ElectiveThemeID,Name,ShortName,Archive,ElectiveID")] ElectiveTheme electiveTheme, int id)
         {
             if (ModelState.IsValid)
             {
                 _context.Add(electiveTheme);
                 await _context.SaveChangesAsync();
-                return RedirectToAction(nameof(Index));
+                return RedirectToAction("Details", "Electives", new { id });
             }
-            ViewData["ElectiveID"] = new SelectList(_context.Electives, "ElectiveID", "Name", electiveTheme.ElectiveID);
+            ViewBag.Id = id;
+            ViewData["ElectiveID"] = new SelectList(_context.Electives.Where(e => e.ElectiveID == id), "ElectiveID", "Name", electiveTheme.ElectiveID);
             return View(electiveTheme);
         }
 
-        public async Task<IActionResult> Edit(int? id)
+        public async Task<IActionResult> Edit(int? id, int? electiveID)
         {
             if (id == null)
             {
@@ -61,7 +65,7 @@ namespace Portal.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("ElectiveThemeID,Name,ShortName,Archive,ElectiveID")] ElectiveTheme electiveTheme)
+        public async Task<IActionResult> Edit(int id, int electiveID, [Bind("ElectiveThemeID,Name,ShortName,Archive,ElectiveID")] ElectiveTheme electiveTheme)
         {
             if (id != electiveTheme.ElectiveThemeID)
             {
@@ -86,7 +90,7 @@ namespace Portal.Controllers
                         throw;
                     }
                 }
-                return RedirectToAction(nameof(Index));
+                return RedirectToAction("Details", "Electives", new { id = electiveID });
             }
             ViewData["ElectiveID"] = new SelectList(_context.Electives, "ElectiveID", "Name", electiveTheme.ElectiveID);
             return View(electiveTheme);
@@ -117,7 +121,7 @@ namespace Portal.Controllers
             var electiveTheme = await _context.ElectiveThemes.FindAsync(id);
             _context.ElectiveThemes.Remove(electiveTheme);
             await _context.SaveChangesAsync();
-            return RedirectToAction(nameof(Index));
+            return RedirectToAction("Index", "ElectiveThemes", new { id = electiveTheme.ElectiveID });
         }
 
         private bool ElectiveThemeExists(int id)

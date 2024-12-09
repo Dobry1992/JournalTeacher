@@ -1,0 +1,85 @@
+﻿@model Portal.Models.Elective.Elective
+
+@{
+    ViewData["Title"] = "Добавить факультатив";
+}
+
+@await Html.PartialAsync("_NavMenuJournal")
+
+<div style="padding:10%">
+    <section class="content-header">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-sm-6">
+                    <h3>Создать факультатив</h3>
+                </div>
+            </div>
+        </div>
+    </section>
+    <section class="content">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-body">
+                            <div id="example1_wrapper" class="dataTables_wrapper dt-bootstrap4">
+                                <div class="row">
+                                    <div class="col-sm-12">
+                                        <form asp-action="ElectiveCreate">
+                                            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                                            <div class="form-group">
+                                                <label asp-for="Name" class="control-label">Наименование</label>
+                                                <input asp-for="Name" class="form-control" />
+                                                <span asp-validation-for="Name" class="text-danger"></span>
+                                            </div>
+                                            <div class="form-group">
+                                                <label asp-for="ShortName" class="control-label">Краткое наименование</label>
+                                                <input asp-for="ShortName" class="form-control" />
+                                                <span asp-validation-for="ShortName" class="text-danger"></span>
+                                            </div>
+                                            <div class="form-group">
+                                                <label asp-for="DepartmentID" class="control-label">Кафедра</label>
+                                                <select asp-for="DepartmentID" class="form-control">
+                                                    @foreach (var department in ViewBag.Departments)
+                                                    {
+                                                        <option value="@department.DepartmentID">@department.Name</option>
+                                                    }
+                                                </select>
+                                                <span asp-validation-for="DepartmentID" class="text-danger"></span>
+                                            </div>
+                                            @foreach (var group in ViewBag.Groups)
+                                            {
+                                                <div class="form-group mb-2">
+                                                    <h6>@group.Name.ToString()</h6>
+                                                    @foreach (var student in group.Students)
+                                                    {
+                                                        <div class="form-check-inline">
+                                                            <input type="checkbox" value="@student.StudentID" name="IdStudents" class="form-check-input" />
+                                                            <label class="form-check-label">@student.LastName @student.Name[0]. @student.Surname[0].</label>
+                                                        </div>
+                                                    }
+                                                    <br />
+                                                </div>
+                                            }
+                                            <div class="form-group mt-4">
+                                                <input type="submit" value="Создать" class="btn btn-success" />
+                                                <a class="btn btn-primary" asp-controller="Electives" asp-action="Index">Назад</a>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}
+

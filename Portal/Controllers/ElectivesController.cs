@@ -25,7 +25,10 @@ namespace Portal.Controllers
         [Authorize(Roles = "SuperAdmin, ANB-UMCH")]
         public async Task<IActionResult> Index()
         {
-            return View(await _context.Electives.ToListAsync());
+            ViewBag.Departments = await _context.Departments.ToListAsync();
+            return View(await _context.Electives
+                .OrderBy(e => e.DepartmentID)
+                .ToListAsync());
         }
 
         public async Task<IActionResult> Details(int? id)
@@ -89,6 +92,57 @@ namespace Portal.Controllers
             return View(elective);
         }
 
+        public async Task<IActionResult> ElectiveCreate()
+        {
+            var groups = await _context.Groups
+                .Include(s => s.Students)
+                .ToListAsync();
+
+            var departments = await _context.Departments
+                .ToListAsync();
+
+            ViewBag.Groups = groups;
+            ViewBag.Departments = departments;
+
+            return View();
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ElectiveCreate([Bind("ElectiveID,Name,ShortName,DepartmentID")] Elective elective, int[] IdStudents)
+        {
+            if (ModelState.IsValid)
+            {
+                _context.Electives.Add(elective);
+                await _context.SaveChangesAsync();
+
+                foreach (int studId in IdStudents)
+                {
+                    El_Stud_Link el_Stud_Link = new()
+                    {
+                        ElectiveID = elective.ElectiveID,
+                        StudentID = studId
+                    };
+                    _context.El_Stud_Links.Add(el_Stud_Link);
+                }
+                await _context.SaveChangesAsync();
+
+                return RedirectToAction("Index", "Electives");
+            }
+
+            var groups = await _context.Groups
+                .Include(s => s.Students)
+                .ToListAsync();
+
+            var departments = await _context.Departments
+               .ToListAsync();
+
+            ViewBag.Departments = departments;
+            ViewBag.Groups = groups;
+
+            return View(elective);
+        }
+
         public async Task<IActionResult> Edit(int? id)
         {
             if (id == null)
@@ -132,7 +186,7 @@ namespace Portal.Controllers
                 };
                 foreach (var es in viewStudents)
                 {
-                    if (es.Student.GroupID == group.GroupID) 
+                    if (es.Student.GroupID == group.GroupID)
                     {
                         electiveGroup.ElectiveStudents.Add(es);
                     }
@@ -178,7 +232,7 @@ namespace Portal.Controllers
             {
                 try
                 {
-                    foreach(var link in links)
+                    foreach (var link in links)
                     {
                         _context.El_Stud_Links.Remove(link);
                     }
@@ -210,7 +264,7 @@ namespace Portal.Controllers
                 return RedirectToAction("ChooseDepartment", "Departments");
             }
 
-            
+
             var students = await _context.Students.Where(s => s.Status == true).ToListAsync();
             var groups = await _context.Groups.ToListAsync();
             List<Department> departments = await _context.Departments.ToListAsync();
