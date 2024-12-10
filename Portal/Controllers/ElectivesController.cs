@@ -31,6 +31,14 @@ namespace Portal.Controllers
                 .ToListAsync());
         }
 
+        public async Task<IActionResult> ChooseElectives()
+        {
+            ViewBag.Departments = await _context.Departments.ToListAsync();
+            return View(await _context.Electives
+                .OrderBy(e => e.DepartmentID)
+                .ToListAsync());
+        }
+
         public async Task<IActionResult> Details(int? id)
         {
             if (id == null)

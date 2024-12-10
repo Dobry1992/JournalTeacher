@@ -1,0 +1,90 @@
+﻿@model IEnumerable<Portal.Models.Elective.ElectiveLesson>
+
+@{
+    ViewData["Title"] = "Журнал";
+    int i = 1;
+}
+
+@await Html.PartialAsync("_NavMenuJournal")
+
+<div style="padding: 5%">
+    <section class="content-header">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-sm-6">
+                    <h3 class="mb-1"></h3>
+                </div>
+            </div>
+        </div>
+    </section>
+    <section class="content">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-body">
+                            <div id="example1_wrapper" class="dataTables_wrapper dt-bootstrap4">
+                                <div class="row">
+                                    <div class="col-sm-12">
+                                        <div class="p-2">
+                                            <h6 class="mb-3 text-center bg-warning headGroup p-2 rounded">Факультатив: @ViewBag.Elective.Name</h6>
+                                            <div class="btn-group mr-2 mb-3 border rounded" role="group" aria-label="Занятия">
+                                                <a class="btn btn-success p-2" asp-route-electiveID="" asp-controller="ElectiveLessons" asp-action="Create">Добавить занятие</a>
+                                            </div>
+                                            <div class="table-wrap">
+                                                <table class="table table-bordered" id="JournalTable">
+                                                    <thead class="thead-dark compact">
+                                                        <tr role="row">
+                                                            <th class="align-middle text-center p-1 fix">#</th>
+                                                            <th class="align-middle text-center p-1 fix">Ф.И.О.</th>
+                                                            @foreach (var lesson in Model)
+                                                            {
+                                                                <th class="align-middle text-center p-1">
+                                                                    <a class="btn btn-outline-danger text-white border-0" title="Удалить" asp-controller="ElectiveLessons" asp-action="Delete" asp-route-id="" asp-route-e=""><span class="rotate-sm-90"><br /></span></a>
+                                                                </th>
+                                                            }
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody class="bg-white">
+                                                        @foreach (var student in ViewBag.Students)
+                                                        {
+                                                            <tr>
+                                                                <td class="align-middle text-center p-1 bg-light fix">@i</td>
+                                                                <td class="align-middle text-center p-1 bg-light fix" style="white-space:nowrap">@student.LastName @student.Name @student.Surname</td>
+                                                                @foreach (var mark in ViewBag.Marks)
+                                                                {
+                                                                    if (mark.StudentID == student.StudentID)
+                                                                    {
+                                                                        <td class="align-middle text-center p-0 markDR">
+                                                                            <a asp-controller="StatementMarks" asp-action="Edit" asp-route-id="@mark.StatementMarkID" asp-route-GroupID="@ViewBag.GroupID" data-toggle="tooltip" id="btn-tooltip" data-placement="left" class="btn border-0 text-center align-middle text-white p-3" data-html="true" data-title="Комментарий: @mark.Comment<br>Подпись: @mark.SignatureOfTeacher<br>История:<br> @mark.HistoryOfMark" style="width:100%;">
+                                                                                @mark.Value
+                                                                            </a>
+                                                                        </td>
+                                                                    }
+                                                                }
+                                                            </tr>
+                                                            i++;
+                                                        }
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+
+@section Scripts {
+    <script src="~/js/journal.js"></script>
+    <script>
+        $(function () {
+            $('[data-toggle="tooltip"]').tooltip();
+        });
+    </script>
+}

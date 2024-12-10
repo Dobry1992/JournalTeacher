@@ -105,6 +105,32 @@ namespace Portal
             return View(await lessons.ToListAsync());
         }
 
+        public async Task<IActionResult> ElectiveJournal(int electiveID)
+        {
+            var elective = await _context.Electives.FindAsync(electiveID);
+            var links = await _context.El_Stud_Links.Where(l => l.ElectiveID == electiveID).ToListAsync();
+            List<Student> students = new();
+            foreach (var link in links) 
+            {
+                Student student = _context.Students.Find(link.StudentID);
+                students.Add(student);
+            }
+
+            var lessons = await _context.ElectiveLessons
+                .Where(l => l.Theme.ElectiveID == electiveID)
+                .ToListAsync();
+
+            var marks = await _context.ElectiveMarks
+                .Where(m => m.ElectiveLesson.Theme.ElectiveID == electiveID)
+                .ToListAsync();
+
+            ViewBag.Elective = elective;
+            ViewBag.Students = students;
+            ViewBag.Marks = marks;
+
+            return View(lessons);
+        }
+
         public async Task<IActionResult> Journal(int GroupID, int SubjectID)
         {
             var group = await _context.Groups.FindAsync(GroupID);
