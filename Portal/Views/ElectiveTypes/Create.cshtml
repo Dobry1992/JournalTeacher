@@ -1,7 +1,7 @@
-﻿@model Portal.Models.TypeOfExercise
+﻿@model Portal.Models.Elective.ElectiveType
 
 @{
-    ViewData["Title"] = "Редактирование типа занятий";
+    ViewData["Title"] = "Добавить тип факультативного занятия";
 }
 
 @await Html.PartialAsync("_NavMenuJournal")
@@ -11,7 +11,7 @@
         <div class="container-fluid">
             <div class="row">
                 <div class="col-sm-6">
-                    <h3>Редактировать тип занятий</h3>
+                    <h3>Создать тип факультативного занятия</h3>
                 </div>
             </div>
         </div>
@@ -25,18 +25,16 @@
                             <div id="example1_wrapper" class="dataTables_wrapper dt-bootstrap4">
                                 <div class="row">
                                     <div class="col-sm-12">
-                                        <form asp-action="Edit">
+                                        <form asp-action="Create">
                                             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-                                            <input type="hidden" asp-for="TypeOfExerciseID" />
-                                            <input type="hidden" asp-for="Arch" />
                                             <div class="form-group">
-                                                <label asp-for="Name" class="control-label">Тип занятий</label>
+                                                <label asp-for="Name" class="control-label">Тип факультативного занятия</label>
                                                 <input asp-for="Name" class="form-control" />
                                                 <span asp-validation-for="Name" class="text-danger"></span>
                                             </div>
                                             <div class="form-group">
-                                                <input type="submit" value="Сохранить" class="btn btn-success" />
-                                                <a class="btn btn-primary" asp-action="Index">Назад</a>
+                                                <input type="submit" value="Создать" class="btn btn-success" />
+                                                <a class="btn btn-primary" asp-controller="ElectiveTypes" asp-action="Index">Назад</a>
                                             </div>
                                         </form>
                                     </div>
@@ -49,7 +47,6 @@
         </div>
     </section>
 </div>
-
 
 @section Scripts {
     @{

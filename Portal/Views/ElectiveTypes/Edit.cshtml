@@ -1,7 +1,7 @@
-﻿@model Portal.Models.TypeOfExercise
+﻿@model Portal.Models.Elective.ElectiveType
 
 @{
-    ViewData["Title"] = "Редактирование типа занятий";
+    ViewData["Title"] = "Редактировать факультативное занятие";
 }
 
 @await Html.PartialAsync("_NavMenuJournal")
@@ -27,8 +27,8 @@
                                     <div class="col-sm-12">
                                         <form asp-action="Edit">
                                             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-                                            <input type="hidden" asp-for="TypeOfExerciseID" />
-                                            <input type="hidden" asp-for="Arch" />
+                                            <input type="hidden" asp-for="ElectiveTypeID" />
+                                            <input type="hidden" asp-for="Archive" />
                                             <div class="form-group">
                                                 <label asp-for="Name" class="control-label">Тип занятий</label>
                                                 <input asp-for="Name" class="form-control" />
@@ -49,7 +49,6 @@
         </div>
     </section>
 </div>
-
 
 @section Scripts {
     @{

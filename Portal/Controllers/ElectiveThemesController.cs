@@ -22,6 +22,8 @@ namespace Portal.Controllers
             var electiveThemes = _context.ElectiveThemes
                 .Where(e => e.ElectiveID == id)
                 .Include(e => e.Elective);
+            ViewBag.ElectiveID = id;
+
             return View(await electiveThemes.ToListAsync());
         }
 

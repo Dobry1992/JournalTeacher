@@ -1,7 +1,7 @@
-﻿@model IEnumerable<Portal.Models.Elective.Elective>
+﻿@model IEnumerable<Portal.Models.Elective.ElectiveType>
 
 @{
-    ViewData["Title"] = "Факультативы";
+    ViewData["Title"] = "Типы факультативных занятий";
     int i = 1;
 }
 
@@ -12,7 +12,7 @@
         <div class="container-fluid">
             <div class="row">
                 <div class="col-sm-6">
-                    <h3 class="mb-1">Факультативы</h3>
+                    <h3 class="mb-1">Типы факультативных занятий</h3>
                 </div>
             </div>
         </div>
@@ -26,14 +26,12 @@
                             <div id="example1_wrapper" class="dataTables_wrapper dt-bootstrap4">
                                 <div class="row">
                                     <div class="col-sm-12 table-wrap">
-                                        <a asp-action="ElectiveCreate" class="btn btn-primary mb-3 mr-2">Добавить факультатив</a>
-                                        <a asp-controller="ElectiveTypes" asp-action="Index" class="btn btn-primary mb-3">Типы факультативных занятий</a>
+                                        <a asp-action="Create" class="btn btn-primary mb-3 mr-2">Добавить тип факультативного знанятия</a>
                                         <table id="Table" class="table table-bordered dataTable dtr-inline table-sm compact" role="grid">
                                             <thead class="thead-dark">
                                                 <tr role="row">
                                                     <th class="sorting_asc">#</th>
-                                                    <th class="sorting">Факультатив</th>
-                                                    <th class="sorting">Кафедра</th>
+                                                    <th class="sorting">Тип факультативного занятия</th>
                                                     <th class="sorting fix">Действие</th>
                                                 </tr>
                                             </thead>
@@ -43,18 +41,10 @@
                                                     <tr role="row" class="odd bg-white">
                                                         <td tabindex="0" class="sorting_1">@i</td>
                                                         <td tabindex="0" class="sorting_1">@Html.DisplayFor(modelItem => item.Name)</td>
-                                                        @foreach (var department in ViewBag.Departments)
-                                                        {
-                                                            if (department.DepartmentID == item.DepartmentID)
-                                                            {
-                                                                <td tabindex="0" class="sorting_1">@department.Name</td>
-                                                            }
-                                                        }
                                                         <td tabindex="0" class="sorting_1 fix">
                                                             <div class="container">
-                                                                <a title="Редактировать" class="btn btn-warning btn-sm" asp-controller="Electives" asp-action="Edit" asp-route-id="@item.ElectiveID"><i class="fa fa-file-edit"></i></a>
-                                                                <a title="Информация" class="btn btn-info btn-sm" asp-controller="ElectiveThemes" asp-action="Index" asp-route-id="@item.ElectiveID"><i class="fa fa-info"></i></a>
-                                                                <a title="Удалить" class="btn btn-danger btn-sm" asp-controller="Electives" asp-action="Delete" asp-route-id="@item.ElectiveID"><i class="fa fa-remove"></i></a>
+                                                                <a title="Редактировать" class="btn btn-warning btn-sm" asp-controller="ElectiveTypes" asp-action="Edit" asp-route-id="@item.ElectiveTypeID"><i class="fa fa-file-edit"></i></a>
+                                                                <a title="Удалить" class="btn btn-danger btn-sm" asp-controller="ElectiveTypes" asp-action="Delete" asp-route-id="@item.ElectiveTypeID"><i class="fa fa-remove"></i></a>
                                                             </div>
                                                         </td>
                                                     </tr>
@@ -78,3 +68,5 @@
         await Html.RenderPartialAsync("_ValidationScriptsPartial");
     }
 }
+
+
