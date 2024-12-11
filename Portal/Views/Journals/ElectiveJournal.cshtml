@@ -7,13 +7,10 @@
 
 @await Html.PartialAsync("_NavMenuJournal")
 
-<div style="padding: 5%">
-    <section class="content-header">
+<div>
+    <section class="content-header" style="padding:15px 15px !important">
         <div class="container-fluid">
             <div class="row">
-                <div class="col-sm-6">
-                    <h3 class="mb-1"></h3>
-                </div>
             </div>
         </div>
     </section>
@@ -29,23 +26,23 @@
                                         <div class="p-2">
                                             <h6 class="mb-3 text-center bg-warning headGroup p-2 rounded">Факультатив: @ViewBag.Elective.Name</h6>
                                             <div class="btn-group mr-2 mb-3 border rounded" role="group" aria-label="Занятия">
-                                                <a class="btn btn-success p-2" asp-route-electiveID="" asp-controller="ElectiveLessons" asp-action="Create">Добавить занятие</a>
+                                                <a class="btn btn-success p-2" asp-controller="ElectiveLessons" asp-action="Create" asp-route-electiveID="@ViewBag.ElectiveID">Создать занятие</a>
                                             </div>
-                                            <div class="table-wrap">
-                                                <table class="table table-bordered" id="JournalTable">
+                                            <div class="table-wrap" id="sd">
+                                                <table class="table table-bordered compact table-sm" id="JournalTable">
                                                     <thead class="thead-dark compact">
                                                         <tr role="row">
                                                             <th class="align-middle text-center p-1 fix">#</th>
                                                             <th class="align-middle text-center p-1 fix">Ф.И.О.</th>
                                                             @foreach (var lesson in Model)
                                                             {
-                                                                <th class="align-middle text-center p-1">
-                                                                    <a class="btn btn-outline-danger text-white border-0" title="Удалить" asp-controller="ElectiveLessons" asp-action="Delete" asp-route-id="" asp-route-e=""><span class="rotate-sm-90"><br /></span></a>
+                                                                <th class="align-middle text-center p-0 m-0">
+                                                                    <a class="btn btn-outline-danger text-white border-0 p-1 m-0" data-toggle="tooltip" id="btn-tooltip" data-placement="left" data-html="true" data-title="Подпись: @lesson.Signature" asp-controller="ElectiveLessons" asp-action="Delete" asp-route-id="@lesson.ElectiveLessonID"><span class="rotate-sm-90">@lesson.Type.Name<br />@lesson.Theme.ShortName<br />@lesson.Date.ToShortDateString()</span></a>
                                                                 </th>
                                                             }
                                                         </tr>
                                                     </thead>
-                                                    <tbody class="bg-white">
+                                                    <tbody class="bg-white compact">
                                                         @foreach (var student in ViewBag.Students)
                                                         {
                                                             <tr>
@@ -55,8 +52,8 @@
                                                                 {
                                                                     if (mark.StudentID == student.StudentID)
                                                                     {
-                                                                        <td class="align-middle text-center p-0 markDR">
-                                                                            <a asp-controller="StatementMarks" asp-action="Edit" asp-route-id="@mark.StatementMarkID" asp-route-GroupID="@ViewBag.GroupID" data-toggle="tooltip" id="btn-tooltip" data-placement="left" class="btn border-0 text-center align-middle text-white p-3" data-html="true" data-title="Комментарий: @mark.Comment<br>Подпись: @mark.SignatureOfTeacher<br>История:<br> @mark.HistoryOfMark" style="width:100%;">
+                                                                        <td class="align-middle text-center p-0 tableMarkSet">
+                                                                            <a asp-controller="ElectiveMarks" asp-action="Edit" asp-route-id="@mark.ElectiveMarkID" data-toggle="tooltip" id="btn-tooltip" data-placement="left" class="btn border-0 text-center align-middle p-3" data-html="true" data-title="Подпись: @mark.SignatureOfTeacher <br>История:<br> @mark.HistoryOfMark" style="width:100%;">
                                                                                 @mark.Value
                                                                             </a>
                                                                         </td>
@@ -85,6 +82,16 @@
     <script>
         $(function () {
             $('[data-toggle="tooltip"]').tooltip();
+        });
+    </script>
+    <script>
+        window.addEventListener('DOMContentLoaded', function () {
+            var div = document.querySelector('#sd');
+            var scroll = localStorage.getItem('scroll') || 0;
+            div.scrollLeft = scroll;
+            div.addEventListener('scroll', function () {
+                localStorage.setItem('scroll', div.scrollLeft);
+            })
         });
     </script>
 }

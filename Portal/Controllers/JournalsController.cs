@@ -118,15 +118,20 @@ namespace Portal
 
             var lessons = await _context.ElectiveLessons
                 .Where(l => l.Theme.ElectiveID == electiveID)
+                .Include(l => l.Theme)
+                .Include(l => l.Type)
+                .OrderBy(l => l.Date)
                 .ToListAsync();
 
             var marks = await _context.ElectiveMarks
                 .Where(m => m.ElectiveLesson.Theme.ElectiveID == electiveID)
+                .OrderBy(m => m.Date)
                 .ToListAsync();
 
             ViewBag.Elective = elective;
             ViewBag.Students = students;
             ViewBag.Marks = marks;
+            ViewBag.ElectiveID = electiveID;
 
             return View(lessons);
         }
