@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.DirectoryServices.AccountManagement;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
@@ -22,6 +23,7 @@ namespace Portal.Controllers
             _context = context;
         }
 
+        [Authorize(Roles = "SuperAdmin, ANB-UMCH")]
         public async Task<IActionResult> Index()
         {
             var academyContext = _context.ElectiveLessons.Include(e => e.Theme).Include(e => e.Type);

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.DirectoryServices.AccountManagement;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
@@ -7,6 +8,7 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using Portal.Data;
 using Portal.Models;
+using Portal.Repository;
 
 namespace Portal
 {
@@ -59,9 +61,28 @@ namespace Portal
                 ModelState.AddModelError("", "Невозможно создать занятие в будующем!");
             }
 
+            string teacher = "";
+            var username = User.Identity.Name;
+            using (var context = new PrincipalContext(ContextType.Domain, AD.root))
+            {
+                try
+                {
+                    var user = UserPrincipal.FindByIdentity(context, username);
+
+                    if (user != null)
+                    {
+                        teacher = user.DisplayName;
+                    }
+                }
+                catch
+                {
+                    teacher = username;
+                }
+            }
+
             if (ModelState.IsValid)
             {
-                statementLesson.Signature = User.Identity.Name;
+                statementLesson.Signature = teacher;
                 _context.Add(statementLesson);
                 await _context.SaveChangesAsync();
 
@@ -114,6 +135,25 @@ namespace Portal
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id, int GroupID)
         {
+            string teacher = "";
+            var username = User.Identity.Name;
+            using (var context = new PrincipalContext(ContextType.Domain, AD.root))
+            {
+                try
+                {
+                    var user = UserPrincipal.FindByIdentity(context, username);
+
+                    if (user != null)
+                    {
+                        teacher = user.DisplayName;
+                    }
+                }
+                catch
+                {
+                    teacher = username;
+                }
+            }
+
             var statementLesson = await _context.StatementLessons.FindAsync(id);
             var statementMarks = _context.StatementMarks.Where(m => m.StatementLessonID == id);
             foreach(var mark in statementMarks)
@@ -127,7 +167,7 @@ namespace Portal
             var group = await _context.Groups.FindAsync(GroupID);
             Event e = new();
             e.Date = DateTime.Now;
-            e.Teacher = User.Identity.Name;
+            e.Teacher = teacher;
             e.Log = "Удалено занятие от: " + statementLesson.Date.ToShortDateString() + ", тип: " + type.Name + ", группа: " + group.Name;
             _context.Events.Update(e);
             await _context.SaveChangesAsync();

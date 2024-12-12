@@ -77,11 +77,7 @@ namespace Portal
 
             var students = _context.Students
                .Where(s => s.GroupID == GroupID && s.Status == true)
-               .OrderBy(s => s.LastName)
-               .Include(s => s.Marks)
-                   .ThenInclude(m => m.Theme)
-               .Include(s => s.Group)
-                   .ThenInclude(g => g.Lessons);
+               .OrderBy(s => s.LastName);
 
             var marks = _context.StatementMarks
                 .Where(m => m.GroupID == GroupID && (m.TypeOfExerciseID == typeDR.TypeOfExerciseID || m.TypeOfExerciseID == typeGE.TypeOfExerciseID

@@ -1,5 +1,6 @@
 ﻿using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
@@ -17,6 +18,7 @@ namespace Portal.Controllers
             _context = context;
         }
 
+        [Authorize(Roles = "SuperAdmin, ANB-UMCH")]
         public async Task<IActionResult> Index(int id)
         {
             var electiveThemes = _context.ElectiveThemes
@@ -98,6 +100,7 @@ namespace Portal.Controllers
             return View(electiveTheme);
         }
 
+        [Authorize(Roles = "SuperAdmin, ANB-UMCH")]
         public async Task<IActionResult> Delete(int? id)
         {
             if (id == null)
@@ -116,6 +119,7 @@ namespace Portal.Controllers
             return View(electiveTheme);
         }
 
+        [Authorize(Roles = "SuperAdmin, ANB-UMCH")]
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)

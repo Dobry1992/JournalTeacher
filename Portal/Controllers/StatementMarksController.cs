@@ -1,4 +1,5 @@
 ﻿using System;
+using System.DirectoryServices.AccountManagement;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
@@ -6,6 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Portal.Data;
 using Portal.Models;
+using Portal.Repository;
 
 namespace Portal
 {
@@ -63,6 +65,25 @@ namespace Portal
                 return NotFound();
             }
 
+            string teacher = "";
+            var username = User.Identity.Name;
+            using (var context = new PrincipalContext(ContextType.Domain, AD.root))
+            {
+                try
+                {
+                    var user = UserPrincipal.FindByIdentity(context, username);
+
+                    if (user != null)
+                    {
+                        teacher = user.DisplayName;
+                    }
+                }
+                catch
+                {
+                    teacher = username;
+                }
+            }
+
             if (statementMark.HistoryOfMark != null)
             {
                 var type = await _context.Types.FindAsync(statementMark.TypeOfExerciseID);
@@ -71,7 +92,7 @@ namespace Portal
 
                 Event e = new();
                 e.Date = statementMark.Date;
-                e.Teacher = User.Identity.Name;
+                e.Teacher = teacher;
                 e.Log = "Изменение оценки от " + statementMark.Date.ToShortDateString() + ", тип занятия: " + type.Name + ", курсант/слушатель: "
                     + student.LastName + " " + student.Name[0] + "." + student.Surname[0] + "." + ", группа: " + group.Name;
                 _context.Events.Update(e);
@@ -82,8 +103,8 @@ namespace Portal
             {
                 try
                 {
-                    statementMark.SignatureOfTeacher = User.Identity.Name;
-                    statementMark.HistoryOfMark += statementMark.Value + " - " + statementMark.Date.ToShortDateString() + " - " + User.Identity.Name + "</br>";
+                    statementMark.SignatureOfTeacher = teacher;
+                    statementMark.HistoryOfMark += statementMark.Value + " - " + statementMark.Date.ToShortDateString() + " - " + teacher + "</br>";
                     _context.StatementMarks.Update(statementMark);
                     await _context.SaveChangesAsync();
                 }

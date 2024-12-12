@@ -1,69 +1,216 @@
 ﻿@model Portal.Models.Elective.ElectiveMark
 
 @{
-    ViewData["Title"] = "Edit";
+    ViewData["Title"] = "Оценить";
 }
 
-<h1>Edit</h1>
+@await Html.PartialAsync("_NavMenuJournal")
 
-<h4>ElectiveMark</h4>
-<hr />
-<div class="row">
-    <div class="col-md-4">
-        <form asp-action="Edit">
-            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-            <input type="hidden" asp-for="ElectiveMarkID" />
-            <div class="form-group">
-                <label asp-for="Value" class="control-label"></label>
-                <input asp-for="Value" class="form-control" />
-                <span asp-validation-for="Value" class="text-danger"></span>
+<div style="padding:10%;">
+    <section class="content-header">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-sm-6">
+                    <h3>Оценить</h3>
+                </div>
             </div>
-            <div class="form-group">
-                <label asp-for="Date" class="control-label"></label>
-                <input asp-for="Date" class="form-control" />
-                <span asp-validation-for="Date" class="text-danger"></span>
+        </div>
+    </section>
+    <section class="content">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-6">
+                    <div class="card">
+                        <div class="card-body">
+                            <div id="example1_wrapper" class="dataTables_wrapper dt-bootstrap4">
+                                <div class="row">
+                                    <div class="col-sm-12">
+                                        @if (User.IsInRole("ICDA-writer"))
+                                        {
+                                            <form asp-action="Edit">
+                                                <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                                                <input hidden asp-for="ElectiveMarkID" />
+                                                <input hidden asp-for="Date" />
+                                                <input hidden asp-for="ElectiveLessonID" />
+                                                <input hidden asp-for="StudentID" />
+                                                <input hidden asp-for="StudentID" />
+                                                <input hidden asp-for="FlagF" />
+                                                <input hidden asp-for="HistoryOfMark" />
+                                                <div class="form-group">
+                                                    <label asp-for="Value" class="control-label">Оценка</label>
+                                                    <select asp-for="Value" class="form-control">
+                                                        <option value=" ">Нет оценки</option>
+                                                        <option value="1">1</option>
+                                                        <option value="2">2</option>
+                                                        <option value="3">3</option>
+                                                        <option value="4">4</option>
+                                                        <option value="5">5</option>
+                                                        <option value="6">6</option>
+                                                        <option value="7">7</option>
+                                                        <option value="8">8</option>
+                                                        <option value="9">9</option>
+                                                        <option value="10">10</option>
+                                                        <option value="Б">Б</option>
+                                                        <option value="НР">НР</option>
+                                                        <option value="О">О</option>
+                                                        <option value="КМ">КМ</option>
+                                                        <option value="Р">Р</option>
+                                                        <option value="НБ">НБ</option>
+                                                        <option value="З">З</option>
+                                                        <option value="НЗ">НЗ</option>
+                                                    </select>
+                                                    <span asp-validation-for="Value" class="text-danger"></span>
+                                                </div>
+                                                <div class="form-group">
+                                                    <label asp-for="SignatureOfTeacher" class="control-label">Преподаватель</label>
+                                                    <select asp-for="SignatureOfTeacher" class="form-control">
+                                                        @if (ViewBag.Teachers != null)
+                                                        {
+                                                            @foreach (var teacher in ViewBag.Teachers)
+                                                            {
+                                                                <option value="@teacher.FamilyName @teacher.Name @teacher.Surname">@teacher.FamilyName @teacher.Name @teacher.Surname</option>
+                                                            }
+                                                        }
+                                                    </select>
+                                                    <span asp-validation-for="SignatureOfTeacher" class="text-danger"></span>
+                                                </div>
+                                                <div class="form-group">
+                                                    <label asp-for="Comment" class="control-label">Замечание преподавателя</label>
+                                                    <textarea asp-for="Comment" class="form-control" value=""></textarea>
+                                                    <span asp-validation-for="Comment" class="text-danger"></span>
+                                                </div>
+                                                <div class="form-group">
+                                                    <input type="submit" value="Оценить" class="btn btn-primary" />
+                                                    <a class="btn btn-outline-primary" asp-controller="Journals" asp-action="ElectiveJournal" asp-route-electiveID="@ViewBag.ElectiveID">Назад</a>
+                                                </div>
+                                            </form>
+                                        }
+                                        else if (User.IsInRole("K-8Writer"))
+                                        {
+                                            <form asp-action="Edit">
+                                                <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                                                <input hidden asp-for="ElectiveMarkID" />
+                                                <input hidden asp-for="Date" />
+                                                <input hidden asp-for="ElectiveLessonID" />
+                                                <input hidden asp-for="StudentID" />
+                                                <input hidden asp-for="StudentID" />
+                                                <input hidden asp-for="FlagF" />
+                                                <input hidden asp-for="HistoryOfMark" />
+                                                <div class="form-group">
+                                                    <label asp-for="Value" class="control-label">Оценка</label>
+                                                    <select asp-for="Value" class="form-control">
+                                                        <option value=" ">Нет оценки</option>
+                                                        <option value="1">1</option>
+                                                        <option value="2">2</option>
+                                                        <option value="3">3</option>
+                                                        <option value="4">4</option>
+                                                        <option value="5">5</option>
+                                                        <option value="6">6</option>
+                                                        <option value="7">7</option>
+                                                        <option value="8">8</option>
+                                                        <option value="9">9</option>
+                                                        <option value="10">10</option>
+                                                        <option value="Б">Б</option>
+                                                        <option value="НР">НР</option>
+                                                        <option value="О">О</option>
+                                                        <option value="КМ">КМ</option>
+                                                        <option value="Р">Р</option>
+                                                        <option value="НБ">НБ</option>
+                                                        <option value="З">З</option>
+                                                        <option value="НЗ">НЗ</option>
+                                                    </select>
+                                                    <span asp-validation-for="Value" class="text-danger"></span>
+                                                </div>
+                                                <div class="form-group">
+                                                    <label asp-for="SignatureOfTeacher" class="control-label">Преподаватель</label>
+                                                    <select asp-for="SignatureOfTeacher" class="form-control">
+                                                        @if (ViewBag.TeachersNoPC != null)
+                                                        {
+                                                            <option value="@ViewBag.UserName">@ViewBag.UserName</option>
+                                                            @foreach (var teacher in ViewBag.TeachersNoPC)
+                                                            {
+                                                                <option value="@teacher.LastName @teacher.Name @teacher.Surname">@teacher.LastName @teacher.Name @teacher.Surname</option>
+                                                            }
+                                                        }
+                                                    </select>
+                                                    <span asp-validation-for="SignatureOfTeacher" class="text-danger"></span>
+                                                </div>
+                                                <div class="form-group">
+                                                    <label asp-for="Comment" class="control-label">Замечание преподавателя</label>
+                                                    <textarea asp-for="Comment" class="form-control" value=""></textarea>
+                                                    <span asp-validation-for="Comment" class="text-danger"></span>
+                                                </div>
+                                                <div class="form-group">
+                                                    <input type="submit" value="Оценить" class="btn btn-primary" />
+                                                    <a class="btn btn-outline-primary" asp-controller="Journals" asp-action="ElectiveJournal" asp-route-electiveID="@ViewBag.ElectiveID">Назад</a>
+                                                </div>
+                                            </form>
+                                        }
+                                        else
+                                        {
+                                            <form asp-action="Edit">
+                                                <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                                                <input hidden asp-for="ElectiveMarkID" />
+                                                <input hidden asp-for="Date" />
+                                                <input hidden asp-for="ElectiveLessonID" />
+                                                <input hidden asp-for="StudentID" />
+                                                <input hidden asp-for="FlagF" />
+                                                <input hidden asp-for="HistoryOfMark" />
+                                                <div class="form-group">
+                                                    <label asp-for="Value" class="control-label">Оценка</label>
+                                                    <select asp-for="Value" class="form-control">
+                                                        <option value=" ">Нет оценки</option>
+                                                        <option value="1">1</option>
+                                                        <option value="2">2</option>
+                                                        <option value="3">3</option>
+                                                        <option value="4">4</option>
+                                                        <option value="5">5</option>
+                                                        <option value="6">6</option>
+                                                        <option value="7">7</option>
+                                                        <option value="8">8</option>
+                                                        <option value="9">9</option>
+                                                        <option value="10">10</option>
+                                                        <option value="Б">Б</option>
+                                                        <option value="НР">НР</option>
+                                                        <option value="О">О</option>
+                                                        <option value="КМ">КМ</option>
+                                                        <option value="Р">Р</option>
+                                                        <option value="НБ">НБ</option>
+                                                        <option value="З">З</option>
+                                                        <option value="НЗ">НЗ</option>
+                                                    </select>
+                                                    <span asp-validation-for="Value" class="text-danger"></span>
+                                                </div>
+                                                <div class="form-group">
+                                                    <label asp-for="Comment" class="control-label">Замечание преподавателя</label>
+                                                    <textarea asp-for="Comment" class="form-control" value=""></textarea>
+                                                    <span asp-validation-for="Comment" class="text-danger"></span>
+                                                </div>
+                                                <div class="form-group">
+                                                    <input type="submit" value="Оценить" class="btn btn-primary" />
+                                                    <a class="btn btn-outline-primary" asp-controller="Journals" asp-action="ElectiveJournal" asp-route-electiveID="@ViewBag.ElectiveID">Назад</a>
+                                                </div>
+                                            </form>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6 alert alert-success" role="alert">
+                    <h4 class="alert-heading">Причины отсутствия отмечаются следующими условными обозначениями:</h4>
+                    <p>
+                        Б - болезнь,<br> НР - наряд,<br> О - отпуск,<br> КМ - командировка,<br> Р - отсутствие по мотивированному рапорту,<br> НБ - отсутствие без уважительной причины.<br> З - зачтено.<br> НЗ - незачтено.
+                    </p>
+                </div>
             </div>
-            <div class="form-group">
-                <label asp-for="Comment" class="control-label"></label>
-                <input asp-for="Comment" class="form-control" />
-                <span asp-validation-for="Comment" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="SignatureOfTeacher" class="control-label"></label>
-                <input asp-for="SignatureOfTeacher" class="form-control" />
-                <span asp-validation-for="SignatureOfTeacher" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="HistoryOfMark" class="control-label"></label>
-                <input asp-for="HistoryOfMark" class="form-control" />
-                <span asp-validation-for="HistoryOfMark" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="FlagF" class="control-label"></label>
-                <input asp-for="FlagF" class="form-control" />
-                <span asp-validation-for="FlagF" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="ElectiveLessonID" class="control-label"></label>
-                <select asp-for="ElectiveLessonID" class="form-control" asp-items="ViewBag.ElectiveLessonID"></select>
-                <span asp-validation-for="ElectiveLessonID" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="StudentID" class="control-label"></label>
-                <input asp-for="StudentID" class="form-control" />
-                <span asp-validation-for="StudentID" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <input type="submit" value="Save" class="btn btn-primary" />
-            </div>
-        </form>
-    </div>
-</div>
-
-<div>
-    <a asp-action="Index">Back to List</a>
+        </div>
+    </section>
 </div>
 
 @section Scripts {
-    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
 }
