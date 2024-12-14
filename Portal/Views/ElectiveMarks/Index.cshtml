@@ -1,77 +1,77 @@
-﻿@model IEnumerable<Portal.Models.Elective.ElectiveMark>
+﻿@model IEnumerable<Portal.ViewModel.Elective.ElectiveStudentMark>
 
 @{
-    ViewData["Title"] = "Index";
+    ViewData["Title"] = "Факультативные оценки";
+    int i = 1;
 }
 
-<h1>Index</h1>
+@await Html.PartialAsync("_NavMenuJournal")
 
-<p>
-    <a asp-action="Create">Create New</a>
-</p>
-<table class="table">
-    <thead>
-        <tr>
-            <th>
-                @Html.DisplayNameFor(model => model.Value)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.Date)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.Comment)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.SignatureOfTeacher)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.HistoryOfMark)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.FlagF)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.ElectiveLesson)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.StudentID)
-            </th>
-            <th></th>
-        </tr>
-    </thead>
-    <tbody>
-@foreach (var item in Model) {
-        <tr>
-            <td>
-                @Html.DisplayFor(modelItem => item.Value)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.Date)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.Comment)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.SignatureOfTeacher)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.HistoryOfMark)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.FlagF)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.ElectiveLesson.ElectiveLessonID)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.StudentID)
-            </td>
-            <td>
-                <a asp-action="Edit" asp-route-id="@item.ElectiveMarkID">Edit</a> |
-                <a asp-action="Details" asp-route-id="@item.ElectiveMarkID">Details</a> |
-                <a asp-action="Delete" asp-route-id="@item.ElectiveMarkID">Delete</a>
-            </td>
-        </tr>
-}
-    </tbody>
-</table>
+<div style="padding:7%">
+    <section class="content-header">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-sm-6">
+                    <h2>Список оценок</h2>
+                </div>
+            </div>
+        </div>
+    </section>
+    <section class="content">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-body">
+                            <form asp-action="Index" method="get" class="form-inline mb-3">
+                                <div class="form-group m-auto">
+                                    <label class="mr-2" for="date">Дата:</label>
+                                    <input class="form-control mr-2" type="date" name="date" />
+                                    <input type="submit" value="Поиск" class="btn btn-primary mr-2" />
+                                </div>
+                            </form>
+                            <div id="example1_wrapper" class="dataTables_wrapper dt-bootstrap4">
+                                <div class="row">
+                                    <div class="col-sm-12">
+                                        <table class="table table-bordered table-sm compact dataTable hover text-center" role="grid" id="LessonsTable">
+                                            <thead class="thead-dark">
+                                                <tr role="row">
+                                                    <th class="sorting_asc">#</th>
+                                                    <th class="sorting_asc">Слушатель/Курсант</th>
+                                                    <th class="sorting_asc">Группа</th>
+                                                    <th class="sorting_asc">Факультатив</th>
+                                                    <th class="sorting_asc">Значение</th>
+                                                    <th class="sorting_asc">Преподаватель</th>
+                                                    <th class="sorting_asc">Комментарий</th>
+                                                    <th class="sorting">Дата</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach (var item in Model)
+                                                {
+                                                    <tr role="row" class="odd bg-white">
+                                                        <td tabindex="0" class="sorting_1">@i</td>
+                                                        <td tabindex="0" class="sorting_1"><a class="text-decoration-none text-success" asp-controller="Students" asp-action="Details" asp-route-id="@item.Student.StudentID">@item.Student.LastName @item.Student.Name[0].@item.Student.Surname[0].</a></td>
+                                                        <td tabindex="0" class="sorting_1"><a class="text-decoration-none text-success" asp-controller="Groups" asp-action="DetailsGroup" asp-route-id="@item.Group.GroupID">@item.Group.Name</a></td>
+                                                        <td tabindex="0" class="sorting_1">@item.ElectiveMark.ElectiveLesson.Theme.Elective.Name</td>
+                                                        <td tabindex="0" class="sorting_1">@item.ElectiveMark.Value</td>
+                                                        <td tabindex="0" class="sorting_1">@item.ElectiveMark.SignatureOfTeacher</td>
+                                                        <td tabindex="0" class="sorting_1">@item.ElectiveMark.Comment</td>
+                                                        <td tabindex="0" class="sorting_1">@item.ElectiveMark.Date.ToShortDateString()</td>
+                                                    </tr>
+                                                    i++;
+                                                }
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+
+<script src="~/js/lessons.js"></script>

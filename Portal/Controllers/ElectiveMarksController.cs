@@ -11,6 +11,7 @@ using Portal.Data;
 using Portal.Models;
 using Portal.Models.Elective;
 using Portal.Repository;
+using Portal.ViewModel.Elective;
 
 namespace Portal.Controllers
 {
@@ -24,10 +25,55 @@ namespace Portal.Controllers
         }
 
         [Authorize(Roles = "SuperAdmin, ANB-UMCH")]
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(DateTime date)
         {
-            var academyContext = _context.ElectiveMarks.Include(e => e.ElectiveLesson);
-            return View(await academyContext.ToListAsync());
+            List<ElectiveStudentMark> electiveStudentMarks = new();
+
+            if (date.ToShortDateString() == "01.01.0001")
+            {
+                var marks = await _context.ElectiveMarks
+               .Where(l => l.Date.Year == DateTime.Now.Year && l.Date.Month == DateTime.Now.Month && l.Date.Day == DateTime.Now.Day && l.Value != "")
+               .Include(l => l.ElectiveLesson)
+                   .ThenInclude(l => l.Theme)
+                       .ThenInclude(t => t.Elective)
+               .ToListAsync();
+
+                foreach (var mark in marks)
+                {
+                    Student student = _context.Students.Find(mark.StudentID);
+                    ElectiveStudentMark electiveStudentMark = new ElectiveStudentMark()
+                    {
+                        Student = student,
+                        ElectiveMark = mark,
+                        Group = _context.Groups.Find(student.GroupID)
+                    };
+                    electiveStudentMarks.Add(electiveStudentMark);
+                }
+            }
+
+            if (date.ToShortDateString() != "01.01.0001")
+            {
+                var marks = _context.ElectiveMarks
+                 .Where(l => l.Date.Year == date.Year && l.Date.Month == date.Month && l.Date.Day == date.Day && l.Value != "")
+                 .Include(l => l.ElectiveLesson)
+                    .ThenInclude(l => l.Theme)
+                        .ThenInclude(t => t.Elective)
+                 .ToList();
+
+                foreach (var mark in marks)
+                {
+                    Student student = _context.Students.Find(mark.StudentID);
+                    ElectiveStudentMark electiveStudentMark = new ElectiveStudentMark()
+                    {
+                        Student = student,
+                        ElectiveMark = mark,
+                        Group = _context.Groups.Find(student.GroupID)
+                    };
+                    electiveStudentMarks.Add(electiveStudentMark);
+                }
+            }
+
+            return View(electiveStudentMarks);
         }
 
         public async Task<IActionResult> Edit(int? id)
@@ -37,10 +83,32 @@ namespace Portal.Controllers
                 return NotFound();
             }
 
+            string teacher = "";
+            var username = User.Identity.Name;
+            using (var context = new PrincipalContext(ContextType.Domain, AD.root))
+            {
+                try
+                {
+                    var user = UserPrincipal.FindByIdentity(context, username);
+
+                    if (user != null)
+                    {
+                        teacher = user.DisplayName;
+                    }
+                }
+                catch
+                {
+                    teacher = username;
+                }
+            }
+
             var electiveMark = await _context.ElectiveMarks.FindAsync(id);
             var lesson = await _context.ElectiveLessons.FindAsync(electiveMark.ElectiveLessonID);
             var theme = await _context.ElectiveThemes.FindAsync(lesson.ElectiveThemeID);
             var elective = await _context.Electives.FindAsync(theme.ElectiveID);
+            ViewBag.TeachersNoPC = await _context.TeacherNoPCs.ToListAsync();
+            ViewBag.Teachers = await _context.Teachers.ToListAsync();
+            ViewBag.UserName = teacher;
 
             if (electiveMark == null)
             {

@@ -24,10 +24,65 @@ namespace Portal.Controllers
         }
 
         [Authorize(Roles = "SuperAdmin, ANB-UMCH")]
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(DateTime date_1, DateTime date_2, int electiveID, string teacher)
         {
-            var academyContext = _context.ElectiveLessons.Include(e => e.Theme).Include(e => e.Type);
-            return View(await academyContext.ToListAsync());
+            var lessons = await _context.ElectiveLessons
+               .OrderBy(l => l.Date)
+               .Include(l => l.Theme)
+                    .ThenInclude(t => t.Elective)
+               .Include(l => l.Type)
+               .ToListAsync();
+
+            if (date_1.ToShortDateString() == "01.01.0001" && date_2.ToShortDateString() == "01.01.0001" && electiveID == 0 && teacher == null)
+            {
+                lessons = lessons
+                    .Where(l => l.Date.Year == DateTime.Now.Year && l.Date.Month == DateTime.Now.Month && l.Date.Day == DateTime.Now.Day)
+                    .ToList();
+            }
+
+            if (date_1.ToShortDateString() != "01.01.0001")
+            {
+                lessons = lessons
+                    .Where(l => l.Date >= date_1)
+                    .ToList();
+            }
+
+            if (date_2.ToShortDateString() != "01.01.0001")
+            {
+                lessons = lessons
+                    .Where(l => l.Date <= date_2)
+                    .ToList();
+            }
+
+            if (electiveID != 0)
+            {
+                lessons = lessons
+                    .Where(l => l.Theme.ElectiveID == electiveID)
+                    .ToList();
+            }
+
+            if (teacher != null && teacher != "")
+            {
+                lessons = lessons
+                  .Where(l => l.Signature == teacher)
+                  .ToList();
+            }
+
+            var teachersMarks = _context.ElectiveMarks.Where(m => m.SignatureOfTeacher != null);
+            var teachers = from mark in teachersMarks
+                           group mark by mark.SignatureOfTeacher into t
+                           select new { NickName = t.Key };
+
+            List<string> tchrs = new();
+            foreach (var t in teachers)
+            {
+                tchrs.Add(t.NickName);
+            }
+
+            ViewBag.Electives = await _context.Electives.ToListAsync();
+            ViewBag.Teachers = tchrs;
+
+            return View(lessons);
         }
 
         public IActionResult Create(int? electiveID)
