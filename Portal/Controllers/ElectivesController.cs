@@ -1,10 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using Portal.Data;
 using Portal.Models;
@@ -33,10 +31,8 @@ namespace Portal.Controllers
 
         public async Task<IActionResult> ChooseElectives()
         {
-            ViewBag.Departments = await _context.Departments.ToListAsync();
-            return View(await _context.Electives
-                .OrderBy(e => e.DepartmentID)
-                .ToListAsync());
+            ViewBag.Departments = await _context.Departments.OrderBy(d => d.Name).ToListAsync();
+            return View(await _context.Electives.ToListAsync());
         }
 
         public async Task<IActionResult> Details(int? id)

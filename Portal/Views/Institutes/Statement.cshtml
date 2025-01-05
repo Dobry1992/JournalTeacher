@@ -1,0 +1,22 @@
+﻿@model IEnumerable<Portal.ViewModel.Statement.GroupRaiting>
+
+@{
+    ViewData["Title"] = "Информация о институте";
+}
+
+@await Html.PartialAsync("_NavMenuJournal")
+
+@foreach (var groupRaiting in Model)
+{
+    <h1>@groupRaiting.Group.Name</h1>
+    @foreach (var student in groupRaiting.Raitings)
+    {
+        <h2>@student.Student.LastName</h2>
+        @foreach (var raiting in student.SubRaitings)
+        {
+            <p style="color:@raiting.Color">
+                @raiting.Subject.Name - @raiting.Raiting
+            </p>
+        }
+    }
+}

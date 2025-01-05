@@ -20,7 +20,7 @@
                 <div class="info-box">
                     <span class="info-box-icon bg-info elevation-1"><i class="fas fa-info"></i></span>
                     <div class="info-box-content">
-                        <span class="info-box-text text-center">Текущий средний балл</span>
+                        <span class="info-box-text text-center">Текущий<br />средний балл</span>
                         <span class="info-box-number text-center">
                             @ViewBag.Raiting.ToString()
                         </span>
@@ -30,9 +30,8 @@
             <div class="col-12 col-sm-6 col-md-3">
                 <div class="info-box mb-3">
                     <span class="info-box-icon bg-danger elevation-1"><i class="fas fa-gears"></i></span>
-
                     <div class="info-box-content">
-                        <span class="info-box-text text-center">Количество специальностей</span>
+                        <span class="info-box-text text-center">Количество<br />специальностей</span>
                         <span class="info-box-number text-center">@ViewBag.Specialities.ToString()</span>
                     </div>
                 </div>
@@ -42,9 +41,8 @@
             <div class="col-12 col-sm-6 col-md-3">
                 <div class="info-box mb-3">
                     <span class="info-box-icon bg-success elevation-1"><i class="fas fa-people-group"></i></span>
-
                     <div class="info-box-content">
-                        <span class="info-box-text text-center">Количество групп</span>
+                        <span class="info-box-text text-center">Количество<br />групп</span>
                         <span class="info-box-number text-center">@ViewBag.Groups.ToString()</span>
                     </div>
                 </div>
@@ -53,9 +51,8 @@
             <div class="col-12 col-sm-6 col-md-3">
                 <div class="info-box mb-3">
                     <span class="info-box-icon bg-warning elevation-1"><i class="fas fa-users"></i></span>
-
                     <div class="info-box-content">
-                        <span class="info-box-text text-center">Количество слушателей/курсантов</span>
+                        <span class="info-box-text text-center">Количество<br />слушателей/курсантов</span>
                         <span class="info-box-number text-center">@ViewBag.Students.ToString()</span>
                     </div>
                 </div>
@@ -130,7 +127,7 @@
                                             <td class="align-middle">@j</td>
                                             <td class="align-middle"><a class="nav-link text-dark" asp-controller="Groups" asp-action="DetailsGroup" asp-route-id="@group.Group.GroupID">@group.Group.Name</a></td>
                                             <td class="align-middle">@group.Group.DateEnter.Year.ToString()</td>
-                                            <td>@group.Raiting.ToString().Replace(",", ".")</td>
+                                            <td class="align-middle">@group.Raiting.ToString().Replace(",", ".")</td>
                                         </tr>
                                         j++;
                                     }
@@ -142,12 +139,21 @@
             </div>
 
             <div class="col-md-6">
+                <div class="info-box mb-3 bg-primary">
+                    <span class="info-box-icon"><i class="fas fa-book-open-reader"></i></span>
+                    <div class="info-box-content">
+                        <span class="info-box-text mb-1">Сводная ведомость и<br />итоговые оценки</span>
+                    </div>
+                    <div class="info-box-content">
+                        <a asp-controller="Institutes" asp-action="Statement" asp-route-id="@Model.InstituteID" class="btn btn-outline-light text-center w-50">Перейти</a>
+                    </div>
+                </div>
                 <div class="info-box mb-3 bg-success">
                     <span class="info-box-icon"><i class="far fa-user"></i></span>
                     @if (ViewBag.BestStudent.Group != null)
                     {
                         <div class="info-box-content">
-                            <span class="info-box-text mb-1">Лучший слушатель/курсант: @ViewBag.BestStudent.Student.LastName @ViewBag.BestStudent.Student.Name[0].@ViewBag.BestStudent.Student.Surname[0].</span>
+                            <span class="info-box-text mb-1">Лучший слушатель/курсант:<br />@ViewBag.BestStudent.Student.LastName @ViewBag.BestStudent.Student.Name[0].@ViewBag.BestStudent.Student.Surname[0].</span>
                             <span class="info-box-text">Группа: @ViewBag.BestStudent.Group.Name</span>
                             <span class="info-box-number">Средний балл: @ViewBag.BestStudent.CommonRaiting.ToString()</span>
                         </div>
@@ -161,7 +167,7 @@
                     @if (ViewBag.WorseStudent.Group != null)
                     {
                         <div class="info-box-content">
-                            <span class="info-box-text mb-1">Худший слушатель/курсант: @ViewBag.WorseStudent.Student.LastName @ViewBag.WorseStudent.Student.Name[0].@ViewBag.WorseStudent.Student.Surname[0].</span>
+                            <span class="info-box-text mb-1">Худший слушатель/курсант:<br />@ViewBag.WorseStudent.Student.LastName @ViewBag.WorseStudent.Student.Name[0].@ViewBag.WorseStudent.Student.Surname[0].</span>
                             <span class="info-box-text">Группа: @ViewBag.WorseStudent.Group.Name</span>
                             <span class="info-box-number">Средний балл: @ViewBag.WorseStudent.CommonRaiting.ToString()</span>
                         </div>
@@ -357,5 +363,7 @@
 </script>
 
 @section Scripts {
-    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
 }

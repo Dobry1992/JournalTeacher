@@ -10,6 +10,7 @@ using Portal.Models;
 using Portal.Models.Model;
 using Portal.ViewModel;
 using Portal.ViewModel.Raiting;
+using Portal.ViewModel.Statement;
 
 namespace Portal
 {
@@ -20,6 +21,77 @@ namespace Portal
         public InstitutesController(AcademyContext context)
         {
             _context = context;
+        }
+
+        public async Task<IActionResult> Statement(int id)
+        {
+            Institute institute = await _context.Institutes.FindAsync(id);
+            List<Group> groups = await _context.Groups.Where(g => g.InstituteID == id).ToListAsync();
+            List<ViewModel.Statement.GroupRaiting> groupRaitings = new();
+
+            foreach (Group g in groups)
+            {
+                List<Student> students = _context.Students.Where(s => s.GroupID == g.GroupID).ToList();
+                List<Journal> journals = _context.Journals.Where(j => j.GroupID == g.GroupID).ToList();
+                List<StudRaiting> studRaitings = new();
+                TypeOfExercise typeIO = _context.Types.FirstOrDefault(t => t.Name == "Итоговая оценка");
+
+                foreach (Student student in students)
+                {
+                    List<SubRaiting> subRaitings = new();
+                    foreach (Journal journal in journals)
+                    {
+                        Subject subject = _context.Subjects.Find(journal.SubjectID);
+                        List<Mark> marks = _context.Marks.Where(m => m.StudentID == student.StudentID && m.SubjectID == journal.SubjectID).ToList();
+                        Mark finalMark = marks.FirstOrDefault(m => m.TypeOfExerciseID == typeIO.TypeOfExerciseID);
+                        if (finalMark != null)
+                        {
+                            SubRaiting subRaiting = new()
+                            {
+                                Subject = subject,
+                                Raiting = finalMark.Value,
+                                Color = "white"
+                            };
+                            subRaitings.Add(subRaiting);
+                        }
+                        else
+                        {
+                            List<double> doubleMarks = new();
+                            foreach (Mark mark in marks)
+                            {
+                                if (int.TryParse(mark.Value, out var m))
+                                {
+                                    doubleMarks.Add(m);
+                                }
+                            }
+                            double raiting = Math.Round(doubleMarks.Sum() / doubleMarks.Count, 2);
+                            SubRaiting subRaiting = new()
+                            {
+                                Subject = subject,
+                                Raiting = raiting.ToString(),
+                                Color = "gray"
+                            };
+                            subRaitings.Add(subRaiting);
+                        }
+                    }
+
+                    StudRaiting studRaiting = new()
+                    {
+                        Student = student,
+                        SubRaitings = subRaitings
+                    };
+                    studRaitings.Add(studRaiting);
+                }
+
+                ViewModel.Statement.GroupRaiting groupRaiting = new()
+                {
+                    Group = g,
+                    Raitings = studRaitings
+                };
+                groupRaitings.Add(groupRaiting);
+            }
+
+            return View(groupRaitings);
         }
 
         public async Task<IActionResult> Start()
