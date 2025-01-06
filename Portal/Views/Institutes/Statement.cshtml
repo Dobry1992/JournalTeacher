@@ -1,22 +1,133 @@
 ﻿@model IEnumerable<Portal.ViewModel.Statement.GroupRaiting>
 
 @{
-    ViewData["Title"] = "Информация о институте";
+    ViewData["Title"] = "Сводная ведомость и итоговые оценки";
+    int i = 1;
 }
 
 @await Html.PartialAsync("_NavMenuJournal")
 
-@foreach (var groupRaiting in Model)
-{
-    <h1>@groupRaiting.Group.Name</h1>
-    @foreach (var student in groupRaiting.Raitings)
-    {
-        <h2>@student.Student.LastName</h2>
-        @foreach (var raiting in student.SubRaitings)
-        {
-            <p style="color:@raiting.Color">
-                @raiting.Subject.Name - @raiting.Raiting
-            </p>
-        }
-    }
+<div>
+    <section class="content-header" style="padding:15px 15px !important">
+        <div class="container-fluid">
+            <div class="row">
+            </div>
+        </div>
+    </section>
+
+    <section class="content">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <h3 class="text-center mt-4">@ViewBag.Institute.Name</h3>
+                        <div class="card-body">
+                            <div id="example1_wrapper" class="dataTables_wrapper dt-bootstrap4">
+                                <div class="row">
+                                    <div class="col-sm-12">
+                                        <div class="container">
+                                            <h4 class="text-center">Сводная ведомость текущей средней успеваемости по предмету.</h4>
+                                            <p class="text-sm-right">*Ячейка таблицы выделяется оттенком жёлтого цвета, если на текущий момент стоит итоговая оценка.</p>
+                                        </div>
+                                        @foreach (var group in Model)
+                                        {
+                                            <div class="p-2">
+                                                <h5 class="mb-1 text-left bg-warning headGroup p-2 rounded">@group.Group.Name</h5>
+                                                <div class="table-wrap">
+                                                    <table class="table table-bordered compact table-sm" id="JournalTable">
+                                                        <thead class="thead-dark compact">
+                                                            <tr role="row">
+                                                                <th class="align-middle text-center p-1 fix">#</th>
+                                                                <th class="align-middle text-center p-1 fix">Ф.И.О.</th>
+                                                                @foreach (var subject in group.Subjects)
+                                                                {
+                                                                    <th class="align-middle text-center">
+                                                                        <span class="rotate-sm-90 text-white">@subject.Name</span>
+                                                                    </th>
+                                                                }
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody class="bg-white compact">
+                                                            @foreach (var student in group.Raitings)
+                                                            {
+                                                                <tr>
+                                                                    <td class="align-middle text-center p-1 bg-light fix">@i</td>
+                                                                    <td class="align-middle text-center p-1 bg-light fix" style="white-space:nowrap">@student.Student.LastName @student.Student.Name[0]. @student.Student.Surname[0].</td>
+                                                                    @foreach (var item in student.SubRaitings)
+                                                                    {
+                                                                        <td class="align-middle text-center bg-light" style="background-color:@item.Color !important;">@item.Raiting</td>
+                                                                    }
+                                                                </tr>
+                                                                i++;
+                                                            }
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                            i = 1;
+                                        }
+                                    </div>
+
+
+                                    <div class="col-sm-12">
+                                        <div class="container">
+                                            <h4 class="text-center">Сводная ведомость текущей средней успеваемости по предмету.</h4>
+                                            <p class="text-sm-right">*Ячейка таблицы выделяется оттенком жёлтого цвета, если на текущий момент стоит итоговая оценка.</p>
+                                        </div>
+                                        @foreach (var group in Model)
+                                        {
+                                            <div class="p-2">
+                                                <h5 class="mb-1 text-left bg-warning headGroup p-2 rounded">@group.Group.Name</h5>
+                                                <div class="table-wrap">
+                                                    <table class="table table-bordered compact table-sm" id="JournalTable">
+                                                        <thead class="thead-dark compact">
+                                                            <tr role="row">
+                                                                <th class="align-middle text-center p-1 fix">#</th>
+                                                                <th class="align-middle text-center p-1 fix">Ф.И.О.</th>
+                                                                @foreach (var subject in group.Subjects)
+                                                                {
+                                                                    <th class="align-middle text-center">
+                                                                        <span class="rotate-sm-90 text-white">@subject.Name</span>
+                                                                    </th>
+                                                                }
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody class="bg-white compact">
+                                                            @foreach (var student in group.Raitings)
+                                                            {
+                                                                <tr>
+                                                                    <td class="align-middle text-center p-1 bg-light fix">@i</td>
+                                                                    <td class="align-middle text-center p-1 bg-light fix" style="white-space:nowrap">@student.Student.LastName @student.Student.Name[0]. @student.Student.Surname[0].</td>
+                                                                    @foreach (var item in student.SubRaitings)
+                                                                    {
+                                                                        <td class="align-middle text-center bg-light" style="background-color:@item.Color !important;">@item.Raiting</td>
+                                                                    }
+                                                                </tr>
+                                                                i++;
+                                                            }
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                            i = 1;
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+</div>
+
+@section Scripts {
+    <script src="~/js/journal.js"></script>
+    <script>
+        $(function () {
+            $('[data-toggle="tooltip"]').tooltip();
+        });
+    </script>
 }

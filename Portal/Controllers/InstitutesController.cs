@@ -35,6 +35,12 @@ namespace Portal
                 List<Journal> journals = _context.Journals.Where(j => j.GroupID == g.GroupID).ToList();
                 List<StudRaiting> studRaitings = new();
                 TypeOfExercise typeIO = _context.Types.FirstOrDefault(t => t.Name == "Итоговая оценка");
+                List<Subject> subjects = new();
+                foreach(Journal journal in journals)
+                {
+                    Subject sub = _context.Subjects.Find(journal.SubjectID);
+                    subjects.Add(sub);
+                }
 
                 foreach (Student student in students)
                 {
@@ -42,15 +48,17 @@ namespace Portal
                     foreach (Journal journal in journals)
                     {
                         Subject subject = _context.Subjects.Find(journal.SubjectID);
-                        List<Mark> marks = _context.Marks.Where(m => m.StudentID == student.StudentID && m.SubjectID == journal.SubjectID).ToList();
-                        Mark finalMark = marks.FirstOrDefault(m => m.TypeOfExerciseID == typeIO.TypeOfExerciseID);
-                        if (finalMark != null)
+                        List<Mark> marks = _context.Marks.Where(m => m.StudentID == student.StudentID && m.SubjectID == journal.SubjectID && m.FlagF == 0).ToList();
+                        List<Mark> finalMarks = _context.Marks.Where(m => m.StudentID == student.StudentID && m.SubjectID == journal.SubjectID && m.TypeOfExerciseID == typeIO.TypeOfExerciseID).ToList();
+
+                        if (finalMarks.Count != 0 && marks.Count == 0)
                         {
+                            Mark finalMark = finalMarks.OrderByDescending(m => m.Date).First();
                             SubRaiting subRaiting = new()
                             {
                                 Subject = subject,
                                 Raiting = finalMark.Value,
-                                Color = "white"
+                                Color = "#ebc509"
                             };
                             subRaitings.Add(subRaiting);
                         }
@@ -65,11 +73,12 @@ namespace Portal
                                 }
                             }
                             double raiting = Math.Round(doubleMarks.Sum() / doubleMarks.Count, 2);
+
                             SubRaiting subRaiting = new()
                             {
                                 Subject = subject,
                                 Raiting = raiting.ToString(),
-                                Color = "gray"
+                                Color = "#FFFFFF"
                             };
                             subRaitings.Add(subRaiting);
                         }
@@ -78,7 +87,7 @@ namespace Portal
                     StudRaiting studRaiting = new()
                     {
                         Student = student,
-                        SubRaitings = subRaitings
+                        SubRaitings = subRaitings.OrderBy(s => s.Subject.Name).ToList()
                     };
                     studRaitings.Add(studRaiting);
                 }
@@ -86,12 +95,14 @@ namespace Portal
                 ViewModel.Statement.GroupRaiting groupRaiting = new()
                 {
                     Group = g,
-                    Raitings = studRaitings
+                    Subjects = subjects.OrderBy(s => s.Name).ToList(),
+                    Raitings = studRaitings.OrderBy(s => s.Student.LastName).ToList()
                 };
                 groupRaitings.Add(groupRaiting);
             }
 
-            return View(groupRaitings);
+            ViewBag.Institute = institute;
+            return View(groupRaitings.OrderBy(g => g.Group.Name).ToList());
         }
 
         public async Task<IActionResult> Start()
