@@ -9,6 +9,7 @@ using Portal.Data;
 using Portal.Models;
 using Portal.Models.Model;
 using Portal.ViewModel;
+using Portal.ViewModel.Final;
 using Portal.ViewModel.Raiting;
 using Portal.ViewModel.Statement;
 
@@ -28,15 +29,17 @@ namespace Portal
             Institute institute = await _context.Institutes.FindAsync(id);
             List<Group> groups = await _context.Groups.Where(g => g.InstituteID == id).ToListAsync();
             List<ViewModel.Statement.GroupRaiting> groupRaitings = new();
+            List<FinalGroup> finalGroups = new();
 
             foreach (Group g in groups)
             {
                 List<Student> students = _context.Students.Where(s => s.GroupID == g.GroupID).ToList();
                 List<Journal> journals = _context.Journals.Where(j => j.GroupID == g.GroupID).ToList();
                 List<StudRaiting> studRaitings = new();
+                List<FinalStudent> finalStudents = new();
                 TypeOfExercise typeIO = _context.Types.FirstOrDefault(t => t.Name == "Итоговая оценка");
                 List<Subject> subjects = new();
-                foreach(Journal journal in journals)
+                foreach (Journal journal in journals)
                 {
                     Subject sub = _context.Subjects.Find(journal.SubjectID);
                     subjects.Add(sub);
@@ -44,12 +47,20 @@ namespace Portal
 
                 foreach (Student student in students)
                 {
+                    List<FinalSubject> finalSubjects = new();
                     List<SubRaiting> subRaitings = new();
                     foreach (Journal journal in journals)
                     {
                         Subject subject = _context.Subjects.Find(journal.SubjectID);
                         List<Mark> marks = _context.Marks.Where(m => m.StudentID == student.StudentID && m.SubjectID == journal.SubjectID && m.FlagF == 0).ToList();
                         List<Mark> finalMarks = _context.Marks.Where(m => m.StudentID == student.StudentID && m.SubjectID == journal.SubjectID && m.TypeOfExerciseID == typeIO.TypeOfExerciseID).ToList();
+
+                        FinalSubject finalSubject = new()
+                        {
+                            Subject = subject,
+                            FinalMarks = finalMarks.OrderBy(m => m.Date).ToList()
+                        };
+                        finalSubjects.Add(finalSubject);
 
                         if (finalMarks.Count != 0 && marks.Count == 0)
                         {
@@ -84,6 +95,13 @@ namespace Portal
                         }
                     }
 
+                    FinalStudent finalStudent = new()
+                    {
+                        Student = student,
+                        FinalSubjects = finalSubjects.OrderBy(s => s.Subject.Name).ToList()
+                    };
+                    finalStudents.Add(finalStudent);
+
                     StudRaiting studRaiting = new()
                     {
                         Student = student,
@@ -91,6 +109,14 @@ namespace Portal
                     };
                     studRaitings.Add(studRaiting);
                 }
+
+                FinalGroup finalGroup = new()
+                {
+                    Group = g,
+                    Subjects = subjects.OrderBy(s => s.Name).ToList(),
+                    FinalStudents = finalStudents.OrderBy(s => s.Student.LastName).ToList()
+                };
+                finalGroups.Add(finalGroup);
 
                 ViewModel.Statement.GroupRaiting groupRaiting = new()
                 {
@@ -102,7 +128,13 @@ namespace Portal
             }
 
             ViewBag.Institute = institute;
-            return View(groupRaitings.OrderBy(g => g.Group.Name).ToList());
+            FinalStatement finalStatement = new()
+            {
+                GroupRaitings = groupRaitings.OrderBy(g => g.Group.Name).ToList(),
+                FinalGroups = finalGroups.OrderBy(g => g.Group.Name).ToList()
+            };
+
+            return View(finalStatement);
         }
 
         public async Task<IActionResult> Start()

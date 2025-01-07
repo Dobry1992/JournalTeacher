@@ -1,8 +1,9 @@
-﻿@model IEnumerable<Portal.ViewModel.Statement.GroupRaiting>
+﻿@model Portal.ViewModel.FinalStatement
 
 @{
     ViewData["Title"] = "Сводная ведомость и итоговые оценки";
     int i = 1;
+    int j = 1;
 }
 
 @await Html.PartialAsync("_NavMenuJournal")
@@ -14,67 +15,21 @@
             </div>
         </div>
     </section>
-
     <section class="content">
         <div class="container-fluid">
+            <h2 class="mb-3 text-center bg-gray-light headGroup p-2 rounded shadow">@ViewBag.Institute.Name</h2>
             <div class="row">
                 <div class="col-12">
                     <div class="card">
-                        <h3 class="text-center mt-4">@ViewBag.Institute.Name</h3>
                         <div class="card-body">
                             <div id="example1_wrapper" class="dataTables_wrapper dt-bootstrap4">
                                 <div class="row">
                                     <div class="col-sm-12">
                                         <div class="container">
-                                            <h4 class="text-center">Сводная ведомость текущей средней успеваемости по предмету.</h4>
-                                            <p class="text-sm-right">*Ячейка таблицы выделяется оттенком жёлтого цвета, если на текущий момент стоит итоговая оценка.</p>
+                                            <h4 class="text-center">Сводная ведомость текущей средней успеваемости.</h4>
+                                            <p class="text-sm-center">*Белый цвет ячейки таблицы показывает среднюю текущую успеваемость по предмету. Если ячейка выделена оттенком жёлтого цвета, значит на текущий момент выставлена итоговая оценка.</p>
                                         </div>
-                                        @foreach (var group in Model)
-                                        {
-                                            <div class="p-2">
-                                                <h5 class="mb-1 text-left bg-warning headGroup p-2 rounded">@group.Group.Name</h5>
-                                                <div class="table-wrap">
-                                                    <table class="table table-bordered compact table-sm" id="JournalTable">
-                                                        <thead class="thead-dark compact">
-                                                            <tr role="row">
-                                                                <th class="align-middle text-center p-1 fix">#</th>
-                                                                <th class="align-middle text-center p-1 fix">Ф.И.О.</th>
-                                                                @foreach (var subject in group.Subjects)
-                                                                {
-                                                                    <th class="align-middle text-center">
-                                                                        <span class="rotate-sm-90 text-white">@subject.Name</span>
-                                                                    </th>
-                                                                }
-                                                            </tr>
-                                                        </thead>
-                                                        <tbody class="bg-white compact">
-                                                            @foreach (var student in group.Raitings)
-                                                            {
-                                                                <tr>
-                                                                    <td class="align-middle text-center p-1 bg-light fix">@i</td>
-                                                                    <td class="align-middle text-center p-1 bg-light fix" style="white-space:nowrap">@student.Student.LastName @student.Student.Name[0]. @student.Student.Surname[0].</td>
-                                                                    @foreach (var item in student.SubRaitings)
-                                                                    {
-                                                                        <td class="align-middle text-center bg-light" style="background-color:@item.Color !important;">@item.Raiting</td>
-                                                                    }
-                                                                </tr>
-                                                                i++;
-                                                            }
-                                                        </tbody>
-                                                    </table>
-                                                </div>
-                                            </div>
-                                            i = 1;
-                                        }
-                                    </div>
-
-
-                                    <div class="col-sm-12">
-                                        <div class="container">
-                                            <h4 class="text-center">Сводная ведомость текущей средней успеваемости по предмету.</h4>
-                                            <p class="text-sm-right">*Ячейка таблицы выделяется оттенком жёлтого цвета, если на текущий момент стоит итоговая оценка.</p>
-                                        </div>
-                                        @foreach (var group in Model)
+                                        @foreach (var group in Model.GroupRaitings)
                                         {
                                             <div class="p-2">
                                                 <h5 class="mb-1 text-left bg-warning headGroup p-2 rounded">@group.Group.Name</h5>
@@ -116,18 +71,68 @@
                             </div>
                         </div>
                     </div>
+                    <div class="card">
+                        <div class="card-body">
+                            <div id="example1_wrapper" class="dataTables_wrapper dt-bootstrap4">
+                                <div class="row">
+                                    <div class="col-sm-12">
+                                        <div class="container">
+                                            <h4 class="text-center">Ведомость итоговых оценок.</h4>
+                                        </div>
+                                        @foreach (var group in Model.FinalGroups)
+                                        {
+                                            <div class="p-2">
+                                                <h5 class="mb-1 text-left bg-warning headGroup p-2 rounded">@group.Group.Name</h5>
+                                                <div class="table-wrap">
+                                                    <table class="table table-bordered compact table-sm" id="JournalTable">
+                                                        <thead class="thead-dark compact">
+                                                            <tr role="row">
+                                                                <th class="align-middle text-center p-1 fix">#</th>
+                                                                <th class="align-middle text-center p-1 fix">Ф.И.О.</th>
+                                                                @foreach (var subject in group.Subjects)
+                                                                {
+                                                                    <th class="align-middle text-center">
+                                                                        <span class="rotate-sm-90 text-white">@subject.Name</span>
+                                                                    </th>
+                                                                }
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody class="bg-white compact">
+                                                            @foreach (var student in group.FinalStudents)
+                                                            {
+                                                                <tr>
+                                                                    <td class="align-middle text-center p-1 bg-light fix">@j</td>
+                                                                    <td class="align-middle text-center p-1 bg-light fix" style="white-space:nowrap">@student.Student.LastName @student.Student.Name[0]. @student.Student.Surname[0].</td>
+                                                                    @foreach (var subject in student.FinalSubjects)
+                                                                    {
+                                                                        <td class="align-middle text-center bg-light">
+                                                                            @foreach (var mark in subject.FinalMarks)
+                                                                            {
+                                                                                <span>@mark.Value - @mark.Date.ToShortDateString()</span>
+                                                                                <br />
+                                                                            }
+                                                                        </td>
+                                                                    }
+                                                                </tr>
+                                                                j++;
+                                                            }
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                            j = 1;
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </section>
-
 </div>
 
 @section Scripts {
     <script src="~/js/journal.js"></script>
-    <script>
-        $(function () {
-            $('[data-toggle="tooltip"]').tooltip();
-        });
-    </script>
 }
