@@ -1,4 +1,5 @@
-﻿@model Portal.ViewModel.FinalStatement
+﻿@* @model Portal.ViewModel.FinalStatement *@
+@model ICollection<Portal.ViewModel.Statement.GroupRaiting>
 
 @{
     ViewData["Title"] = "Сводная ведомость и итоговые оценки";
@@ -29,7 +30,7 @@
                                             <h4 class="text-center">Сводная ведомость текущей средней успеваемости.</h4>
                                             <p class="text-sm-center">*Белый цвет ячейки таблицы показывает среднюю текущую успеваемость по предмету. Если ячейка выделена оттенком жёлтого цвета, значит на текущий момент выставлена итоговая оценка.</p>
                                         </div>
-                                        @foreach (var group in Model.GroupRaitings)
+                                        @foreach (var group in Model)
                                         {
                                             <div class="p-2">
                                                 <h5 class="mb-1 text-left bg-warning headGroup p-2 rounded">@group.Group.Name</h5>
@@ -79,7 +80,7 @@
                                         <div class="container">
                                             <h4 class="text-center">Ведомость итоговых оценок.</h4>
                                         </div>
-                                        @foreach (var group in Model.FinalGroups)
+                                        @foreach (var group in Model)
                                         {
                                             <div class="p-2">
                                                 <h5 class="mb-1 text-left bg-warning headGroup p-2 rounded">@group.Group.Name</h5>
@@ -98,12 +99,12 @@
                                                             </tr>
                                                         </thead>
                                                         <tbody class="bg-white compact">
-                                                            @foreach (var student in group.FinalStudents)
+                                                            @foreach (var student in group.Raitings)
                                                             {
                                                                 <tr>
                                                                     <td class="align-middle text-center p-1 bg-light fix">@j</td>
                                                                     <td class="align-middle text-center p-1 bg-light fix" style="white-space:nowrap">@student.Student.LastName @student.Student.Name[0]. @student.Student.Surname[0].</td>
-                                                                    @foreach (var subject in student.FinalSubjects)
+                                                                    @foreach (var subject in student.SubRaitings)
                                                                     {
                                                                         <td class="align-middle text-center bg-light">
                                                                             @foreach (var mark in subject.FinalMarks)
