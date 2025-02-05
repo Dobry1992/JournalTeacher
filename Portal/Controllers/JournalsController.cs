@@ -203,7 +203,7 @@ namespace Portal
                                 {
                                     if (EKZ < 4)
                                     {
-                                        studMarkIO.Value = "Незачёт";
+                                        studMarkIO.Value = "Не зачтено";
                                         _context.Marks.Update(studMarkIO);
                                     }
                                     else if ((marksDouble.Sum() / marksDouble.Count) < 4)
@@ -260,7 +260,7 @@ namespace Portal
                                     double finishMark = marksDouble.Sum() * 0.6 / marksDouble.Count + Z * 0.4;
                                     if (Z < 4)
                                     {
-                                        studMarkIO.Value = "Незачтено";
+                                        studMarkIO.Value = "Не зачтено";
                                         studMarkIO.Comment = finishMark.ToString();
                                         _context.Marks.Update(studMarkIO);
                                     }
@@ -292,7 +292,7 @@ namespace Portal
                                 }
                                 else if (studMarkEKZ.Value == "НЗ")
                                 {
-                                    studMarkIO.Value = "Незачтено";
+                                    studMarkIO.Value = "Не зачтено";
                                     _context.Marks.Update(studMarkIO);
                                 }
                                 else
