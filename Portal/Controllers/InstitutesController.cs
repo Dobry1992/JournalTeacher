@@ -27,86 +27,90 @@ namespace Portal
         {
             Institute institute = await _context.Institutes.FindAsync(id);
             List<Group> groups = await _context.Groups.Where(g => g.InstituteID == id).ToListAsync();
+            var typeIO = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Итоговая оценка");
 
             List<ViewModel.Statement.GroupRaiting> groupRaitings = new();
 
             foreach (Group g in groups)
             {
-                List<Student> students = _context.Students.Where(s => s.GroupID == g.GroupID).ToList();
-                List<Journal> journals = _context.Journals.Where(j => j.GroupID == g.GroupID).ToList();
-                List<StudRaiting> studRaitings = new();
-                TypeOfExercise typeIO = _context.Types.FirstOrDefault(t => t.Name == "Итоговая оценка");
+                var students = await _context.Students.Where(s => s.GroupID == g.GroupID).ToListAsync();
+                var journals = await _context.Journals.Where(j => j.GroupID == g.GroupID).ToListAsync();
 
-                List<Subject> subjects = new();
-                foreach (Journal journal in journals)
-                {
-                    Subject sub = _context.Subjects.Find(journal.SubjectID);
-                    subjects.Add(sub);
-                }
+                // Заранее загружаем все нужные предметы
+                var subjectIds = journals.Select(j => j.SubjectID).Distinct().ToList();
+                var subjectsDict = await _context.Subjects
+                    .Where(s => subjectIds.Contains(s.SubjectID))
+                    .ToDictionaryAsync(s => s.SubjectID);
+
+                List<Subject> subjects = subjectsDict.Values.OrderBy(s => s.Name).ToList();
+                List<StudRaiting> studRaitings = new();
 
                 foreach (Student student in students)
                 {
                     List<SubRaiting> subRaitings = new();
-                    foreach (Journal journal in journals)
-                    {
-                        Subject subject = _context.Subjects.Find(journal.SubjectID);
-                        List<Mark> marks = _context.Marks.Where(m => m.StudentID == student.StudentID && m.SubjectID == journal.SubjectID && m.FlagF == 0).ToList();
-                        List<Mark> finalMarks = _context.Marks.Where(m => m.StudentID == student.StudentID && m.SubjectID == journal.SubjectID && m.TypeOfExerciseID == typeIO.TypeOfExerciseID).ToList();
 
-                        if (finalMarks.Count != 0 && marks.Count == 0)
+                    foreach (var journal in journals)
+                    {
+                        var subject = subjectsDict[journal.SubjectID];
+
+                        var marks = await _context.Marks
+                            .Where(m => m.StudentID == student.StudentID && m.SubjectID == journal.SubjectID && m.FlagF == 0)
+                            .ToListAsync();
+
+                        var finalMarks = await _context.Marks
+                            .Where(m => m.StudentID == student.StudentID && m.SubjectID == journal.SubjectID && m.TypeOfExerciseID == typeIO.TypeOfExerciseID)
+                            .ToListAsync();
+
+                        if (finalMarks.Any() && !marks.Any())
                         {
-                            Mark finalMark = finalMarks.OrderByDescending(m => m.Date).First();
-                            SubRaiting subRaiting = new()
+                            var finalMark = finalMarks.OrderByDescending(m => m.Date).First();
+
+                            subRaitings.Add(new SubRaiting
                             {
                                 Subject = subject,
                                 Raiting = finalMark.Value,
                                 Color = "#ebc509",
                                 FinalMarks = finalMarks
-                            };
-                            subRaitings.Add(subRaiting);
+                            });
                         }
                         else
                         {
-                            List<double> doubleMarks = new();
-                            foreach (Mark mark in marks)
-                            {
-                                if (int.TryParse(mark.Value, out var m))
-                                {
-                                    doubleMarks.Add(m);
-                                }
-                            }
-                            double raiting = Math.Round(doubleMarks.Sum() / doubleMarks.Count, 2);
+                            var numericMarks = marks
+                                .Select(m => int.TryParse(m.Value, out int val) ? (int?)val : null)
+                                .Where(m => m.HasValue)
+                                .Select(m => m.Value)
+                                .ToList();
 
-                            SubRaiting subRaiting = new()
+                            string raiting = numericMarks.Count > 0
+                                ? Math.Round(numericMarks.Average(), 2).ToString()
+                                : "-";
+
+                            subRaitings.Add(new SubRaiting
                             {
                                 Subject = subject,
-                                Raiting = raiting.ToString(),
+                                Raiting = raiting,
                                 Color = "#FFFFFF",
                                 FinalMarks = finalMarks
-                            };
-                            subRaitings.Add(subRaiting);
+                            });
                         }
                     }
 
-                    StudRaiting studRaiting = new()
+                    studRaitings.Add(new StudRaiting
                     {
                         Student = student,
                         SubRaitings = subRaitings.OrderBy(s => s.Subject.Name).ToList()
-                    };
-                    studRaitings.Add(studRaiting);
+                    });
                 }
 
-                ViewModel.Statement.GroupRaiting groupRaiting = new()
+                groupRaitings.Add(new ViewModel.Statement.GroupRaiting
                 {
                     Group = g,
-                    Subjects = subjects.OrderBy(s => s.Name).ToList(),
+                    Subjects = subjects,
                     Raitings = studRaitings.OrderBy(s => s.Student.LastName).ToList()
-                };
-                groupRaitings.Add(groupRaiting);
+                });
             }
 
             ViewBag.Institute = institute;
-
             return View(groupRaitings.OrderBy(g => g.Group.Name).ToList());
         }
 
