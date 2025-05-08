@@ -43,12 +43,24 @@
                                 <p class="text-danger">2025-2029 ПЯТИЛЕТКА<br /><span class="text-success">КАЧЕСТВА</span></p>
                             </a>
                         </li>
-                        <li class="nav-item">
-                            <a asp-controller="Institutes" asp-action="Start" class="nav-link">
-                                <i class="nav-icon fas fa-edit"></i>
-                                <p>Журнал оценок</p>
-                            </a>
-                        </li>
+                        @if (User.IsInRole("CO-J"))
+                        {
+                            <li class="nav-item">
+                                <a href="https://journal" target="_blank" class="nav-link">
+                                    <i class="nav-icon fas fa-edit"></i>
+                                    <p>Журнал оценок</p>
+                                </a>
+                            </li>
+                        }
+                        else
+                        {
+                            <li class="nav-item">
+                                <a asp-controller="Institutes" asp-action="Start" class="nav-link">
+                                    <i class="nav-icon fas fa-edit"></i>
+                                    <p>Журнал оценок</p>
+                                </a>
+                            </li>
+                        }
                         <li class="nav-item">
                             <a href="https://phonebook" target="_blank" class="nav-link">
                                 <i class="nav-icon fas fa-phone"></i>
