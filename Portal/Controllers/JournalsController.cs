@@ -206,7 +206,7 @@ namespace Portal
             var today = DateTime.Today;
             var currentMonth = new DateTime(today.Year, today.Month, 1);
             var previousMonth = currentMonth.AddMonths(-1);
-            var tenthOfCurrentMonth = new DateTime(today.Year, today.Month, 10);
+            var tenthOfCurrentMonth = new DateTime(today.Year, today.Month, 9);
 
             foreach (var mark in marks)
             {
@@ -216,7 +216,6 @@ namespace Portal
                     Controller = "Marks"
                 };
 
-                // Логика IsEdit
                 var markMonth = new DateTime(mark.Date.Year, mark.Date.Month, 1);
                 jm.IsEdit = markMonth == currentMonth || (markMonth == previousMonth && today <= tenthOfCurrentMonth);
 
@@ -254,7 +253,7 @@ namespace Portal
             var today = DateTime.Today;
             var currentMonth = new DateTime(today.Year, today.Month, 1);
             var previousMonth = currentMonth.AddMonths(-1);
-            var tenthOfCurrentMonth = new DateTime(today.Year, today.Month, 10);
+            var tenthOfCurrentMonth = new DateTime(today.Year, today.Month, 9);
 
             foreach (var lesson in lessons)
             {

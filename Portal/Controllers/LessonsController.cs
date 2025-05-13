@@ -95,35 +95,25 @@ namespace Portal
 
         public IActionResult CreateF(int? GroupID, int? SubjectID)
         {
+            string teacher = GetDisplayName();
 
-            string teacher = "";
-            var username = User.Identity.Name;
-            using (var context = new PrincipalContext(ContextType.Domain, AD.root))
-            {
-                try
+            ViewData["ThemeID"] = new SelectList(
+                _context.Themes.Where(t => t.SubjectID == SubjectID && t.Name == "Контрольное занятие"),
+                "ThemeID", "Name");
+
+            string[] allowedTypes =
                 {
-                    var user = UserPrincipal.FindByIdentity(context, username);
+                    "Экзамен", "Дифференцированный зачёт", "Зачёт"
+                };
 
-                    if (user != null)
-                    {
-                        teacher = user.DisplayName;
-                    }
-                }
-                catch
-                {
-                    teacher = username;
-                }
-            }
+            ViewData["TypeOfExerciseID"] = new SelectList(_context.Types.Where(t => allowedTypes.Contains(t.Name)), "TypeOfExerciseID", "Name");
 
-            ViewData["ThemeID"] = new SelectList(_context.Themes.Where(t => t.SubjectID == SubjectID && t.Name == "Контрольное занятие"), "ThemeID", "Name");
-            ViewData["TypeOfExerciseID"] = new SelectList(_context.Types.Where(t => t.Name == "Экзамен" || t.Name == "Дифференцированный зачёт" || t.Name == "Зачёт"), "TypeOfExerciseID", "Name");
-            var teachers = _context.Teachers.OrderBy(t => t.FamilyName);
-            var teachersNoPC = _context.TeacherNoPCs.OrderBy(t => t.LastName).AsNoTracking();
             ViewBag.UserName = teacher;
-            ViewBag.TeachersNoPC = teachersNoPC;
-            ViewBag.Teachers = teachers;
+            ViewBag.Teachers = _context.Teachers.OrderBy(t => t.FamilyName);
+            ViewBag.TeachersNoPC = _context.TeacherNoPCs.OrderBy(t => t.LastName).AsNoTracking();
             ViewBag.GroupID = GroupID;
             ViewBag.SubjectID = SubjectID;
+
             return View();
         }
 
@@ -131,166 +121,162 @@ namespace Portal
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> CreateF(int GroupID, int SubjectID, [Bind("LessonID,Date,Comment,FlagF,ThemeID,TypeOfExerciseID,GroupID,SubjectID,Signature")] Lesson lessonF)
         {
-            if (lessonF.Date > DateTime.Now)
+            string teacher = GetDisplayName();
+
+            if (!IsLessonDateValid(lessonF.Date, out string errorMessage))
             {
-                ModelState.AddModelError("", "Невозможно создать занятие в будущем!");
+                ModelState.AddModelError("", errorMessage);
             }
 
-            if (ModelState.IsValid)
+            if (!ModelState.IsValid)
             {
-                var typeOfExerciseIO = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Итоговая оценка");
-                var typeKR = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Курсовая работа");
-                var typeKP = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Курсовой проект");
-                var simpleLessons = _context.Lessons.Where(l => l.GroupID == GroupID && l.SubjectID == SubjectID && l.Date < lessonF.Date && l.FlagF == 0 && l.TypeOfExerciseID != typeKR.TypeOfExerciseID && l.TypeOfExerciseID != typeKP.TypeOfExerciseID);
-                var subject = await _context.Subjects.FindAsync(SubjectID);
-                var group = await _context.Groups.FindAsync(GroupID);
-                var students = _context.Students.Where(s => s.GroupID == GroupID);
+                ViewBag.UserName = teacher;
+                ViewBag.Teachers = _context.Teachers.OrderBy(t => t.FamilyName);
+                ViewBag.TeachersNoPC = _context.TeacherNoPCs.OrderBy(t => t.LastName).AsNoTracking();
+                ViewBag.GroupID = GroupID;
+                ViewBag.SubjectID = SubjectID;
+                ViewData["ThemeID"] = new SelectList(
+                    _context.Themes.Where(t => t.SubjectID == SubjectID && t.Name == "Контрольное занятие"),
+                    "ThemeID", "Name");
 
-                string teacher = "";
-                var username = User.Identity.Name;
-                using (var context = new PrincipalContext(ContextType.Domain, AD.root))
+                string[] allowedTypes =
                 {
-                    try
-                    {
-                        var user = UserPrincipal.FindByIdentity(context, username);
+                    "Экзамен", "Дифференцированный зачёт", "Зачёт"
+                };
 
-                        if (user != null)
-                        {
-                            teacher = user.DisplayName;
-                        }
-                    }
-                    catch
-                    {
-                        teacher = username;
-                    }
-                }
+                ViewData["TypeOfExerciseID"] = new SelectList(_context.Types.Where(t => allowedTypes.Contains(t.Name)), "TypeOfExerciseID", "Name");
 
-                if (!simpleLessons.Any())
-                {
-                    return RedirectToAction("ErrorF", "Lessons", new { GroupID, SubjectID });
-                }
-                else
-                {
-                    lessonF.SubjectID = SubjectID;
-                    lessonF.GroupID = GroupID;
-                    if (!User.IsInRole("ICDA-writer") && !User.IsInRole("K-8Writer"))
-                    {
-                        lessonF.Signature = teacher;
-                    }
-                    _context.Lessons.Add(lessonF);
-                    await _context.SaveChangesAsync();
-                    lessonF.FlagF = lessonF.LessonID;
-                    _context.Lessons.Update(lessonF);
-                    await _context.SaveChangesAsync();
-
-                    Lesson lessonIO = new();
-                    lessonIO.Date = lessonF.Date.AddMinutes(10);
-                    lessonIO.FlagF = lessonF.FlagF;
-                    lessonIO.SubjectID = SubjectID;
-                    lessonIO.GroupID = GroupID;
-                    lessonIO.ThemeID = lessonF.ThemeID;
-                    lessonIO.TypeOfExerciseID = typeOfExerciseIO.TypeOfExerciseID;
-                    if (!User.IsInRole("ICDA-writer") && !User.IsInRole("K-8Writer"))
-                    {
-                        lessonIO.Signature = teacher;
-                    }
-                    else
-                    {
-                        lessonIO.Signature = lessonF.Signature;
-                    }
-                    _context.Lessons.Add(lessonIO);
-                    await _context.SaveChangesAsync();
-
-                    foreach (var lesson in simpleLessons)
-                    {
-                        lesson.FlagF = lessonF.FlagF;
-                        _context.Lessons.Update(lesson);
-                    }
-                    await _context.SaveChangesAsync();
-
-                    var marks = _context.Marks.Where(m => m.SubjectID == SubjectID && m.GroupID == GroupID && m.FlagF == 0 && m.Date < lessonF.Date);
-                    foreach (var mark in marks)
-                    {
-                        mark.FlagF = lessonF.FlagF;
-                        _context.Marks.Update(mark);
-                    }
-                    await _context.SaveChangesAsync();
-
-                    foreach (var student in students)
-                    {
-                        Mark markF = new();
-                        markF.Value = "";
-                        markF.Date = lessonF.Date;
-                        markF.SubjectID = SubjectID;
-                        markF.GroupID = GroupID;
-                        markF.LessonID = lessonF.LessonID;
-                        markF.TypeOfExerciseID = lessonF.TypeOfExerciseID;
-                        markF.DepartmentID = subject.DepartmentID;
-                        markF.InstituteID = group.InstituteID;
-                        markF.SpecialityID = group.SpecialityID;
-                        markF.ThemeID = lessonF.ThemeID;
-                        markF.StudentID = student.StudentID;
-                        markF.FlagF = lessonF.FlagF;
-                        _context.Marks.Add(markF);
-
-                        Mark markIO = new();
-                        markIO.Value = "";
-                        markIO.Date = lessonIO.Date;
-                        markIO.SubjectID = SubjectID;
-                        markIO.GroupID = GroupID;
-                        markIO.LessonID = lessonIO.LessonID;
-                        markIO.TypeOfExerciseID = typeOfExerciseIO.TypeOfExerciseID;
-                        markIO.DepartmentID = subject.DepartmentID;
-                        markIO.InstituteID = group.InstituteID;
-                        markIO.SpecialityID = group.SpecialityID;
-                        markIO.ThemeID = lessonIO.ThemeID;
-                        markIO.StudentID = student.StudentID;
-                        markIO.FlagF = lessonIO.FlagF;
-                        _context.Marks.Add(markIO);
-                    }
-                }
-                await _context.SaveChangesAsync();
-
-                return RedirectToAction("Journal", "Journals", new { GroupID, SubjectID });
+                return View(lessonF);
             }
-            ViewData["ThemeID"] = new SelectList(_context.Themes.Where(t => t.SubjectID == SubjectID && t.Name == "Контрольное занятие"), "ThemeID", "Name");
-            ViewData["TypeOfExerciseID"] = new SelectList(_context.Types.Where(t => t.Name == "Экзамен" || t.Name == "Дифференцированный зачёт" || t.Name == "Зачёт"), "TypeOfExerciseID", "Name");
-            return View(lessonF);
+
+            var typeFinal = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Итоговая оценка");
+            var typeKR = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Курсовая работа");
+            var typeKP = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Курсовой проект");
+
+            var simpleLessons = await _context.Lessons
+                .Where(l => l.GroupID == GroupID && l.SubjectID == SubjectID &&
+                            l.Date < lessonF.Date &&
+                            l.FlagF == 0 &&
+                            l.TypeOfExerciseID != typeKR.TypeOfExerciseID &&
+                            l.TypeOfExerciseID != typeKP.TypeOfExerciseID)
+                .ToListAsync();
+
+            if (!simpleLessons.Any())
+            {
+                return RedirectToAction("ErrorF", "Lessons", new { GroupID, SubjectID });
+            }
+
+            var subject = await _context.Subjects.FindAsync(SubjectID);
+            var group = await _context.Groups.FindAsync(GroupID);
+            var students = await _context.Students.Where(s => s.GroupID == GroupID).ToListAsync();
+
+            lessonF.SubjectID = SubjectID;
+            lessonF.GroupID = GroupID;
+            if (!User.IsInRole("ICDA-writer") && !User.IsInRole("K-8Writer"))
+                lessonF.Signature = teacher;
+
+            _context.Lessons.Add(lessonF);
+            await _context.SaveChangesAsync();
+
+            lessonF.FlagF = lessonF.LessonID;
+            _context.Lessons.Update(lessonF);
+            await _context.SaveChangesAsync();
+
+            Lesson lessonFinal = new Lesson
+            {
+                Date = lessonF.Date.AddMinutes(10),
+                FlagF = lessonF.FlagF,
+                SubjectID = SubjectID,
+                GroupID = GroupID,
+                ThemeID = lessonF.ThemeID,
+                TypeOfExerciseID = typeFinal.TypeOfExerciseID,
+                Signature = (!User.IsInRole("ICDA-writer") && !User.IsInRole("K-8Writer")) ? teacher : lessonF.Signature
+            };
+            _context.Lessons.Add(lessonFinal);
+            await _context.SaveChangesAsync();
+
+            foreach (var lesson in simpleLessons)
+            {
+                lesson.FlagF = lessonF.FlagF;
+                _context.Lessons.Update(lesson);
+            }
+
+            var previousMarks = await _context.Marks
+                .Where(m => m.SubjectID == SubjectID && m.GroupID == GroupID && m.FlagF == 0 && m.Date < lessonF.Date)
+                .ToListAsync();
+
+            foreach (var mark in previousMarks)
+            {
+                mark.FlagF = lessonF.FlagF;
+                _context.Marks.Update(mark);
+            }
+
+            foreach (var student in students)
+            {
+                _context.Marks.AddRange(
+                    new Mark
+                    {
+                        Value = "",
+                        Date = lessonF.Date,
+                        SubjectID = SubjectID,
+                        GroupID = GroupID,
+                        LessonID = lessonF.LessonID,
+                        TypeOfExerciseID = lessonF.TypeOfExerciseID,
+                        DepartmentID = subject.DepartmentID,
+                        InstituteID = group.InstituteID,
+                        SpecialityID = group.SpecialityID,
+                        ThemeID = lessonF.ThemeID,
+                        StudentID = student.StudentID,
+                        FlagF = lessonF.FlagF
+                    },
+                    new Mark
+                    {
+                        Value = "",
+                        Date = lessonFinal.Date,
+                        SubjectID = SubjectID,
+                        GroupID = GroupID,
+                        LessonID = lessonFinal.LessonID,
+                        TypeOfExerciseID = typeFinal.TypeOfExerciseID,
+                        DepartmentID = subject.DepartmentID,
+                        InstituteID = group.InstituteID,
+                        SpecialityID = group.SpecialityID,
+                        ThemeID = lessonFinal.ThemeID,
+                        StudentID = student.StudentID,
+                        FlagF = lessonFinal.FlagF
+                    });
+            }
+
+            await _context.SaveChangesAsync();
+
+            return RedirectToAction("Journal", "Journals", new { GroupID, SubjectID });
         }
 
         public IActionResult Create(int? GroupID, int? SubjectID)
         {
-            string teacher = "";
-            var username = User.Identity.Name;
-            using (var context = new PrincipalContext(ContextType.Domain, AD.root))
-            {
-                try
-                {
-                    var user = UserPrincipal.FindByIdentity(context, username);
+            string teacher = GetDisplayName();
 
-                    if (user != null)
-                    {
-                        teacher = user.DisplayName;
-                    }
-                }
-                catch
-                {
-                    teacher = username;
-                }
-            }
-            List<Theme> themes = new();
-            themes = _context.Themes.Where(t => t.SubjectID == SubjectID && t.Name != "Контрольное занятие").ToList();
+            var themes = _context.Themes
+                .Where(t => t.SubjectID == SubjectID && t.Name != "Контрольное занятие")
+                .ToList();
+
+            string[] allowedTypes = {
+                "Семинарское занятие", "Практическое занятие",
+                "Лабораторное занятие", "Лекция",
+                "Контрольное мероприятие", "Городское практическое занятие"
+            };
+
             ViewBag.Themes = themes;
-            
-            ViewData["TypeOfExerciseID"] = new SelectList(_context.Types.Where(t => t.Name == "Семинарское занятие" || t.Name == "Практическое занятие"
-                || t.Name == "Лабораторное занятие" || t.Name == "Лекция" || t.Name == "Контрольное мероприятие" || t.Name == "Городское практическое занятие"), "TypeOfExerciseID", "Name");
-            var teachers = _context.Teachers.OrderBy(t => t.FamilyName);
-            var teachersNoPC = _context.TeacherNoPCs.OrderBy(t => t.LastName).AsNoTracking();
+            ViewData["TypeOfExerciseID"] = new SelectList(
+                _context.Types.Where(t => allowedTypes.Contains(t.Name)),
+                "TypeOfExerciseID", "Name"
+            );
+
             ViewBag.UserName = teacher;
-            ViewBag.TeachersNoPC = teachersNoPC;
-            ViewBag.Teachers = teachers;
+            ViewBag.Teachers = _context.Teachers.OrderBy(t => t.FamilyName);
+            ViewBag.TeachersNoPC = _context.TeacherNoPCs.OrderBy(t => t.LastName).AsNoTracking();
             ViewBag.GroupID = GroupID;
             ViewBag.SubjectID = SubjectID;
+
             return View();
         }
 
@@ -298,95 +284,84 @@ namespace Portal
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(int GroupID, int SubjectID, [Bind("LessonID,Date,Comment,FlagF,ThemeID,TypeOfExerciseID,GroupID,SubjectID,Signature")] Lesson lesson)
         {
-            if (lesson.Date > DateTime.Now)
+            string teacher = GetDisplayName();
+
+            if (!IsLessonDateValid(lesson.Date, out var errorMessage))
             {
-                ModelState.AddModelError("", "Невозможно создать занятие в будущем!");
+                ModelState.AddModelError("", errorMessage);
             }
 
-            if (ModelState.IsValid)
+            if (!ModelState.IsValid)
             {
-                string teacher = "";
-                var username = User.Identity.Name;
-                using (var context = new PrincipalContext(ContextType.Domain, AD.root))
-                {
-                    try
-                    {
-                        var user = UserPrincipal.FindByIdentity(context, username);
+                var themes = await _context.Themes
+                    .Where(t => t.SubjectID == SubjectID && t.Name != "Контрольное занятие")
+                    .ToListAsync();
 
-                        if (user != null)
-                        {
-                            teacher = user.DisplayName;
-                        }
-                    }
-                    catch
-                    {
-                        teacher = username;
-                    }
-                }
+                string[] allowedTypes = {
+                    "Семинарское занятие", "Практическое занятие",
+                    "Лабораторное занятие", "Лекция",
+                    "Контрольное мероприятие", "Городское практическое занятие"
+                };
 
-                lesson.SubjectID = SubjectID;
-                lesson.GroupID = GroupID;
-                if (!User.IsInRole("ICDA-writer") && !User.IsInRole("K-8Writer"))
-                {
-                    lesson.Signature = teacher;
-                }
-                _context.Add(lesson);
-                await _context.SaveChangesAsync();
+                ViewBag.Themes = themes;
+                ViewData["TypeOfExerciseID"] = new SelectList(
+                    _context.Types.Where(t => allowedTypes.Contains(t.Name)),
+                    "TypeOfExerciseID", "Name"
+                );
 
-                var subject = await _context.Subjects.FindAsync(SubjectID);
-                var group = await _context.Groups.FindAsync(GroupID);
-                var students = _context.Students.Where(s => s.GroupID == GroupID);
-
-                foreach (var student in students)
-                {
-                    Mark mark = new();
-                    mark.Value = "";
-                    mark.Date = lesson.Date;
-                    mark.SubjectID = SubjectID;
-                    mark.GroupID = GroupID;
-                    mark.LessonID = lesson.LessonID;
-                    mark.TypeOfExerciseID = lesson.TypeOfExerciseID;
-                    mark.DepartmentID = subject.DepartmentID;
-                    mark.InstituteID = group.InstituteID;
-                    mark.SpecialityID = group.SpecialityID;
-                    mark.ThemeID = lesson.ThemeID;
-                    mark.StudentID = student.StudentID;
-                    _context.Marks.Add(mark);
-                }
-
-                await _context.SaveChangesAsync();
-
-                return RedirectToAction("Journal", "Journals", new { GroupID, SubjectID });
+                ViewBag.UserName = teacher;
+                ViewBag.Teachers = _context.Teachers.OrderBy(t => t.FamilyName);
+                ViewBag.TeachersNoPC = _context.TeacherNoPCs.OrderBy(t => t.LastName).AsNoTracking();
+                ViewBag.GroupID = GroupID;
+                ViewBag.SubjectID = SubjectID;
+                return View(lesson);
             }
 
-            List<Theme> themes = new();
-            themes = await _context.Themes.Where(t => t.SubjectID == SubjectID && t.Name != "Контрольное занятие").ToListAsync();
-            ViewBag.Themes = themes;
-            ViewData["TypeOfExerciseID"] = new SelectList(_context.Types.Where(t => t.Name == "Семинарское занятие" || t.Name == "Практическое занятие"
-                || t.Name == "Лабораторное занятие" || t.Name == "Лекция" || t.Name == "Контрольное мероприятие" || t.Name == "Городское практическое занятие"), "TypeOfExerciseID", "Name");
-            return View(lesson);
+            lesson.SubjectID = SubjectID;
+            lesson.GroupID = GroupID;
+
+            if (!User.IsInRole("ICDA-writer") && !User.IsInRole("K-8Writer"))
+            {
+                lesson.Signature = teacher;
+            }
+
+            _context.Add(lesson);
+            await _context.SaveChangesAsync();
+
+            var subject = await _context.Subjects.FindAsync(SubjectID);
+            var group = await _context.Groups.FindAsync(GroupID);
+            var students = _context.Students.Where(s => s.GroupID == GroupID);
+
+            foreach (var student in students)
+            {
+                var mark = new Mark
+                {
+                    Value = "",
+                    Date = lesson.Date,
+                    SubjectID = SubjectID,
+                    GroupID = GroupID,
+                    LessonID = lesson.LessonID,
+                    TypeOfExerciseID = lesson.TypeOfExerciseID,
+                    DepartmentID = subject.DepartmentID,
+                    InstituteID = group.InstituteID,
+                    SpecialityID = group.SpecialityID,
+                    ThemeID = lesson.ThemeID,
+                    StudentID = student.StudentID
+                };
+                _context.Marks.Add(mark);
+            }
+
+            await _context.SaveChangesAsync();
+
+            return RedirectToAction("Journal", "Journals", new { GroupID, SubjectID });
         }
+
 
         public IActionResult CreateK(int? GroupID, int? SubjectID)
         {
-            string teacher = "";
-            var username = User.Identity.Name;
-            using (var context = new PrincipalContext(ContextType.Domain, AD.root))
-            {
-                try
-                {
-                    var user = UserPrincipal.FindByIdentity(context, username);
 
-                    if (user != null)
-                    {
-                        teacher = user.DisplayName;
-                    }
-                }
-                catch
-                {
-                    teacher = username;
-                }
-            }
+            string teacher = GetDisplayName();
+
             ViewData["ThemeID"] = new SelectList(_context.Themes.Where(t => t.SubjectID == SubjectID && t.Name == "Контрольное занятие"), "ThemeID", "Name");
             ViewData["TypeOfExerciseID"] = new SelectList(_context.Types.Where(t => t.Name == "Курсовая работа" || t.Name == "Курсовой проект"), "TypeOfExerciseID", "Name");
             var teachers = _context.Teachers.OrderBy(t => t.FamilyName);
@@ -403,69 +378,71 @@ namespace Portal
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> CreateK(int GroupID, int SubjectID, [Bind("LessonID,Date,Comment,FlagX,FlagF,ThemeID,TypeOfExerciseID,GroupID,SubjectID,Signature")] Lesson lessonK)
         {
-            if (lessonK.Date > DateTime.Now)
+            string teacher = GetDisplayName();
+
+            if (!IsLessonDateValid(lessonK.Date, out var errorMessage))
             {
-                ModelState.AddModelError("", "Невозможно создать занятие в будущем!");
+                ModelState.AddModelError("", errorMessage);
             }
 
-            if (ModelState.IsValid)
+            if (!ModelState.IsValid)
             {
-                string teacher = "";
-                var username = User.Identity.Name;
-                using (var context = new PrincipalContext(ContextType.Domain, AD.root))
-                {
-                    try
-                    {
-                        var user = UserPrincipal.FindByIdentity(context, username);
+                ViewData["ThemeID"] = new SelectList(
+                    _context.Themes.Where(t => t.SubjectID == SubjectID && t.Name == "Контрольное занятие"),
+                    "ThemeID", "Name");
 
-                        if (user != null)
-                        {
-                            teacher = user.DisplayName;
-                        }
-                    }
-                    catch
-                    {
-                        teacher = username;
-                    }
-                }
+                ViewData["TypeOfExerciseID"] = new SelectList(
+                    _context.Types.Where(t => t.Name == "Курсовая работа" || t.Name == "Курсовой проект"),
+                    "TypeOfExerciseID", "Name");
 
-                lessonK.SubjectID = SubjectID;
-                lessonK.GroupID = GroupID;
-                if (!User.IsInRole("ICDA-writer") && !User.IsInRole("K-8Writer"))
-                {
-                    lessonK.Signature = teacher;
-                }
-                _context.Add(lessonK);
-                await _context.SaveChangesAsync();
+                var teachers = _context.Teachers.OrderBy(t => t.FamilyName);
+                var teachersNoPC = _context.TeacherNoPCs.OrderBy(t => t.LastName).AsNoTracking();
+                ViewBag.UserName = teacher;
+                ViewBag.TeachersNoPC = teachersNoPC;
+                ViewBag.Teachers = teachers;
+                ViewBag.GroupID = GroupID;
+                ViewBag.SubjectID = SubjectID;
 
-                var subject = await _context.Subjects.FindAsync(SubjectID);
-                var group = await _context.Groups.FindAsync(GroupID);
-                var students = _context.Students.Where(s => s.GroupID == GroupID);
-
-                foreach (var student in students)
-                {
-                    Mark mark = new();
-                    mark.Value = "";
-                    mark.Date = lessonK.Date;
-                    mark.SubjectID = SubjectID;
-                    mark.GroupID = GroupID;
-                    mark.LessonID = lessonK.LessonID;
-                    mark.TypeOfExerciseID = lessonK.TypeOfExerciseID;
-                    mark.DepartmentID = subject.DepartmentID;
-                    mark.InstituteID = group.InstituteID;
-                    mark.SpecialityID = group.SpecialityID;
-                    mark.ThemeID = lessonK.ThemeID;
-                    mark.StudentID = student.StudentID;
-                    _context.Marks.Add(mark);
-                }
-
-                await _context.SaveChangesAsync();
-
-                return RedirectToAction("Journal", "Journals", new { GroupID, SubjectID });
+                return View(lessonK);
             }
-            ViewData["ThemeID"] = new SelectList(_context.Themes.Where(t => t.SubjectID == SubjectID && t.Name == "Контрольное занятие"), "ThemeID", "Name");
-            ViewData["TypeOfExerciseID"] = new SelectList(_context.Types.Where(t => t.Name == "Курсовая работа" || t.Name == "Курсовой проект"), "TypeOfExerciseID", "Name");
-            return View(lessonK);
+
+            lessonK.SubjectID = SubjectID;
+            lessonK.GroupID = GroupID;
+            if (!User.IsInRole("ICDA-writer") && !User.IsInRole("K-8Writer"))
+            {
+                lessonK.Signature = teacher;
+            }
+
+            _context.Add(lessonK);
+            await _context.SaveChangesAsync();
+
+            var subject = await _context.Subjects.FindAsync(SubjectID);
+            var group = await _context.Groups.FindAsync(GroupID);
+            var students = await _context.Students.Where(s => s.GroupID == GroupID).ToListAsync();
+
+            foreach (var student in students)
+            {
+                Mark mark = new()
+                {
+                    Value = "",
+                    Date = lessonK.Date,
+                    SubjectID = SubjectID,
+                    GroupID = GroupID,
+                    LessonID = lessonK.LessonID,
+                    TypeOfExerciseID = lessonK.TypeOfExerciseID,
+                    DepartmentID = subject.DepartmentID,
+                    InstituteID = group.InstituteID,
+                    SpecialityID = group.SpecialityID,
+                    ThemeID = lessonK.ThemeID,
+                    StudentID = student.StudentID
+                };
+
+                _context.Marks.Add(mark);
+            }
+
+            await _context.SaveChangesAsync();
+
+            return RedirectToAction("Journal", "Journals", new { GroupID, SubjectID });
         }
 
         public async Task<IActionResult> Delete(int? id, int? GroupID, int? SubjectID)
@@ -642,6 +619,60 @@ namespace Portal
             ViewBag.SubjectID = SubjectID;
             ViewBag.GroupID = GroupID;
             return View();
+        }
+
+        private string GetDisplayName()
+        {
+            string teacher = "";
+            var username = User.Identity.Name;
+            using var context = new PrincipalContext(ContextType.Domain, AD.root);
+            try
+            {
+                var user = UserPrincipal.FindByIdentity(context, username);
+                teacher = user?.DisplayName ?? username;
+            }
+            catch
+            {
+                teacher = username;
+            }
+            return teacher;
+        }
+
+        private bool IsLessonDateValid(DateTime lessonDate, out string errorMessage)
+        {
+            var today = DateTime.Today;
+            var currentYear = today.Year;
+            var currentMonth = today.Month;
+            var currentDay = today.Day;
+
+            var lessonYear = lessonDate.Year;
+            var lessonMonth = lessonDate.Month;
+
+            if (lessonDate > DateTime.Now)
+            {
+                errorMessage = "Невозможно создать занятие в будущем!";
+                return false;
+            }
+
+            bool isLessonInPreviousMonth =
+                (lessonYear == currentYear && lessonMonth == currentMonth - 1) ||
+                (currentMonth == 1 && lessonYear == currentYear - 1 && lessonMonth == 12);
+
+            if (isLessonInPreviousMonth && currentDay > 9)
+            {
+                errorMessage = "Создание занятий в прошлом месяце возможно только до 10 числа текущего месяца.";
+                return false;
+            }
+
+            var startOfCurrentMonth = new DateTime(currentYear, currentMonth, 1);
+            if (lessonDate < startOfCurrentMonth && !isLessonInPreviousMonth)
+            {
+                errorMessage = "Невозможно создать занятие в более ранних месяцах.";
+                return false;
+            }
+
+            errorMessage = null;
+            return true;
         }
 
         private bool LessonExists(int id)
