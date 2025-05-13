@@ -8,5 +8,6 @@ namespace Portal.ViewModel
         public string Property { get; set; }
         public string Action { get; set; }
         public string Controller { get; set; }
+        public bool IsEdit {  get; set; }
     }
 }

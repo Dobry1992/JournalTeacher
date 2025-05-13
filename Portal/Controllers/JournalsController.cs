@@ -106,7 +106,7 @@ namespace Portal
             var elective = await _context.Electives.FindAsync(electiveID);
             var links = await _context.El_Stud_Links.Where(l => l.ElectiveID == electiveID).ToListAsync();
             List<Student> students = new();
-            foreach (var link in links) 
+            foreach (var link in links)
             {
                 Student student = _context.Students.Find(link.StudentID);
                 students.Add(student);
@@ -134,18 +134,31 @@ namespace Portal
 
         public async Task<IActionResult> Journal(int GroupID, int SubjectID)
         {
+            // Последовательные запросы — безопасно
             var group = await _context.Groups.FindAsync(GroupID);
             var subject = await _context.Subjects.FindAsync(SubjectID);
+
+            if (group == null || subject == null)
+                return NotFound();
+
             var department = await _context.Departments.FindAsync(subject.DepartmentID);
-            var journals = await _context.Journals.Where(j => j.GroupID == GroupID && j.SubjectID == SubjectID).AsNoTracking().ToListAsync();
+
+            var journals = await _context.Journals
+                .Where(j => j.GroupID == GroupID && j.SubjectID == SubjectID)
+                .AsNoTracking()
+                .ToListAsync();
 
             if (!journals.Any())
             {
                 ViewBag.GroupID = GroupID;
                 ViewBag.SubjectID = SubjectID;
-                ViewBag.CountFlag = journals.Count();
+                ViewBag.CountFlag = 0;
                 return View();
             }
+
+            // Предзагружаем все типы занятий
+            var types = await _context.Types.ToListAsync();
+            var typesDict = types.ToDictionary(t => t.Name, t => t.TypeOfExerciseID);
 
             var lessons = await _context.Lessons
                 .Where(l => l.Theme.SubjectID == SubjectID && l.GroupID == GroupID)
@@ -167,248 +180,111 @@ namespace Portal
                 .AsNoTracking()
                 .ToListAsync();
 
-            var typeOfExerciseEKZ = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Экзамен");
-            var typeOfExersiceDZ = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Дифференцированный зачёт");
-            var typeOfExersiceZ = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Зачёт");
-            var typeOfExersiceIO = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Итоговая оценка");
-            var typeOfExersiceKP = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Курсовой проект");
-            var typeOfExersiceKR = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Курсовая работа");
-
             var statementLessons = lessons
-                .Where(l => l.TypeOfExerciseID == typeOfExerciseEKZ.TypeOfExerciseID || l.TypeOfExerciseID == typeOfExersiceDZ.TypeOfExerciseID || l.TypeOfExerciseID == typeOfExersiceZ.TypeOfExerciseID)
-                .OrderBy(l => l.Date);
+                .Where(l => IsType(l.TypeOfExerciseID, typesDict, "Экзамен", "Дифференцированный зачёт", "Зачёт"))
+                .OrderBy(l => l.Date)
+                .ToList();
 
-            foreach (var student in students)
+            var journalMarks = BuildJournalMarks(marks, typesDict);
+            var journalLessons = BuildJournalLessons(lessons, typesDict);
+
+            var journalViewModel = new JournalViewModel
             {
-                var studMarksIO = marks.Where(m => m.StudentID == student.StudentID && m.TypeOfExerciseID == typeOfExersiceIO.TypeOfExerciseID);
-                if (studMarksIO != null)
-                {
-                    foreach (var studMarkIO in studMarksIO)
-                    {
-                        var studMarksF = marks.Where(m => m.FlagF == studMarkIO.FlagF && m.StudentID == student.StudentID && m.TypeOfExerciseID != typeOfExersiceKP.TypeOfExerciseID && m.TypeOfExerciseID != typeOfExersiceKR.TypeOfExerciseID && m.TypeOfExerciseID != typeOfExersiceIO.TypeOfExerciseID && m.TypeOfExerciseID != typeOfExerciseEKZ.TypeOfExerciseID && m.TypeOfExerciseID != typeOfExersiceDZ.TypeOfExerciseID && m.TypeOfExerciseID != typeOfExersiceZ.TypeOfExerciseID);
-                        var studMarkEKZ = marks.FirstOrDefault(m => m.FlagF == studMarkIO.FlagF && m.StudentID == student.StudentID && (m.TypeOfExerciseID == typeOfExerciseEKZ.TypeOfExerciseID || m.TypeOfExerciseID == typeOfExersiceDZ.TypeOfExerciseID || m.TypeOfExerciseID == typeOfExersiceZ.TypeOfExerciseID));
-                        //Экзамен (Дифференцированный зачёт)
-                        if (studMarkEKZ.TypeOfExerciseID == typeOfExerciseEKZ.TypeOfExerciseID || studMarkEKZ.TypeOfExerciseID == typeOfExersiceDZ.TypeOfExerciseID)
-                        {
-                            List<double> marksDouble = new();
-                            foreach (var mark in studMarksF)
-                            {
-                                if (double.TryParse(mark.Value, out double markF))
-                                    marksDouble.Add(markF);
-                            }
+                JournalMarks = journalMarks.OrderBy(m => m.Mark.Date).ToList(),
+                JournalLessons = journalLessons.OrderBy(l => l.Lesson.Date).ToList(),
+                Students = students,
+                Department = department,
+                Subject = subject,
+                Group = group,
+                StatementLessons = statementLessons
+            };
 
-                            if (marksDouble.Count > 0)
-                            {
-                                if (int.TryParse(studMarkEKZ.Value, out int EKZ))
-                                {
-                                    if (EKZ < 4)
-                                    {
-                                        studMarkIO.Value = "Не зачтено";
-                                        _context.Marks.Update(studMarkIO);
-                                    }
-                                    else if ((marksDouble.Sum() / marksDouble.Count) < 4)
-                                    {
-                                        studMarkEKZ.Value = "Н/Д";
-                                        _context.Marks.Update(studMarkEKZ);
-                                        studMarkIO.Value = "Н/Д";
-                                        _context.Marks.Update(studMarkIO);
-                                    }
-                                    else
-                                    {
-                                        studMarkIO.Value = (Math.Round(marksDouble.Sum() * 0.6 / marksDouble.Count + EKZ * 0.4)).ToString();
-                                        _context.Marks.Update(studMarkIO);
-                                    }
-                                }
-                                else if ((marksDouble.Sum() / marksDouble.Count) < 4)
-                                {
-                                    studMarkEKZ.Value = "Н/Д";
-                                    _context.Marks.Update(studMarkEKZ);
-                                    studMarkIO.Value = "Н/Д";
-                                    _context.Marks.Update(studMarkIO);
-                                }
-                                else
-                                {
-                                    studMarkEKZ.Value = "";
-                                    _context.Marks.Update(studMarkEKZ);
-                                    studMarkIO.Value = "";
-                                    _context.Marks.Update(studMarkIO);
-                                }
-                            }
-                            else
-                            {
-                                studMarkEKZ.Value = "Н/Д";
-                                _context.Marks.Update(studMarkEKZ);
-                                studMarkIO.Value = "Н/Д";
-                                _context.Marks.Update(studMarkIO);
-                            }
-                        }
+            return View(journalViewModel);
+        }
 
-                        //Зачёт
-                        if (studMarkEKZ.TypeOfExerciseID == typeOfExersiceZ.TypeOfExerciseID)
-                        {
-                            List<double> marksDouble = new();
-                            foreach (var mark in studMarksF)
-                            {
-                                if (double.TryParse(mark.Value, out var markF))
-                                    marksDouble.Add(markF);
-                            }
+        private List<JournalMarks> BuildJournalMarks(List<Mark> marks, Dictionary<string, int> types)
+        {
+            var list = new List<JournalMarks>();
 
-                            if (marksDouble.Count > 0)
-                            {
-                                if (int.TryParse(studMarkEKZ.Value, out var Z))
-                                {
-                                    double finishMark = marksDouble.Sum() * 0.6 / marksDouble.Count + Z * 0.4;
-                                    if (Z < 4)
-                                    {
-                                        studMarkIO.Value = "Не зачтено";
-                                        studMarkIO.Comment = finishMark.ToString();
-                                        _context.Marks.Update(studMarkIO);
-                                    }
-                                    else if ((marksDouble.Sum() / marksDouble.Count) < 4)
-                                    {
-                                        studMarkEKZ.Value = "Н/Д";
-                                        _context.Marks.Update(studMarkEKZ);
-                                        studMarkIO.Value = "Н/Д";
-                                        _context.Marks.Update(studMarkIO);
-                                    }
-                                    else
-                                    {
-                                        studMarkIO.Value = "Зачтено";
-                                        studMarkIO.Comment = finishMark.ToString();
-                                        _context.Marks.Update(studMarkIO);
-                                    }
-                                }
-                                else if ((marksDouble.Sum() / marksDouble.Count) < 4)
-                                {
-                                    studMarkEKZ.Value = "Н/Д";
-                                    _context.Marks.Update(studMarkEKZ);
-                                    studMarkIO.Value = "Н/Д";
-                                    _context.Marks.Update(studMarkIO);
-                                }
-                                else if (studMarkEKZ.Value == "З")
-                                {
-                                    studMarkIO.Value = "Зачтено";
-                                    _context.Marks.Update(studMarkIO);
-                                }
-                                else if (studMarkEKZ.Value == "НЗ")
-                                {
-                                    studMarkIO.Value = "Не зачтено";
-                                    _context.Marks.Update(studMarkIO);
-                                }
-                                else
-                                {
-                                    studMarkEKZ.Value = "";
-                                    _context.Marks.Update(studMarkEKZ);
-                                    studMarkIO.Value = "";
-                                    _context.Marks.Update(studMarkIO);
-                                }
-                            }
-                            else
-                            {
-                                studMarkEKZ.Value = "Н/Д";
-                                _context.Marks.Update(studMarkEKZ);
-                                studMarkIO.Value = "Н/Д";
-                                _context.Marks.Update(studMarkIO);
-                            }
-                        }
-                    }
-                }
-            }
-            await _context.SaveChangesAsync();
-
-            List<JournalMarks> journalMarks = new();
             foreach (var mark in marks)
             {
-                if (mark.TypeOfExerciseID == typeOfExerciseEKZ.TypeOfExerciseID || mark.TypeOfExerciseID == typeOfExersiceZ.TypeOfExerciseID || mark.TypeOfExerciseID == typeOfExersiceDZ.TypeOfExerciseID)
+                var jm = new JournalMarks
                 {
-                    JournalMarks jm = new();
-                    jm.Mark = mark;
+                    Mark = mark,
+                    Controller = "Marks"
+                };
+
+                if (IsType(mark.TypeOfExerciseID, types, "Экзамен", "Зачёт", "Дифференцированный зачёт"))
+                {
                     jm.Property = "tableMarkEKZ";
                     jm.Action = "Edit";
-                    jm.Controller = "Marks";
-                    journalMarks.Add(jm);
                 }
-                else if (mark.TypeOfExerciseID == typeOfExersiceIO.TypeOfExerciseID)
+                else if (IsType(mark.TypeOfExerciseID, types, "Итоговая оценка"))
                 {
-                    JournalMarks jm = new();
-                    jm.Mark = mark;
                     jm.Property = "tableMarkIO";
                     jm.Action = "Journal";
                     jm.Controller = "Journals";
-                    journalMarks.Add(jm);
                 }
-                else if (mark.TypeOfExerciseID == typeOfExersiceKP.TypeOfExerciseID || mark.TypeOfExerciseID == typeOfExersiceKR.TypeOfExerciseID)
+                else if (IsType(mark.TypeOfExerciseID, types, "Курсовой проект", "Курсовая работа"))
                 {
-                    JournalMarks jm = new();
-                    jm.Mark = mark;
                     jm.Property = "tableMarkK";
                     jm.Action = "Edit";
-                    jm.Controller = "Marks";
-                    journalMarks.Add(jm);
                 }
                 else
                 {
-                    if (mark.FlagF == 0)
-                    {
-                        JournalMarks jm = new();
-                        jm.Mark = mark;
-                        jm.Property = "tableMark";
-                        jm.Action = "Edit";
-                        jm.Controller = "Marks";
-                        journalMarks.Add(jm);
-                    }
-                    else
-                    {
-                        JournalMarks jm = new();
-                        jm.Mark = mark;
-                        jm.Property = "tableMarkSet";
-                        jm.Action = "Edit";
-                        jm.Controller = "Marks";
-                        journalMarks.Add(jm);
-                    }
+                    jm.Property = mark.FlagF == 0 ? "tableMark" : "tableMarkSet";
+                    jm.Action = "Edit";
                 }
+
+                list.Add(jm);
             }
 
-            List<JournalLessons> journalLessons = new();
+            return list;
+        }
+
+        private List<JournalLessons> BuildJournalLessons(List<Lesson> lessons, Dictionary<string, int> types)
+        {
+            var list = new List<JournalLessons>();
+
             foreach (var lesson in lessons)
             {
-                if (lesson.TypeOfExerciseID == typeOfExerciseEKZ.TypeOfExerciseID || lesson.TypeOfExerciseID == typeOfExersiceZ.TypeOfExerciseID || lesson.TypeOfExerciseID == typeOfExersiceDZ.TypeOfExerciseID)
+                var jl = new JournalLessons
                 {
-                    JournalLessons jl = new();
+                    Lesson = lesson,
+                    Controller = "Lessons"
+                };
+
+                if (IsType(lesson.TypeOfExerciseID, types, "Экзамен", "Зачёт", "Дифференцированный зачёт"))
+                {
                     jl.Action = "DeleteF";
-                    jl.Lesson = lesson;
-                    jl.Controller = "Lessons";
-                    journalLessons.Add(jl);
                 }
-                else if (lesson.TypeOfExerciseID == typeOfExersiceIO.TypeOfExerciseID)
+                else if (IsType(lesson.TypeOfExerciseID, types, "Итоговая оценка"))
                 {
-                    JournalLessons jl = new();
                     jl.Action = "Journal";
-                    jl.Lesson = lesson;
                     jl.Controller = "Journals";
-                    journalLessons.Add(jl);
                 }
                 else
                 {
-                    JournalLessons jl = new();
                     jl.Action = "Delete";
-                    jl.Lesson = lesson;
-                    jl.Controller = "Lessons";
-                    journalLessons.Add(jl);
                 }
+
+                list.Add(jl);
             }
 
-            ViewBag.Marks = journalMarks.OrderBy(m => m.Mark.Date);
-            ViewBag.Students = students;
-            ViewBag.GroupID = GroupID;
-            ViewBag.SubjectID = SubjectID;
-            ViewBag.Department = department;
-            ViewBag.Subject = subject;
-            ViewBag.Group = group;
-            ViewBag.StatementLessons = statementLessons;
-
-            return View(journalLessons.OrderBy(l => l.Lesson.Date));
+            return list;
         }
+
+        private bool IsType(int typeId, Dictionary<string, int> dict, params string[] names)
+        {
+            foreach (var name in names)
+            {
+                if (dict.TryGetValue(name, out var id) && id == typeId)
+                    return true;
+            }
+
+            return false;
+        }
+
 
         [Authorize(Roles = "SuperAdmin, ANB-UMCH")]
         public IActionResult Create(int GroupID, int SubjectID)
