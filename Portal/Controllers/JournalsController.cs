@@ -134,7 +134,6 @@ namespace Portal
 
         public async Task<IActionResult> Journal(int GroupID, int SubjectID)
         {
-            // Последовательные запросы — безопасно
             var group = await _context.Groups.FindAsync(GroupID);
             var subject = await _context.Subjects.FindAsync(SubjectID);
 
@@ -156,7 +155,6 @@ namespace Portal
                 return View();
             }
 
-            // Предзагружаем все типы занятий
             var types = await _context.Types.ToListAsync();
             var typesDict = types.ToDictionary(t => t.Name, t => t.TypeOfExerciseID);
 
@@ -205,6 +203,10 @@ namespace Portal
         private List<JournalMarks> BuildJournalMarks(List<Mark> marks, Dictionary<string, int> types)
         {
             var list = new List<JournalMarks>();
+            var today = DateTime.Today;
+            var currentMonth = new DateTime(today.Year, today.Month, 1);
+            var previousMonth = currentMonth.AddMonths(-1);
+            var tenthOfCurrentMonth = new DateTime(today.Year, today.Month, 10);
 
             foreach (var mark in marks)
             {
@@ -213,6 +215,10 @@ namespace Portal
                     Mark = mark,
                     Controller = "Marks"
                 };
+
+                // Логика IsEdit
+                var markMonth = new DateTime(mark.Date.Year, mark.Date.Month, 1);
+                jm.IsEdit = markMonth == currentMonth || (markMonth == previousMonth && today <= tenthOfCurrentMonth);
 
                 if (IsType(mark.TypeOfExerciseID, types, "Экзамен", "Зачёт", "Дифференцированный зачёт"))
                 {
@@ -245,6 +251,10 @@ namespace Portal
         private List<JournalLessons> BuildJournalLessons(List<Lesson> lessons, Dictionary<string, int> types)
         {
             var list = new List<JournalLessons>();
+            var today = DateTime.Today;
+            var currentMonth = new DateTime(today.Year, today.Month, 1);
+            var previousMonth = currentMonth.AddMonths(-1);
+            var tenthOfCurrentMonth = new DateTime(today.Year, today.Month, 10);
 
             foreach (var lesson in lessons)
             {
@@ -253,6 +263,10 @@ namespace Portal
                     Lesson = lesson,
                     Controller = "Lessons"
                 };
+
+                // Логика IsEdit
+                var lessonMonth = new DateTime(lesson.Date.Year, lesson.Date.Month, 1);
+                jl.IsEdit = lessonMonth == currentMonth || (lessonMonth == previousMonth && today <= tenthOfCurrentMonth);
 
                 if (IsType(lesson.TypeOfExerciseID, types, "Экзамен", "Зачёт", "Дифференцированный зачёт"))
                 {
@@ -281,7 +295,6 @@ namespace Portal
                 if (dict.TryGetValue(name, out var id) && id == typeId)
                     return true;
             }
-
             return false;
         }
 
