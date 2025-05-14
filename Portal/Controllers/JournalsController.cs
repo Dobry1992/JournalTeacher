@@ -217,7 +217,30 @@ namespace Portal
                 };
 
                 var markMonth = new DateTime(mark.Date.Year, mark.Date.Month, 1);
-                jm.IsEdit = markMonth == currentMonth || (markMonth == previousMonth && today <= tenthOfCurrentMonth);
+                bool isInAllowedDateRange = markMonth == currentMonth || (markMonth == previousMonth && today <= tenthOfCurrentMonth);
+
+                var allowedTypes = _context.Types
+                    .Where(t => t.Name == "Экзамен" || t.Name == "Зачёт" || t.Name == "Дифференцированный зачёт")
+                    .Select(t => t.TypeOfExerciseID)
+                    .ToList();
+
+                bool isEditAllowedByRules = true;
+
+                if (mark.FlagF != 0 && !allowedTypes.Contains(mark.TypeOfExerciseID))
+                {
+                    isEditAllowedByRules = false;
+                }
+                else if (mark.ChangeCounter >= 3)
+                {
+                    isEditAllowedByRules = false;
+                }
+                else if (mark.ChangeCounter == 1 && allowedTypes.Contains(mark.TypeOfExerciseID))
+                {
+                    isEditAllowedByRules = false;
+                }
+
+                jm.IsEdit = isInAllowedDateRange && isEditAllowedByRules;
+
 
                 if (IsType(mark.TypeOfExerciseID, types, "Экзамен", "Зачёт", "Дифференцированный зачёт"))
                 {
@@ -265,6 +288,11 @@ namespace Portal
 
                 var lessonMonth = new DateTime(lesson.Date.Year, lesson.Date.Month, 1);
                 jl.IsEdit = lessonMonth == currentMonth || (lessonMonth == previousMonth && today <= tenthOfCurrentMonth);
+
+                if (lesson.FlagF != 0)
+                {
+                    jl.IsEdit = false;
+                }
 
                 if (IsType(lesson.TypeOfExerciseID, types, "Экзамен", "Зачёт", "Дифференцированный зачёт"))
                 {
