@@ -10,16 +10,20 @@ using Microsoft.EntityFrameworkCore;
 using Portal.Data;
 using Portal.Models;
 using Portal.Repository;
+using Portal.Services;
 
 namespace Portal
 {
     public class LessonsController : Controller
     {
         private readonly AcademyContext _context;
+        private readonly UserNameService _userNameService;
 
-        public LessonsController(AcademyContext context)
+
+        public LessonsController(AcademyContext context, UserNameService userNameService)
         {
             _context = context;
+            _userNameService = userNameService;
         }
 
         [Authorize(Roles = "SuperAdmin, ANB-UMCH")]
@@ -95,7 +99,7 @@ namespace Portal
 
         public IActionResult CreateF(int? GroupID, int? SubjectID)
         {
-            string teacher = GetDisplayName();
+            string teacher = _userNameService.GetDisplayName();
 
             ViewData["ThemeID"] = new SelectList(
                 _context.Themes.Where(t => t.SubjectID == SubjectID && t.Name == "Контрольное занятие"),
@@ -121,7 +125,7 @@ namespace Portal
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> CreateF(int GroupID, int SubjectID, [Bind("LessonID,Date,Comment,FlagF,ThemeID,TypeOfExerciseID,GroupID,SubjectID,Signature")] Lesson lessonF)
         {
-            string teacher = GetDisplayName();
+            string teacher = _userNameService.GetDisplayName();
 
             if (!IsLessonDateValid(lessonF.Date, out string errorMessage))
             {
@@ -253,7 +257,7 @@ namespace Portal
 
         public IActionResult Create(int? GroupID, int? SubjectID)
         {
-            string teacher = GetDisplayName();
+            string teacher = _userNameService.GetDisplayName();
 
             var themes = _context.Themes
                 .Where(t => t.SubjectID == SubjectID && t.Name != "Контрольное занятие")
@@ -284,7 +288,7 @@ namespace Portal
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(int GroupID, int SubjectID, [Bind("LessonID,Date,Comment,FlagF,ThemeID,TypeOfExerciseID,GroupID,SubjectID,Signature")] Lesson lesson)
         {
-            string teacher = GetDisplayName();
+            string teacher = _userNameService.GetDisplayName();
 
             if (!IsLessonDateValid(lesson.Date, out var errorMessage))
             {
@@ -360,7 +364,7 @@ namespace Portal
         public IActionResult CreateK(int? GroupID, int? SubjectID)
         {
 
-            string teacher = GetDisplayName();
+            string teacher = _userNameService.GetDisplayName();
 
             ViewData["ThemeID"] = new SelectList(_context.Themes.Where(t => t.SubjectID == SubjectID && t.Name == "Контрольное занятие"), "ThemeID", "Name");
             ViewData["TypeOfExerciseID"] = new SelectList(_context.Types.Where(t => t.Name == "Курсовая работа" || t.Name == "Курсовой проект"), "TypeOfExerciseID", "Name");
@@ -378,7 +382,7 @@ namespace Portal
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> CreateK(int GroupID, int SubjectID, [Bind("LessonID,Date,Comment,FlagX,FlagF,ThemeID,TypeOfExerciseID,GroupID,SubjectID,Signature")] Lesson lessonK)
         {
-            string teacher = GetDisplayName();
+            string teacher = _userNameService.GetDisplayName();
 
             if (!IsLessonDateValid(lessonK.Date, out var errorMessage))
             {
@@ -471,24 +475,7 @@ namespace Portal
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id, int GroupID, int SubjectID)
         {
-            string teacher = "";
-            var username = User.Identity.Name;
-            using (var context = new PrincipalContext(ContextType.Domain, AD.root))
-            {
-                try
-                {
-                    var user = UserPrincipal.FindByIdentity(context, username);
-
-                    if (user != null)
-                    {
-                        teacher = user.DisplayName;
-                    }
-                }
-                catch
-                {
-                    teacher = username;
-                }
-            }
+            string teacher = _userNameService.GetDisplayName(); ;
 
             var lesson = await _context.Lessons.FindAsync(id);
             var marks = _context.Marks.Where(m => m.LessonID == id);
@@ -539,25 +526,8 @@ namespace Portal
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteFConfirmed(int id, int GroupID, int SubjectID)
         {
-            string teacher = "";
-            var username = User.Identity.Name;
-            using (var context = new PrincipalContext(ContextType.Domain, AD.root))
-            {
-                try
-                {
-                    var user = UserPrincipal.FindByIdentity(context, username);
-
-                    if (user != null)
-                    {
-                        teacher = user.DisplayName;
-                    }
-                }
-                catch
-                {
-                    teacher = username;
-                }
-            }
-
+            string teacher = _userNameService.GetDisplayName(); ;
+           
             var typeOfExerciseIO = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Итоговая оценка");
 
             var lesson = await _context.Lessons.FindAsync(id);
@@ -619,23 +589,6 @@ namespace Portal
             ViewBag.SubjectID = SubjectID;
             ViewBag.GroupID = GroupID;
             return View();
-        }
-
-        private string GetDisplayName()
-        {
-            string teacher = "";
-            var username = User.Identity.Name;
-            using var context = new PrincipalContext(ContextType.Domain, AD.root);
-            try
-            {
-                var user = UserPrincipal.FindByIdentity(context, username);
-                teacher = user?.DisplayName ?? username;
-            }
-            catch
-            {
-                teacher = username;
-            }
-            return teacher;
         }
 
         private bool IsLessonDateValid(DateTime lessonDate, out string errorMessage)

@@ -6,6 +6,7 @@ using Microsoft.Extensions.Hosting;
 using Portal.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Server.IISIntegration;
+using Portal.Services;
 
 namespace Portal
 {
@@ -29,6 +30,8 @@ namespace Portal
             services.AddMvc();
             services.AddRazorPages();
             services.AddAuthentication(IISDefaults.AuthenticationScheme);
+            services.AddHttpContextAccessor();
+            services.AddScoped<UserNameService>();
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
