@@ -47,40 +47,40 @@ namespace Portal.Controllers
         public async Task<IActionResult> Edit(int? MarkID, int? GroupID, int? SubjectID)
         {
             if (MarkID == null)
-            {
                 return NotFound();
-            }
+
+            var mark = await _context.Marks.FindAsync(MarkID);
+            if (mark == null)
+                return NotFound();
 
             string teacher = _userNameService.GetDisplayName();
 
-            var mark = await _context.Marks.FindAsync(MarkID);
-
-            if (mark == null)
-            {
-                return NotFound();
-            }
-            var teachers = _context.Teachers.OrderBy(t => t.FamilyName).AsNoTracking();
-            var teachersNoPC = _context.TeacherNoPCs.OrderBy(t => t.LastName).AsNoTracking();
             ViewBag.UserName = teacher;
-            ViewBag.TeachersNoPC = teachersNoPC;
-            ViewBag.Teachers = teachers;
+            ViewBag.Teachers = _context.Teachers.OrderBy(t => t.FamilyName).AsNoTracking();
+            ViewBag.TeachersNoPC = _context.TeacherNoPCs.OrderBy(t => t.LastName).AsNoTracking();
             ViewBag.GroupID = GroupID;
             ViewBag.SubjectID = SubjectID;
+
             return View(mark);
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int MarkID, int? GroupID, int? SubjectID, [Bind("MarkID,Value,Date,Comment,SignatureOfTeacher,HistoryOfMark,SubjectID,GroupID,LessonID,TypeOfExerciseID,DepartmentID,SpecialityID,ThemeID,StudentID,FlagX,FlagF,InstituteID")] Mark mark)
+        public async Task<IActionResult> Edit(int MarkID, int? GroupID, int? SubjectID,[Bind("MarkID,Value,Date,Comment,SignatureOfTeacher,HistoryOfMark,SubjectID,GroupID,LessonID,TypeOfExerciseID,DepartmentID,SpecialityID,ThemeID,StudentID,FlagX,FlagF,InstituteID,ChangeCounter")] Mark mark)
         {
             if (MarkID != mark.MarkID)
-            {
                 return NotFound();
-            }
+
+            if (!ModelState.IsValid)
+                return View(mark);
 
             string teacher = _userNameService.GetDisplayName();
+            bool isWriter = User.IsInRole("ICDA-writer") || User.IsInRole("K-8Writer");
 
-            if (mark.HistoryOfMark != null)
+            if (!isWriter)
+                mark.SignatureOfTeacher = teacher;
+
+            if (!string.IsNullOrWhiteSpace(mark.HistoryOfMark))
             {
                 var subject = await _context.Subjects.FindAsync(mark.SubjectID);
                 var theme = await _context.Themes.FindAsync(mark.ThemeID);
@@ -88,55 +88,38 @@ namespace Portal.Controllers
                 var student = await _context.Students.FindAsync(mark.StudentID);
                 var group = await _context.Groups.FindAsync(mark.GroupID);
 
-                Event e = new();
-                e.Date = DateTime.Now;
-                if (User.IsInRole("ICDA-writer") || User.IsInRole("K-8Writer"))
+                if (subject != null && theme != null && type != null && student != null && group != null)
                 {
-                    e.Teacher = mark.SignatureOfTeacher;
+                    var e = new Event
+                    {
+                        Date = DateTime.Now,
+                        Teacher = mark.SignatureOfTeacher,
+                        Log = $"Изменение оценки от {mark.Date:dd.MM.yyyy}, предмет: {subject.Name}, тема: {theme.Name}, тип занятия: {type.Name}, курсант/слушатель: {student.LastName} {student.Name[0]}.{student.Surname[0]}. группа: {group.Name}"
+                    };
+
+                    _context.Events.Add(e);
+                    await _context.SaveChangesAsync();
                 }
-                else
-                {
-                    e.Teacher = teacher;
-                }
-                e.Log = "Изменение оценки от " + mark.Date.ToShortDateString() + ", предмет: " + subject.Name + ", тема: " + theme.Name + ", тип занятия: " + type.Name + ", курсант/слушатель: "
-                    + student.LastName + " " + student.Name[0] + "." + student.Surname[0] + "." + ", группа: " + group.Name;
-                _context.Events.Update(e);
+            }
+
+            string logEntry = $"{mark.Value} - {DateTime.Now:dd.MM.yyyy} - {mark.SignatureOfTeacher}</br>";
+            mark.HistoryOfMark = (mark.HistoryOfMark ?? string.Empty) + logEntry;
+            mark.ChangeCounter++;
+
+            try
+            {
+                _context.Marks.Update(mark);
                 await _context.SaveChangesAsync();
             }
-
-            if (ModelState.IsValid)
+            catch (DbUpdateConcurrencyException)
             {
-                try
-                {
-                    if (User.IsInRole("ICDA-writer") || User.IsInRole("K-8Writer"))
-                    {
-                        mark.HistoryOfMark += mark.Value + " - " + DateTime.Now.ToShortDateString() + " - " + mark.SignatureOfTeacher + "</br>";
-                        _context.Marks.Update(mark);
-                        await _context.SaveChangesAsync();
-                    }
-                    else
-                    {
-                        mark.SignatureOfTeacher = teacher;
-                        mark.HistoryOfMark += mark.Value + " - " + DateTime.Now.ToShortDateString() + " - " + teacher + "</br>";
-                        _context.Marks.Update(mark);
-                        await _context.SaveChangesAsync();
-                    }
-                }
-                catch
-                {
-                    if (!MarkExists(mark.MarkID))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
-                }
-
-                return RedirectToAction("Journal", "Journals", new { GroupID, SubjectID });
+                if (!MarkExists(mark.MarkID))
+                    return NotFound();
+                else
+                    throw;
             }
-            return View(mark);
+
+            return RedirectToAction("Journal", "Journals", new { GroupID, SubjectID });
         }
 
         private bool MarkExists(int id)
