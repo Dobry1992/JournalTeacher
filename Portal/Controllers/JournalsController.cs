@@ -263,7 +263,6 @@ namespace Portal
                     Controller = "Lessons"
                 };
 
-                // Логика IsEdit
                 var lessonMonth = new DateTime(lesson.Date.Year, lesson.Date.Month, 1);
                 jl.IsEdit = lessonMonth == currentMonth || (lessonMonth == previousMonth && today <= tenthOfCurrentMonth);
 

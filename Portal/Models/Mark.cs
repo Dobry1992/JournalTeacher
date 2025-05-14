@@ -23,6 +23,7 @@ namespace Portal.Models
         public int TypeOfExerciseID { get; set; }
         public int DepartmentID { get; set; }
         public int SpecialityID { get; set; }
+        public int ChangeCounter { get; set; }
 
         public int ThemeID { get; set; } 
         public Theme Theme { get; set; } 
