@@ -367,7 +367,7 @@ namespace Portal
             if (!ModelState.IsValid)
             {
                 var themes = await _context.Themes
-                    .Where(t => t.SubjectID == SubjectID && t.Name != "Контрольное занятие")
+                    .Where(t => t.SubjectID == SubjectID)
                     .ToListAsync();
 
                 string[] allowedTypes = {
@@ -428,7 +428,6 @@ namespace Portal
 
             return RedirectToAction("Journal", "Journals", new { GroupID, SubjectID });
         }
-
 
         public IActionResult CreateK(int? GroupID, int? SubjectID)
         {
