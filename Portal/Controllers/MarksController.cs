@@ -66,7 +66,7 @@ namespace Portal.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int MarkID, int? GroupID, int? SubjectID,[Bind("MarkID,Value,Date,Comment,SignatureOfTeacher,HistoryOfMark,SubjectID,GroupID,LessonID,TypeOfExerciseID,DepartmentID,SpecialityID,ThemeID,StudentID,FlagX,FlagF,InstituteID,ChangeCounter")] Mark mark)
+        public async Task<IActionResult> Edit(int MarkID, int? GroupID, int? SubjectID, [Bind("MarkID,Value,Date,Comment,SignatureOfTeacher,HistoryOfMark,SubjectID,GroupID,LessonID,TypeOfExerciseID,DepartmentID,SpecialityID,ThemeID,StudentID,FlagX,FlagF,InstituteID,ChangeCounter")] Mark mark)
         {
             if (MarkID != mark.MarkID)
                 return NotFound();
@@ -109,6 +109,32 @@ namespace Portal.Controllers
             try
             {
                 _context.Marks.Update(mark);
+
+
+                //продолжить работу
+                if (mark.FlagF != 0)
+                {
+                    var requiredTypes = await _context.Types
+                        .Where(t => t.Name == "Зачёт" || t.Name == "Дифференцированный зачёт" || t.Name == "Экзамен")
+                        .ToListAsync();
+
+                    var requiredTypeIds = requiredTypes.Select(t => t.TypeOfExerciseID).ToList();
+
+                    if (requiredTypeIds.Count < 3)
+                    {
+                        throw new InvalidOperationException("Не все типы занятий найдены в справочнике.");
+                    }
+
+                    var markIA = await _context.Marks.FirstOrDefaultAsync(m =>
+                        m.FlagF == mark.FlagF && requiredTypeIds.Contains(m.TypeOfExerciseID));
+
+                    var marks = await _context.Marks
+                        .Where(m => m.FlagF == mark.FlagF)
+                        .ToListAsync();
+
+
+                }
+
                 await _context.SaveChangesAsync();
             }
             catch (DbUpdateConcurrencyException)
