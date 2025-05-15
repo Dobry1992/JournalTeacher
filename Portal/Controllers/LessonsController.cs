@@ -215,39 +215,108 @@ namespace Portal
                 _context.Marks.Update(mark);
             }
 
+            var controlType = _context.Types.FirstOrDefault(t => t.Name == "Контрольное мероприятие");
+            var controlTypeId = controlType?.TypeOfExerciseID;
+
+            if (controlTypeId == null)
+            {
+                throw new InvalidOperationException("Тип 'Контрольное мероприятие' не найден в базе.");
+            }
+
             foreach (var student in students)
             {
-                _context.Marks.AddRange(
-                    new Mark
+                var marks = new List<double>();
+                var controlMarks = new List<double>();
+
+                foreach (var mark in previousMarks)
+                {
+                    if (mark.StudentID == student.StudentID && double.TryParse(mark.Value, out double value))
                     {
-                        Value = "",
-                        Date = lessonF.Date,
-                        SubjectID = SubjectID,
-                        GroupID = GroupID,
-                        LessonID = lessonF.LessonID,
-                        TypeOfExerciseID = lessonF.TypeOfExerciseID,
-                        DepartmentID = subject.DepartmentID,
-                        InstituteID = group.InstituteID,
-                        SpecialityID = group.SpecialityID,
-                        ThemeID = lessonF.ThemeID,
-                        StudentID = student.StudentID,
-                        FlagF = lessonF.FlagF
-                    },
-                    new Mark
-                    {
-                        Value = "",
-                        Date = lessonFinal.Date,
-                        SubjectID = SubjectID,
-                        GroupID = GroupID,
-                        LessonID = lessonFinal.LessonID,
-                        TypeOfExerciseID = typeFinal.TypeOfExerciseID,
-                        DepartmentID = subject.DepartmentID,
-                        InstituteID = group.InstituteID,
-                        SpecialityID = group.SpecialityID,
-                        ThemeID = lessonFinal.ThemeID,
-                        StudentID = student.StudentID,
-                        FlagF = lessonFinal.FlagF
-                    });
+                        marks.Add(value);
+
+                        if (mark.TypeOfExerciseID == controlTypeId)
+                        {
+                            controlMarks.Add(value);
+                        }
+                    }
+                }
+
+                bool hasLowAverage = marks.Any() && marks.Average() < 4;
+                bool hasBadControlMarks = controlMarks.Any(m => m == 1 || m == 2 || m == 3);
+                bool hasMarks = !marks.Any() || !controlMarks.Any();
+
+                if (hasLowAverage || hasBadControlMarks || hasMarks)
+                {
+                    _context.Marks.AddRange(
+                        new Mark
+                        {
+                            Value = "Недопуск",
+                            Date = lessonF.Date,
+                            SubjectID = SubjectID,
+                            GroupID = GroupID,
+                            LessonID = lessonF.LessonID,
+                            TypeOfExerciseID = lessonF.TypeOfExerciseID,
+                            DepartmentID = subject.DepartmentID,
+                            InstituteID = group.InstituteID,
+                            SpecialityID = group.SpecialityID,
+                            ThemeID = lessonF.ThemeID,
+                            StudentID = student.StudentID,
+                            FlagF = lessonF.FlagF,
+                            ChangeCounter = 3
+                        },
+                        new Mark
+                        {
+                            Value = "Недопуск",
+                            Date = lessonFinal.Date,
+                            SubjectID = SubjectID,
+                            GroupID = GroupID,
+                            LessonID = lessonFinal.LessonID,
+                            TypeOfExerciseID = typeFinal.TypeOfExerciseID,
+                            DepartmentID = subject.DepartmentID,
+                            InstituteID = group.InstituteID,
+                            SpecialityID = group.SpecialityID,
+                            ThemeID = lessonFinal.ThemeID,
+                            StudentID = student.StudentID,
+                            FlagF = lessonFinal.FlagF,
+                            ChangeCounter = 3
+                        });
+                }
+                else
+                {
+                    _context.Marks.AddRange(
+                        new Mark
+                        {
+                            Value = "",
+                            Date = lessonF.Date,
+                            SubjectID = SubjectID,
+                            GroupID = GroupID,
+                            LessonID = lessonF.LessonID,
+                            TypeOfExerciseID = lessonF.TypeOfExerciseID,
+                            DepartmentID = subject.DepartmentID,
+                            InstituteID = group.InstituteID,
+                            SpecialityID = group.SpecialityID,
+                            ThemeID = lessonF.ThemeID,
+                            StudentID = student.StudentID,
+                            FlagF = lessonF.FlagF,
+                            ChangeCounter = 0
+                        },
+                        new Mark
+                        {
+                            Value = "",
+                            Date = lessonFinal.Date,
+                            SubjectID = SubjectID,
+                            GroupID = GroupID,
+                            LessonID = lessonFinal.LessonID,
+                            TypeOfExerciseID = typeFinal.TypeOfExerciseID,
+                            DepartmentID = subject.DepartmentID,
+                            InstituteID = group.InstituteID,
+                            SpecialityID = group.SpecialityID,
+                            ThemeID = lessonFinal.ThemeID,
+                            StudentID = student.StudentID,
+                            FlagF = lessonFinal.FlagF,
+                            ChangeCounter = 3
+                        });
+                }
             }
 
             await _context.SaveChangesAsync();
@@ -260,7 +329,7 @@ namespace Portal
             string teacher = _userNameService.GetDisplayName();
 
             var themes = _context.Themes
-                .Where(t => t.SubjectID == SubjectID && t.Name != "Контрольное занятие")
+                .Where(t => t.SubjectID == SubjectID)
                 .ToList();
 
             string[] allowedTypes = {
@@ -527,7 +596,7 @@ namespace Portal
         public async Task<IActionResult> DeleteFConfirmed(int id, int GroupID, int SubjectID)
         {
             string teacher = _userNameService.GetDisplayName(); ;
-           
+
             var typeOfExerciseIO = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Итоговая оценка");
 
             var lesson = await _context.Lessons.FindAsync(id);
