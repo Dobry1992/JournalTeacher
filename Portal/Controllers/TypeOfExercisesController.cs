@@ -23,7 +23,7 @@ namespace Portal.Controllers
         {
             List<TypeOfExercise> tps = new();
             var _types = from t in _context.Types
-                         where t.Name == "Контрольный срез" || t.Name == "Экзамен" || t.Name == "Дифференцированный зачёт" || t.Name == "Зачёт" || t.Name == "Итоговая оценка"
+                         where t.Name == "Контрольное мероприятие" || t.Name == "Экзамен" || t.Name == "Дифференцированный зачёт" || t.Name == "Зачёт" || t.Name == "Итоговая оценка"
                          select t;
             foreach (TypeOfExercise t in _types)
             {
@@ -50,6 +50,7 @@ namespace Portal.Controllers
                     new TypeOfExercise{ Name = "Дипломная работа"},
                     new TypeOfExercise{ Name = "Дипломный проект"},
                     new TypeOfExercise{ Name = "Магистерская работа"},
+                    new TypeOfExercise{ Name = "Контрольное мероприятие" }
                 };
                 foreach (TypeOfExercise _type in types)
                 {

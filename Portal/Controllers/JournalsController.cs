@@ -258,6 +258,11 @@ namespace Portal
                     jm.Property = "tableMarkK";
                     jm.Action = "Edit";
                 }
+                else if (IsType(mark.TypeOfExerciseID, types, "Контрольное мероприятие"))
+                {
+                    jm.Property = "ControlEventMark";
+                    jm.Action = "Edit";
+                }
                 else
                 {
                     jm.Property = mark.FlagF == 0 ? "tableMark" : "tableMarkSet";

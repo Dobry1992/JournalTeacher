@@ -7,10 +7,9 @@ using Microsoft.Extensions.Logging;
 using Portal.Data;
 using Portal.Models;
 using Portal.Models.Election;
-using Portal.Repository;
+using Portal.Services;
 using System;
 using System.Diagnostics;
-using System.DirectoryServices.AccountManagement;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -23,34 +22,21 @@ namespace Portal.Controllers
         private readonly NewsContext _context;
         private readonly AcademyContext _academyContext;
         private readonly IWebHostEnvironment _appEnvironment;
+        private readonly UserNameService _userNameService;
 
-        public HomeController(ILogger<HomeController> logger, NewsContext context, AcademyContext academyContext, IWebHostEnvironment appEnvironment)
+        public HomeController(ILogger<HomeController> logger, NewsContext context, AcademyContext academyContext, IWebHostEnvironment appEnvironment, UserNameService userNameService)
         {
             _logger = logger;
             _context = context;
             _academyContext = academyContext;
             _appEnvironment = appEnvironment;
+            _userNameService = userNameService;
         }
 
         public IActionResult Index()
         {
-            var username = User.Identity.Name;
-            using (var context = new PrincipalContext(ContextType.Domain, AD.root))
-            {
-                try
-                {
-                    var user = UserPrincipal.FindByIdentity(context, username);
-
-                    if (user != null)
-                    {
-                        ViewBag.FullName = user.DisplayName;
-                    }
-                }
-                catch
-                {
-                    ViewBag.FullName = username;
-                }
-            }
+            string teacher = _userNameService.GetDisplayName();
+            ViewBag.FullName = teacher;
 
             var birthdays = _context.Birthdays
                 .Where(b => b.Date.Year == DateTime.Now.Year && b.Date.Month == DateTime.Now.Month && b.Date.Day == DateTime.Now.Day)
@@ -82,23 +68,8 @@ namespace Portal.Controllers
         [Authorize(Roles = "SuperAdmin, ANB-UMCH")]
         public IActionResult Create()
         {
-            var username = User.Identity.Name;
-            using (var context = new PrincipalContext(ContextType.Domain, AD.root))
-            {
-                try
-                {
-                    var user = UserPrincipal.FindByIdentity(context, username);
-
-                    if (user != null)
-                    {
-                        ViewBag.FullName = user.DisplayName;
-                    }
-                }
-                catch
-                {
-                    ViewBag.FullName = username;
-                }
-            }
+            string teacher = _userNameService.GetDisplayName();
+            ViewBag.FullName = teacher;
             return View();
         }
 
@@ -141,23 +112,8 @@ namespace Portal.Controllers
 
         public IActionResult IndexElection()
         {
-            var username = User.Identity.Name;
-            using (var context = new PrincipalContext(ContextType.Domain, AD.root))
-            {
-                try
-                {
-                    var user = UserPrincipal.FindByIdentity(context, username);
-
-                    if (user != null)
-                    {
-                        ViewBag.FullName = user.DisplayName;
-                    }
-                }
-                catch
-                {
-                    ViewBag.FullName = username;
-                }
-            }
+            string teacher = _userNameService.GetDisplayName();
+            ViewBag.FullName = teacher;
 
             var news = _context.ElectionArticles
                 .Include(n => n.Images)
@@ -168,23 +124,9 @@ namespace Portal.Controllers
         [Authorize(Roles = "SuperAdmin, Journalist")]
         public IActionResult CreateElectionArticle()
         {
-            var username = User.Identity.Name;
-            using (var context = new PrincipalContext(ContextType.Domain, AD.root))
-            {
-                try
-                {
-                    var user = UserPrincipal.FindByIdentity(context, username);
+            string teacher = _userNameService.GetDisplayName();
+            ViewBag.FullName = teacher;
 
-                    if (user != null)
-                    {
-                        ViewBag.FullName = user.DisplayName;
-                    }
-                }
-                catch
-                {
-                    ViewBag.FullName = username;
-                }
-            }
             return View();
         }
 
@@ -245,23 +187,9 @@ namespace Portal.Controllers
                 return NotFound();
             }
 
-            var username = User.Identity.Name;
-            using (var context = new PrincipalContext(ContextType.Domain, AD.root))
-            {
-                try
-                {
-                    var user = UserPrincipal.FindByIdentity(context, username);
+            string teacher = _userNameService.GetDisplayName();
+            ViewBag.FullName = teacher;
 
-                    if (user != null)
-                    {
-                        ViewBag.FullName = user.DisplayName;
-                    }
-                }
-                catch
-                {
-                    ViewBag.FullName = username;
-                }
-            }
             return View(article);
         }
 
@@ -312,23 +240,8 @@ namespace Portal.Controllers
                 return NotFound();
             }
 
-            var username = User.Identity.Name;
-            using (var context = new PrincipalContext(ContextType.Domain, AD.root))
-            {
-                try
-                {
-                    var user = UserPrincipal.FindByIdentity(context, username);
-
-                    if (user != null)
-                    {
-                        ViewBag.FullName = user.DisplayName;
-                    }
-                }
-                catch
-                {
-                    ViewBag.FullName = username;
-                }
-            }
+            string teacher = _userNameService.GetDisplayName();
+            ViewBag.FullName = teacher;
 
             return View(article);
         }

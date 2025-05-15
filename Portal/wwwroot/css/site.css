@@ -124,6 +124,16 @@ body {
     transition: 0.5s;
 }
 
+.ControlEventMark {
+    background-color: #FFF3CD;
+    color: #856404;
+    transition: background-color 0.2s ease;
+}
+
+.ControlEventMark:hover {
+    background-color: #FFE8A1;
+}
+
 .tableMarkIO {
     background-color: darksalmon;
 }
