@@ -19,7 +19,7 @@
         </div>
     </section>
 </div>
-@if (!Model.JournalLessons.Any())
+@if (ViewBag.CountFlag == 0)
 {
     <div style="padding:15%">
         <section class="content">
@@ -35,8 +35,8 @@
                             @if (User.IsInRole("ANB-UMCH") || User.IsInRole("SuperAdmin"))
                             {
                                 <a class="btn btn-danger text-white"
-                                   asp-route-SubjectID="@Model.Subject.SubjectID"
-                                   asp-route-GroupID="@Model.Group.GroupID"
+                                   asp-route-SubjectID="@ViewBag.SubjectID"
+                                   asp-route-GroupID="@ViewBag.GroupID"
                                    asp-controller="Journals"
                                    asp-action="Create">
                                     Сформировать журнал

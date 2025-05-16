@@ -147,6 +147,8 @@ namespace Portal
                 .AsNoTracking()
                 .ToListAsync();
 
+            ViewBag.CountFlag = 1;
+
             if (!journals.Any())
             {
                 ViewBag.GroupID = GroupID;
