@@ -134,72 +134,12 @@ namespace Portal
 
         public async Task<IActionResult> Journal(int GroupID, int SubjectID)
         {
-            var group = await _context.Groups.FindAsync(GroupID);
-            var subject = await _context.Subjects.FindAsync(SubjectID);
+            return await PrepareJournalView(GroupID, SubjectID, "Journal");
+        }
 
-            if (group == null || subject == null)
-                return NotFound();
-
-            var department = await _context.Departments.FindAsync(subject.DepartmentID);
-
-            var journals = await _context.Journals
-                .Where(j => j.GroupID == GroupID && j.SubjectID == SubjectID)
-                .AsNoTracking()
-                .ToListAsync();
-
-            ViewBag.CountFlag = 1;
-
-            if (!journals.Any())
-            {
-                ViewBag.GroupID = GroupID;
-                ViewBag.SubjectID = SubjectID;
-                ViewBag.CountFlag = 0;
-                return View();
-            }
-
-            var types = await _context.Types.ToListAsync();
-            var typesDict = types.ToDictionary(t => t.Name, t => t.TypeOfExerciseID);
-
-            var lessons = await _context.Lessons
-                .Where(l => l.Theme.SubjectID == SubjectID && l.GroupID == GroupID)
-                .OrderBy(l => l.Date)
-                .Include(l => l.TypeOfExercise)
-                .Include(l => l.Theme)
-                .AsNoTracking()
-                .ToListAsync();
-
-            var students = await _context.Students
-                .Where(s => s.GroupID == GroupID && s.Status == true)
-                .OrderBy(s => s.LastName)
-                .AsNoTracking()
-                .ToListAsync();
-
-            var marks = await _context.Marks
-                .Where(m => m.SubjectID == SubjectID && m.GroupID == GroupID)
-                .OrderBy(m => m.Date)
-                .AsNoTracking()
-                .ToListAsync();
-
-            var statementLessons = lessons
-                .Where(l => IsType(l.TypeOfExerciseID, typesDict, "Экзамен", "Дифференцированный зачёт", "Зачёт"))
-                .OrderBy(l => l.Date)
-                .ToList();
-
-            var journalMarks = BuildJournalMarks(marks, typesDict);
-            var journalLessons = BuildJournalLessons(lessons, typesDict);
-
-            var journalViewModel = new JournalViewModel
-            {
-                JournalMarks = journalMarks.OrderBy(m => m.Mark.Date).ToList(),
-                JournalLessons = journalLessons.OrderBy(l => l.Lesson.Date).ToList(),
-                Students = students,
-                Department = department,
-                Subject = subject,
-                Group = group,
-                StatementLessons = statementLessons
-            };
-
-            return View(journalViewModel);
+        public async Task<IActionResult> AdjustedJournal(int GroupID, int SubjectID)
+        {
+            return await PrepareJournalView(GroupID, SubjectID, "AdjustedJournal");
         }
 
         private List<JournalMarks> BuildJournalMarks(List<Mark> marks, Dictionary<string, int> types)
@@ -331,6 +271,75 @@ namespace Portal
             return false;
         }
 
+        private async Task<IActionResult> PrepareJournalView(int GroupID, int SubjectID, string viewName)
+        {
+            var group = await _context.Groups.FindAsync(GroupID);
+            var subject = await _context.Subjects.FindAsync(SubjectID);
+
+            if (group == null || subject == null)
+                return NotFound();
+
+            var department = await _context.Departments.FindAsync(subject.DepartmentID);
+
+            var journals = await _context.Journals
+                .Where(j => j.GroupID == GroupID && j.SubjectID == SubjectID)
+                .AsNoTracking()
+                .ToListAsync();
+
+            ViewBag.CountFlag = 1;
+
+            if (!journals.Any())
+            {
+                ViewBag.GroupID = GroupID;
+                ViewBag.SubjectID = SubjectID;
+                ViewBag.CountFlag = 0;
+                return View(viewName);
+            }
+
+            var types = await _context.Types.ToListAsync();
+            var typesDict = types.ToDictionary(t => t.Name, t => t.TypeOfExerciseID);
+
+            var lessons = await _context.Lessons
+                .Where(l => l.Theme.SubjectID == SubjectID && l.GroupID == GroupID)
+                .OrderBy(l => l.Date)
+                .Include(l => l.TypeOfExercise)
+                .Include(l => l.Theme)
+                .AsNoTracking()
+                .ToListAsync();
+
+            var students = await _context.Students
+                .Where(s => s.GroupID == GroupID && s.Status == true)
+                .OrderBy(s => s.LastName)
+                .AsNoTracking()
+                .ToListAsync();
+
+            var marks = await _context.Marks
+                .Where(m => m.SubjectID == SubjectID && m.GroupID == GroupID)
+                .OrderBy(m => m.Date)
+                .AsNoTracking()
+                .ToListAsync();
+
+            var statementLessons = lessons
+                .Where(l => IsType(l.TypeOfExerciseID, typesDict, "Экзамен", "Дифференцированный зачёт", "Зачёт"))
+                .OrderBy(l => l.Date)
+                .ToList();
+
+            var journalMarks = BuildJournalMarks(marks, typesDict);
+            var journalLessons = BuildJournalLessons(lessons, typesDict);
+
+            var journalViewModel = new JournalViewModel
+            {
+                JournalMarks = journalMarks.OrderBy(m => m.Mark.Date).ToList(),
+                JournalLessons = journalLessons.OrderBy(l => l.Lesson.Date).ToList(),
+                Students = students,
+                Department = department,
+                Subject = subject,
+                Group = group,
+                StatementLessons = statementLessons
+            };
+
+            return View(viewName, journalViewModel);
+        }
 
         [Authorize(Roles = "SuperAdmin, ANB-UMCH")]
         public IActionResult Create(int GroupID, int SubjectID)

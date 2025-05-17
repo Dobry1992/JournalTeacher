@@ -1,5 +1,4 @@
-﻿using DocumentFormat.OpenXml.Office2010.ExcelAc;
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Portal.Data;
@@ -69,7 +68,7 @@ namespace Portal.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int MarkID, int? GroupID, int? SubjectID,[Bind("MarkID,Value,Date,Comment,SignatureOfTeacher,HistoryOfMark,SubjectID,GroupID,LessonID,TypeOfExerciseID,DepartmentID,SpecialityID,ThemeID,StudentID,FlagX,FlagF,InstituteID,ChangeCounter")] Mark mark)
+        public async Task<IActionResult> Edit(int MarkID, int? GroupID, int? SubjectID, [Bind("MarkID,Value,Date,Comment,SignatureOfTeacher,HistoryOfMark,SubjectID,GroupID,LessonID,TypeOfExerciseID,DepartmentID,SpecialityID,ThemeID,StudentID,FlagX,FlagF,InstituteID,ChangeCounter")] Mark mark)
         {
             if (MarkID != mark.MarkID)
                 return NotFound();
@@ -215,6 +214,24 @@ namespace Portal.Controllers
                         markIA.ChangeCounter = 3;
                         markIO.ChangeCounter = 3;
                         _context.Marks.Update(markIA);
+                        _context.Marks.Update(markIO);
+                    }
+                    else
+                    {
+                        if (mark.TypeOfExerciseID != typeZachet.TypeOfExerciseID)
+                        {
+                            if (markIA.Value == "Недопуск")
+                            {
+                                markIA.Value = "";
+                                markIO.Value = "";
+                            }
+                            else if (double.TryParse(markIA.Value, out double number))
+                            {
+                                double average = doubleMarks.Average();
+                                double finalValue = average * 0.6 + number * 0.4;
+                                markIO.Value = Math.Round(finalValue).ToString(CultureInfo.InvariantCulture);
+                            }
+                        }
                         _context.Marks.Update(markIO);
                     }
 
