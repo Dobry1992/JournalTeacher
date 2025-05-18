@@ -137,6 +137,7 @@ namespace Portal
             return await PrepareJournalView(GroupID, SubjectID, "Journal");
         }
 
+        [Authorize(Roles = "ANB-UMCH")]
         public async Task<IActionResult> AdjustedJournal(int GroupID, int SubjectID)
         {
             return await PrepareJournalView(GroupID, SubjectID, "AdjustedJournal");

@@ -248,6 +248,217 @@ namespace Portal.Controllers
             return RedirectToAction("Journal", "Journals", new { GroupID, SubjectID });
         }
 
+        public async Task<IActionResult> AdjustmentEdit(int? MarkID, int? GroupID, int? SubjectID)
+        {
+            if (MarkID == null)
+                return NotFound();
+
+            var mark = await _context.Marks.FindAsync(MarkID);
+            if (mark == null)
+                return NotFound();
+
+            string teacher = _userNameService.GetDisplayName();
+
+            ViewBag.UserName = teacher;
+            ViewBag.Teachers = _context.Teachers.OrderBy(t => t.FamilyName).AsNoTracking();
+            ViewBag.TeachersNoPC = _context.TeacherNoPCs.OrderBy(t => t.LastName).AsNoTracking();
+            ViewBag.GroupID = GroupID;
+            ViewBag.SubjectID = SubjectID;
+
+            return View(mark);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> AdjustmentEdit(int MarkID, int? GroupID, int? SubjectID, [Bind("MarkID,Value,Date,Comment,SignatureOfTeacher,HistoryOfMark,SubjectID,GroupID,LessonID,TypeOfExerciseID,DepartmentID,SpecialityID,ThemeID,StudentID,FlagX,FlagF,InstituteID,ChangeCounter")] Mark mark)
+        {
+            if (MarkID != mark.MarkID)
+                return NotFound();
+
+            if (!ModelState.IsValid)
+                return View(mark);
+
+            string teacher = _userNameService.GetDisplayName();
+
+            if (!string.IsNullOrWhiteSpace(mark.HistoryOfMark))
+            {
+                var subject = await _context.Subjects.FindAsync(mark.SubjectID);
+                var theme = await _context.Themes.FindAsync(mark.ThemeID);
+                var type = await _context.Types.FindAsync(mark.TypeOfExerciseID);
+                var student = await _context.Students.FindAsync(mark.StudentID);
+                var group = await _context.Groups.FindAsync(mark.GroupID);
+
+                if (subject != null && theme != null && type != null && student != null && group != null)
+                {
+                    var e = new Event
+                    {
+                        Date = DateTime.Now,
+                        Teacher = teacher,
+                        Log = $"Изменение оценки от {mark.Date:dd.MM.yyyy}, предмет: {subject.Name}, тема: {theme.Name}, тип занятия: {type.Name}, курсант/слушатель: {student.LastName} {student.Name[0]}.{student.Surname[0]}. группа: {group.Name}"
+                    };
+                    _context.Events.Add(e);
+                    await _context.SaveChangesAsync();
+                }
+            }
+
+            mark.SignatureOfTeacher = teacher;
+            mark.HistoryOfMark = (mark.HistoryOfMark ?? string.Empty) +
+                                 $"{mark.Value} - {DateTime.Now:dd.MM.yyyy} - {mark.SignatureOfTeacher}</br>";
+            mark.ChangeCounter++;
+            
+            _context.Marks.Update(mark);
+            await _context.SaveChangesAsync();
+
+            try
+            {
+                if (mark.FlagF != 0)
+                {
+                    var types = await _context.Types.ToListAsync();
+                    var typeZachet = types.FirstOrDefault(t => t.Name == "Зачёт");
+                    var typeDiffZachet = types.FirstOrDefault(t => t.Name == "Дифференцированный зачёт");
+                    var typeExam = types.FirstOrDefault(t => t.Name == "Экзамен");
+                    var typeItog = types.FirstOrDefault(t => t.Name == "Итоговая оценка");
+                    var typeKontrol = types.FirstOrDefault(t => t.Name == "Контрольное мероприятие");
+
+                    if (typeZachet == null || typeDiffZachet == null || typeExam == null || typeItog == null || typeKontrol == null)
+                        throw new InvalidOperationException("Не все типы занятий найдены в справочнике.");
+
+                    var requiredTypeIds = new List<int>
+                    {
+                        typeZachet.TypeOfExerciseID,
+                        typeDiffZachet.TypeOfExerciseID,
+                        typeExam.TypeOfExerciseID
+                    };
+
+                    var markIA = await _context.Marks.FirstOrDefaultAsync(m =>
+                        m.FlagF == mark.FlagF &&
+                        requiredTypeIds.Contains(m.TypeOfExerciseID) &&
+                        m.StudentID == mark.StudentID);
+
+                    var markIO = await _context.Marks.FirstOrDefaultAsync(m =>
+                        m.FlagF == mark.FlagF &&
+                        m.TypeOfExerciseID == typeItog.TypeOfExerciseID &&
+                        m.StudentID == mark.StudentID);
+
+                    if (markIA == null || markIO == null)
+                        return RedirectToAction("AdjustmentJournal", "Journals", new { GroupID, SubjectID });
+
+                    var marks = await _context.Marks
+                        .Where(m => m.FlagF == mark.FlagF &&
+                                    m.StudentID == mark.StudentID &&
+                                    m.TypeOfExerciseID != markIA.TypeOfExerciseID &&
+                                    m.TypeOfExerciseID != markIO.TypeOfExerciseID)
+                        .ToListAsync();
+
+                    List<double> doubleMarks = new();
+                    List<double> doubleControlMarks = new();
+                    List<Mark> controlMarks = new();
+
+                    foreach (var m in marks)
+                    {
+                        if (TryParseMarkValue(m.Value, out double number))
+                        {
+                            doubleMarks.Add(number);
+                            if (m.TypeOfExerciseID == typeKontrol.TypeOfExerciseID)
+                                doubleControlMarks.Add(number);
+                        }
+
+                        if (m.TypeOfExerciseID == typeKontrol.TypeOfExerciseID)
+                        {
+                            controlMarks.Add(m);
+                        }
+                    }
+
+                    if (mark.TypeOfExerciseID == markIA.TypeOfExerciseID)
+                    {
+                        bool updatedIO = false;
+
+                        if (markIA.TypeOfExerciseID == typeZachet.TypeOfExerciseID)
+                        {
+                            if (mark.Value == "З")
+                            {
+                                markIO.Value = "Зачтено";
+                                updatedIO = true;
+                            }
+                            else if (mark.Value == "НЗ")
+                            {
+                                markIO.Value = "Не зачтено";
+                                updatedIO = true;
+                            }
+                        }
+                        else
+                        {
+                            if (new[] { "1", "2", "3" }.Contains(markIA.Value))
+                            {
+                                markIO.Value = markIA.Value;
+                                updatedIO = true;
+                            }
+                            else if (TryParseMarkValue(markIA.Value, out double num) && doubleMarks.Any())
+                            {
+                                double average = doubleMarks.Average();
+                                double finalValue = average * 0.6 + num * 0.4;
+                                markIO.Value = Math.Round(finalValue).ToString(CultureInfo.InvariantCulture);
+                                updatedIO = true;
+                            }
+                        }
+
+                        if (updatedIO)
+                        {
+                            markIO.ChangeCounter = 3;
+                            _context.Marks.Update(markIO);
+                        }
+                    }
+
+                    bool hasLowControlMark = doubleControlMarks.Any(x => x <= 3);
+                    bool noControlMarks = !doubleControlMarks.Any();
+                    bool lowAverage = doubleMarks.Any() && doubleMarks.Average() < 4;
+
+                    if (lowAverage || hasLowControlMark || noControlMarks || controlMarks.Count != doubleControlMarks.Count)
+                    {
+                        markIA.Value = "Недопуск";
+                        markIO.Value = "Недопуск";
+                        markIA.ChangeCounter = 3;
+                        markIO.ChangeCounter = 3;
+                        _context.Marks.Update(markIA);
+                        _context.Marks.Update(markIO);
+                    }
+                    else
+                    {
+                        if (mark.TypeOfExerciseID != typeZachet.TypeOfExerciseID && mark.TypeOfExerciseID != typeItog.TypeOfExerciseID && !requiredTypeIds.Contains(mark.TypeOfExerciseID))
+                        {
+                            if (markIA.Value == "Недопуск")
+                            {
+                                markIA.Value = "";
+                                markIO.Value = "";
+                                markIA.ChangeCounter = 0;
+                            }
+                            else if (double.TryParse(markIA.Value, out double number))
+                            {
+                                double average = doubleMarks.Average();
+                                double finalValue = average * 0.6 + number * 0.4;
+                                markIO.Value = Math.Round(finalValue).ToString(CultureInfo.InvariantCulture);
+                            }
+                        }
+                        else if (mark.TypeOfExerciseID == typeItog.TypeOfExerciseID)
+                        {
+                            markIO.Value = mark.Value;
+                        }
+                        _context.Marks.Update(markIO);
+                    }
+
+                    await _context.SaveChangesAsync();
+                }
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                if (!MarkExists(mark.MarkID))
+                    return NotFound();
+                throw;
+            }
+
+            return RedirectToAction("AdjustedJournal", "Journals", new { GroupID, SubjectID });
+        }
+
         private bool TryParseMarkValue(string value, out double number)
         {
             number = 0;

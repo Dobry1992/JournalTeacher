@@ -11,7 +11,7 @@
         <div class="container-fluid">
             <div class="row">
                 <div class="col-sm-6">
-                    <h2>Создать занятие</h2>
+                    <h2>Создать курсовой проект/курсовую работу</h2>
                 </div>
             </div>
         </div>
@@ -25,21 +25,13 @@
                             <div id="example1_wrapper" class="dataTables_wrapper dt-bootstrap4">
                                 <div class="row">
                                     <div class="col-sm-12">
-                                        <form asp-action="AdjustmentCreate">
+                                        <form asp-action="AdjustmentCreateK">
                                             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
                                             <input asp-for="GroupID" hidden />
                                             <input asp-for="SubjectID" hidden />
-                                            <div class="form-group">
+                                            <div class="form-group" hidden>
                                                 <label asp-for="ThemeID" class="control-label">Тема занятия:</label>
-                                                <select asp-for="ThemeID" class="form-control">
-                                                    @if (ViewBag.Themes != null)
-                                                    {
-                                                        @foreach (Theme theme in ViewBag.Themes)
-                                                        {
-                                                            <option value="@theme.ThemeID">@theme.ShortName @theme.Name</option>
-                                                        }
-                                                    }
-                                                </select>
+                                                <select asp-for="ThemeID" class="form-control" asp-items="ViewBag.ThemeID"></select>
                                             </div>
                                             <div class="form-group">
                                                 <label asp-for="TypeOfExerciseID" class="control-label">Тип занятия:</label>
@@ -76,3 +68,4 @@
         await Html.RenderPartialAsync("_ValidationScriptsPartial");
     }
 }
+

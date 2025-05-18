@@ -107,7 +107,7 @@
                                            data-placement="left"
                                            data-html="true"
                                            data-title="Подпись: @lesson.Lesson.Signature"
-                                           asp-controller="@lesson.Controller"
+                                           asp-controller="Lessons"
                                            asp-action="AdjustmentDelete"
                                            asp-route-id="@lesson.Lesson.LessonID"
                                            asp-route-SubjectID="@Model.Subject.SubjectID"
@@ -131,8 +131,8 @@
                                     @foreach (var mark in Model.JournalMarks.Where(m => m.Mark.StudentID == student.StudentID))
                                     {
                                         <td class="align-middle text-center p-0 @mark.Property">
-                                            <a asp-controller="@mark.Controller"
-                                               asp-action="@mark.Action"
+                                            <a asp-controller="Marks"
+                                               asp-action="AdjustmentEdit"
                                                asp-route-MarkID="@mark.Mark.MarkID"
                                                asp-route-SubjectID="@Model.Subject.SubjectID"
                                                asp-route-GroupID="@Model.Group.GroupID"
