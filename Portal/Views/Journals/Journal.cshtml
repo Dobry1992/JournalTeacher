@@ -152,7 +152,7 @@ else if (User.IsInRole("SuperAdmin") || User.IsInRole("ANB-UMCH") || User.IsInRo
                                 @foreach (var student in Model.Students)
                                 {
                                     <tr>
-                                        <td class="align-middle text-center p-1 bg-light fix">@i</td>
+                                        <td class="align-middle text-center p-1 bg-light">@i</td>
                                         <td class="align-middle text-center p-1 bg-light fix">@student.LastName @student.Name @student.Surname</td>
                                         @foreach (var mark in Model.JournalMarks.Where(m => m.Mark.StudentID == student.StudentID))
                                         {
@@ -178,11 +178,11 @@ else if (User.IsInRole("SuperAdmin") || User.IsInRole("ANB-UMCH") || User.IsInRo
                                             {
                                                 <td class="align-middle text-center p-0 @mark.Property">
                                                     <span class="btn border-0 text-center align-middle p-3 btn-tooltip"
-                                                       data-toggle="tooltip"
-                                                       data-placement="left"
-                                                       data-html="true"
-                                                       data-title="Подпись: @mark.Mark.SignatureOfTeacher<br>История:<br> @mark.Mark.HistoryOfMark"
-                                                       style="width:100%;">
+                                                          data-toggle="tooltip"
+                                                          data-placement="left"
+                                                          data-html="true"
+                                                          data-title="Подпись: @mark.Mark.SignatureOfTeacher<br>История:<br> @mark.Mark.HistoryOfMark"
+                                                          style="width:100%;">
                                                         @mark.Mark.Value
                                                     </span>
                                                 </td>

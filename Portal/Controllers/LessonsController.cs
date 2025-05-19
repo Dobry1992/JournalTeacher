@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
 using DocumentFormat.OpenXml.InkML;
@@ -1140,122 +1141,41 @@ namespace Portal
             string teacher = _userNameService.GetDisplayName();
             var lesson = await _context.Lessons.FindAsync(id);
             if (lesson == null)
-            {
                 return NotFound();
-            }
 
-            var typeIO = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Итоговая оценка");
+            var typeIO = await _context.Types.FirstOrDefaultAsync(t => t.Name == TypeNames.Final);
             if (typeIO == null)
-            {
                 return BadRequest("Тип 'Итоговая оценка' не найден.");
-            }
 
-            var typeNames = new[] { "Экзамен", "Зачёт", "Дифференцированный зачёт" };
             var typeIds = await _context.Types
-                .Where(t => typeNames.Contains(t.Name))
+                .Where(t => TypeNames.ExamTypes.Contains(t.Name))
                 .Select(t => t.TypeOfExerciseID)
                 .ToListAsync();
 
             if (typeIds.Contains(lesson.TypeOfExerciseID))
             {
-                var marks = await _context.Marks
-                    .Where(m => m.LessonID == lesson.LessonID)
-                    .ToListAsync();
-                _context.Marks.RemoveRange(marks);
-                _context.Lessons.Remove(lesson);
+                await DeleteLessonWithMarksAsync(lesson.LessonID);
+                var finalLesson = await _context.Lessons
+                    .FirstOrDefaultAsync(l => l.FlagF == lesson.FlagF && l.TypeOfExerciseID == typeIO.TypeOfExerciseID);
+                if (finalLesson != null)
+                    await DeleteLessonWithMarksAsync(finalLesson.LessonID);
 
-                var lessonIO = await _context.Lessons.FirstOrDefaultAsync(l => l.FlagF == lesson.FlagF && l.TypeOfExerciseID == typeIO.TypeOfExerciseID);
-                if (lessonIO != null)
-                {
-                    var marksIO = await _context.Marks
-                        .Where(m => m.LessonID == lessonIO.LessonID)
-                        .ToListAsync();
-                    _context.Marks.RemoveRange(marksIO);
-                    _context.Lessons.Remove(lessonIO);
-                }
-
-                var simpleLessons = await _context.Lessons
-                    .Where(l => l.FlagF == lesson.FlagF)
-                    .ToListAsync();
-                foreach (var l in simpleLessons)
-                {
-                    l.FlagF = 0;
-                }
-                _context.Lessons.UpdateRange(simpleLessons);
-
-                var simpleMarks = await _context.Marks
-                    .Where(m => m.FlagF == lesson.FlagF)
-                    .ToListAsync();
-                foreach (var mark in simpleMarks)
-                {
-                    mark.FlagF = 0;
-                }
-                _context.Marks.UpdateRange(simpleMarks);
-
-                await _context.SaveChangesAsync();
+                await ResetFlagsAsync(lesson.FlagF);
             }
-
-            if (typeIO != null && lesson.TypeOfExerciseID == typeIO.TypeOfExerciseID)
+            else if (lesson.TypeOfExerciseID == typeIO.TypeOfExerciseID)
             {
-                var marksIO = await _context.Marks
-                    .Where(m => m.LessonID == lesson.LessonID)
-                    .ToListAsync();
-                _context.Marks.RemoveRange(marksIO);
-                _context.Lessons.Remove(lesson);
-
-                var lessonIA = await _context.Lessons
+                await DeleteLessonWithMarksAsync(lesson.LessonID);
+                var examLesson = await _context.Lessons
                     .FirstOrDefaultAsync(l => l.FlagF == lesson.FlagF && typeIds.Contains(l.TypeOfExerciseID));
+                if (examLesson != null)
+                    await DeleteLessonWithMarksAsync(examLesson.LessonID);
 
-                if (lessonIA != null)
-                {
-                    var marksIA = await _context.Marks
-                        .Where(m => m.LessonID == lessonIA.LessonID)
-                        .ToListAsync();
-                    _context.Marks.RemoveRange(marksIA);
-                    _context.Lessons.Remove(lessonIA);
-                }
-
-                var simpleLessons = await _context.Lessons
-                    .Where(l => l.FlagF == lesson.FlagF)
-                    .ToListAsync();
-                foreach (var l in simpleLessons)
-                {
-                    l.FlagF = 0;
-                }
-                _context.Lessons.UpdateRange(simpleLessons);
-
-                var simpleMarks = await _context.Marks
-                    .Where(m => m.FlagF == lesson.FlagF)
-                    .ToListAsync();
-                foreach (var mark in simpleMarks)
-                {
-                    mark.FlagF = 0;
-                }
-                _context.Marks.UpdateRange(simpleMarks);
-
-                await _context.SaveChangesAsync();
+                await ResetFlagsAsync(lesson.FlagF);
             }
-
-            if (lesson.FlagF != 0 && lesson.TypeOfExerciseID != typeIO.TypeOfExerciseID && !typeIds.Contains(lesson.TypeOfExerciseID))
+            else if (lesson.FlagF != 0)
             {
-                var marks = await _context.Marks
-                    .Where(m => m.LessonID == lesson.LessonID)
-                    .ToListAsync();
-                _context.Marks.RemoveRange(marks);
-                _context.Lessons.Remove(lesson);
-                await _context.SaveChangesAsync();
-
-                var students = await _context.Students.Where(s => s.GroupID == GroupID).ToListAsync();
-                foreach (var student in students) 
-                {
-                    List<double> simpleDoubleMarks = new();
-                    List<double> controlsDoubleMarks = new();
-                    List<Mark> controlMarks = new();
-                    var markIO = await _context.Marks.FirstOrDefaultAsync(m => m.StudentID == student.StudentID && m.TypeOfExerciseID == typeIO.TypeOfExerciseID && lesson.FlagF == m.FlagF);
-                    var markIA = await _context.Marks.FirstOrDefaultAsync(m => m.StudentID == student.StudentID && typeIds.Contains(m.TypeOfExerciseID) && m.FlagF == lesson.FlagF);
-
-                    //продолжить код.
-                }
+                await DeleteLessonWithMarksAsync(lesson.LessonID);
+                await RecalculateAdmissionAsync(GroupID, SubjectID, lesson.FlagF, typeIO.TypeOfExerciseID, typeIds);
             }
 
             var subject = await _context.Subjects.FindAsync(lesson.SubjectID);
@@ -1269,10 +1189,107 @@ namespace Portal
                 Teacher = teacher,
                 Log = $"Удалено занятие от: {lesson.Date:dd.MM.yyyy}, предмет: {subject?.Name}, тема: {theme?.Name}, тип: {type?.Name}, группа: {group?.Name}"
             };
-            _context.Events.Update(e);
+            _context.Events.Add(e);
             await _context.SaveChangesAsync();
 
             return RedirectToAction("AdjustedJournal", "Journals", new { GroupID, SubjectID });
+        }
+
+        private static class TypeNames
+        {
+            public const string Final = "Итоговая оценка";
+            public const string Control = "Контрольное мероприятие";
+            public static readonly string[] ExamTypes = { "Экзамен", "Зачёт", "Дифференцированный зачёт" };
+        }
+
+        private async Task DeleteLessonWithMarksAsync(int lessonId)
+        {
+            var marks = await _context.Marks.Where(m => m.LessonID == lessonId).ToListAsync();
+            _context.Marks.RemoveRange(marks);
+
+            var lesson = await _context.Lessons.FindAsync(lessonId);
+            if (lesson != null)
+                _context.Lessons.Remove(lesson);
+
+            await _context.SaveChangesAsync();
+        }
+
+        private async Task ResetFlagsAsync(int flagF)
+        {
+            var simpleLessons = await _context.Lessons.Where(l => l.FlagF == flagF).ToListAsync();
+            simpleLessons.ForEach(l => l.FlagF = 0);
+            _context.Lessons.UpdateRange(simpleLessons);
+
+            var simpleMarks = await _context.Marks.Where(m => m.FlagF == flagF).ToListAsync();
+            simpleMarks.ForEach(m => m.FlagF = 0);
+            _context.Marks.UpdateRange(simpleMarks);
+        }
+
+        private async Task RecalculateAdmissionAsync(int groupId, int subjectId, int flagF, int typeIOId, List<int> examTypeIds)
+        {
+            var students = await _context.Students.Where(s => s.GroupID == groupId).ToListAsync();
+            var controlType = await _context.Types.FirstOrDefaultAsync(t => t.Name == TypeNames.Control);
+
+            foreach (var student in students)
+            {
+                var markIO = await _context.Marks.FirstOrDefaultAsync(m =>
+                    m.StudentID == student.StudentID && m.TypeOfExerciseID == typeIOId && m.FlagF == flagF);
+
+                var markIA = await _context.Marks.FirstOrDefaultAsync(m =>
+                    m.StudentID == student.StudentID && examTypeIds.Contains(m.TypeOfExerciseID) && m.FlagF == flagF);
+
+                var simpleMarks = await _context.Marks
+                    .Where(m => m.StudentID == student.StudentID && m.SubjectID == subjectId &&
+                                m.FlagF == flagF &&
+                                (markIO == null || m.TypeOfExerciseID != markIO.TypeOfExerciseID) &&
+                                (markIA == null || m.TypeOfExerciseID != markIA.TypeOfExerciseID))
+                    .ToListAsync();
+
+                List<double> simpleDoubleMarks = new();
+                List<double> controlDoubleMarks = new();
+                List<Mark> controlMarks = new();
+
+                foreach (var mark in simpleMarks)
+                {
+                    if (double.TryParse(mark.Value, out double num))
+                    {
+                        simpleDoubleMarks.Add(num);
+                        if (mark.TypeOfExerciseID == controlType?.TypeOfExerciseID)
+                            controlDoubleMarks.Add(num);
+                    }
+
+                    if (mark.TypeOfExerciseID == controlType?.TypeOfExerciseID)
+                        controlMarks.Add(mark);
+                }
+
+                double average = simpleDoubleMarks.Any() ? simpleDoubleMarks.Average() : 0;
+
+                if (average < 4 || controlDoubleMarks.Any(n => n is 1 or 2 or 3) ||
+                    !controlMarks.Any() || controlMarks.Count != controlDoubleMarks.Count)
+                {
+                    if (markIA != null)
+                    {
+                        markIA.Value = "Недопуск";
+                        markIA.ChangeCounter = 3;
+                        _context.Marks.Update(markIA);
+                    }
+
+                    if (markIO != null)
+                    {
+                        markIO.Value = "Недопуск";
+                        markIO.ChangeCounter = 3;
+                        _context.Marks.Update(markIO);
+                    }
+                }
+                else if (markIA != null && double.TryParse(markIA.Value, out double examScore) && markIO != null)
+                {
+                    double finalValue = average * 0.6 + examScore * 0.4;
+                    markIO.Value = Math.Round(finalValue).ToString(CultureInfo.InvariantCulture);
+                    _context.Marks.Update(markIO);
+                }
+            }
+
+            await _context.SaveChangesAsync();
         }
 
         public IActionResult Error(int GroupID, int SubjectID)
