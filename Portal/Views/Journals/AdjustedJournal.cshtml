@@ -116,14 +116,14 @@ else
                                                data-toggle="tooltip"
                                                data-placement="left"
                                                data-html="true"
-                                               data-title="Подпись: @lesson.Lesson.Signature"
+                                               data-title="Подпись: @lesson.Lesson.Signature<br />@lesson.Lesson.TypeOfExercise.Name"
                                                asp-controller="Lessons"
                                                asp-action="AdjustmentDelete"
                                                asp-route-id="@lesson.Lesson.LessonID"
                                                asp-route-SubjectID="@Model.Subject.SubjectID"
                                                asp-route-GroupID="@Model.Group.GroupID">
                                                 <span class="rotate-sm-90">
-                                                    @lesson.Lesson.TypeOfExercise.Name<br />
+                                                    @lesson.Lesson.TypeOfExercise.ShortName<br />
                                                     @lesson.Lesson.Theme.ShortName<br />
                                                     @lesson.Lesson.Date.ToShortDateString()
                                                 </span>

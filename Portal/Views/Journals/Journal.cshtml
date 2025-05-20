@@ -115,14 +115,14 @@ else if (User.IsInRole("SuperAdmin") || User.IsInRole("ANB-UMCH") || User.IsInRo
                                                    data-toggle="tooltip"
                                                    data-placement="left"
                                                    data-html="true"
-                                                   data-title="Подпись: @lesson.Lesson.Signature"
+                                                   data-title="Подпись: @lesson.Lesson.Signature<br />@lesson.Lesson.TypeOfExercise.Name"
                                                    asp-controller="@lesson.Controller"
                                                    asp-action="@lesson.Action"
                                                    asp-route-id="@lesson.Lesson.LessonID"
                                                    asp-route-SubjectID="@Model.Subject.SubjectID"
                                                    asp-route-GroupID="@Model.Group.GroupID">
                                                     <span class="rotate-sm-90">
-                                                        @lesson.Lesson.TypeOfExercise.Name<br />
+                                                        @lesson.Lesson.TypeOfExercise.ShortName<br />
                                                         @lesson.Lesson.Theme.ShortName<br />
                                                         @lesson.Lesson.Date.ToShortDateString()
                                                     </span>
@@ -136,9 +136,9 @@ else if (User.IsInRole("SuperAdmin") || User.IsInRole("ANB-UMCH") || User.IsInRo
                                                       data-toggle="tooltip"
                                                       data-placement="left"
                                                       data-html="true"
-                                                      data-title="Подпись: @lesson.Lesson.Signature">
+                                                      data-title="Подпись: @lesson.Lesson.Signature<br />@lesson.Lesson.TypeOfExercise.Name">
                                                     <span class="rotate-sm-90">
-                                                        @lesson.Lesson.TypeOfExercise.Name<br />
+                                                        @lesson.Lesson.TypeOfExercise.ShortName<br />
                                                         @lesson.Lesson.Theme.ShortName<br />
                                                         @lesson.Lesson.Date.ToShortDateString()
                                                     </span>

@@ -74,7 +74,7 @@ namespace Portal.Controllers
         [Authorize(Roles = "SuperAdmin, ANB-UMCH")]
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("TypeOfExerciseID,Name,Color")] TypeOfExercise typeOfExercise)
+        public async Task<IActionResult> Create([Bind("TypeOfExerciseID,Name,Color,ShortName")] TypeOfExercise typeOfExercise)
         {
             if (ModelState.IsValid)
             {
@@ -104,7 +104,7 @@ namespace Portal.Controllers
         [Authorize(Roles = "SuperAdmin, ANB-UMCH")]
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("TypeOfExerciseID,Name,Color,Arch")] TypeOfExercise typeOfExercise)
+        public async Task<IActionResult> Edit(int id, [Bind("TypeOfExerciseID,Name,Color,Arch,ShortName")] TypeOfExercise typeOfExercise)
         {
             if (id != typeOfExercise.TypeOfExerciseID)
             {
@@ -185,7 +185,7 @@ namespace Portal.Controllers
         [Authorize(Roles = "SuperAdmin, ANB-UMCH")]
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Archive(int id, [Bind("TypeOfExerciseID,Name,Color,Arch")] TypeOfExercise typeOfExercise)
+        public async Task<IActionResult> Archive(int id, [Bind("TypeOfExerciseID,Name,Color,Arch,ShortName")] TypeOfExercise typeOfExercise)
         {
             if (id != typeOfExercise.TypeOfExerciseID)
             {
