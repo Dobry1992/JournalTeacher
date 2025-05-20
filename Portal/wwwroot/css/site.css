@@ -319,6 +319,25 @@ body {
     text-overflow: ellipsis;
 }
 
+.control:hover {
+    background-color: #343a40;
+    color: white !important;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.control-table {
+    table-layout: auto; /* Это ключевой параметр */
+    width: auto; /* Таблица не растягивается на всю ширину */
+    border-collapse: collapse;
+}
+
+.control-table th,
+.control-table th {
+    white-space: nowrap; /* Не переносить строки */
+    width: 1%;            /* Минимально возможная ширина */
+    padding: 4px 8px;     /* Минимальные отступы (по желанию) */
+}
+
 @media (min-width: 2300px) {
     .birthday {
         left: 60%;

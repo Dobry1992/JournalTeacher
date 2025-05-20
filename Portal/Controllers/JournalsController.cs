@@ -137,6 +137,50 @@ namespace Portal
             return await PrepareJournalView(GroupID, SubjectID, "Journal");
         }
 
+        public async Task<IActionResult> Controls(int GroupID, int SubjectID)
+        {
+            var group = await _context.Groups.FindAsync(GroupID);
+            var subject = await _context.Subjects.FindAsync(SubjectID);
+            var controlType = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Контрольное мероприятие");
+
+            if (group == null || subject == null)
+                return NotFound();
+
+            var department = await _context.Departments.FindAsync(subject.DepartmentID);
+
+            var lessons = await _context.Lessons
+                .Where(l => l.Theme.SubjectID == SubjectID && l.GroupID == GroupID && l.TypeOfExerciseID == controlType.TypeOfExerciseID)
+                .Include(l => l.TypeOfExercise)
+                .Include(l => l.Theme)
+                .OrderBy(l => l.Date)
+                .AsNoTracking()
+                .ToListAsync();
+
+            var students = await _context.Students
+                .Where(s => s.GroupID == GroupID && s.Status == true)
+                .OrderBy(s => s.LastName)
+                .AsNoTracking()
+                .ToListAsync();
+
+            var marks = await _context.Marks
+                .Where(m => m.SubjectID == SubjectID && m.GroupID == GroupID && m.TypeOfExerciseID == controlType.TypeOfExerciseID)
+                .OrderBy(m => m.Date)
+                .AsNoTracking()
+                .ToListAsync();
+
+            var controlViewModel = new ControlsViewModel
+            {
+                Marks = marks,
+                Lessons = lessons,
+                Students = students,
+                Department = department,
+                Subject = subject,
+                Group = group
+            };
+
+            return View(controlViewModel);
+        }
+
         [Authorize(Roles = "ANB-UMCH")]
         public async Task<IActionResult> AdjustedJournal(int GroupID, int SubjectID)
         {

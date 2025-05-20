@@ -1,0 +1,99 @@
+﻿@using Portal.ViewModel
+@model ControlsViewModel
+
+@{
+    ViewData["Title"] = "Контрольные мероприятия";
+    int i = 1;
+}
+
+@await Html.PartialAsync("_NavMenuJournal")
+
+<div>
+    <section class="content-header">
+        <div class="container-fluid">
+            <div class="row">
+            </div>
+        </div>
+    </section>
+</div>
+
+<section class="content">
+    <div class="container-fluid">
+        <div class="card">
+            <div class="card-body">
+                <h6 class="mb-3 text-center bg-info headGroup p-2 rounded">
+                    Контрольные мероприятия,<br />
+                    группа: @Model.Group.Name,<br />
+                    предмет: @Model.Subject.Name
+                </h6>
+                <div class="table-wrap" id="sd">
+                    <table class="table table-bordered compact table-sm control-table">
+                        <thead class="thead-dark compact">
+                            <tr>
+                                <th class="align-middle text-center p-1 fix">#</th>
+                                <th class="align-middle text-center p-1 fix">Ф.И.О.</th>
+                                @foreach (var lesson in Model.Lessons)
+                                {
+                                    <th class="align-middle text-center p-0 m-0">
+                                        <span class="btn btn-outline-danger text-white border-0 p-1 m-0 btn-tooltip"
+                                              data-toggle="tooltip"
+                                              data-placement="left"
+                                              data-html="true"
+                                              data-title="Подпись: @lesson.Signature">
+                                            <span class="rotate-sm-90">
+                                                @lesson.TypeOfExercise.Name<br />
+                                                @lesson.Theme.ShortName<br />
+                                                @lesson.Date.ToShortDateString()
+                                            </span>
+                                        </span>
+                                    </th>
+                                }
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white compact">
+                            @foreach (var student in Model.Students)
+                            {
+                                <tr>
+                                    <td class="align-middle text-center p-1 bg-light fix">@i</td>
+                                    <td class="align-middle text-center p-1 bg-light fix">@student.LastName @student.Name @student.Surname</td>
+                                    @foreach (var mark in Model.Marks.Where(m => m.StudentID == student.StudentID))
+                                    {
+                                        <td class="align-middle text-center p-0">
+                                            <span class="btn border-0 text-center align-middle p-3 btn-tooltip control"
+                                                  data-toggle="tooltip"
+                                                  data-placement="left"
+                                                  data-html="true"
+                                                  data-title="Подпись: @mark.SignatureOfTeacher<br>История:<br> @mark.HistoryOfMark"
+                                                  style="width:100%;">
+                                                @mark.Value
+                                            </span>
+                                        </td>
+                                    }
+                                </tr>
+                                i++;
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+@section Scripts {
+    <script>
+        $(function () {
+            $('.btn-tooltip').tooltip();
+        });
+
+        window.addEventListener('DOMContentLoaded', function () {
+            const div = document.querySelector('#sd');
+            const scroll = localStorage.getItem('scroll') || 0;
+            div.scrollLeft = scroll;
+            div.addEventListener('scroll', function () {
+                localStorage.setItem('scroll', div.scrollLeft);
+            });
+        });
+    </script>
+    <script src="~/js/journal.js"></script>
+}
