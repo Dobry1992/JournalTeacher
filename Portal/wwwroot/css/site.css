@@ -326,16 +326,16 @@ body {
 }
 
 .control-table {
-    table-layout: auto; /* Это ключевой параметр */
-    width: auto; /* Таблица не растягивается на всю ширину */
+    table-layout: auto;
+    width: auto;
     border-collapse: collapse;
 }
 
 .control-table th,
 .control-table th {
-    white-space: nowrap; /* Не переносить строки */
-    width: 1%;            /* Минимально возможная ширина */
-    padding: 4px 8px;     /* Минимальные отступы (по желанию) */
+    white-space: nowrap;
+    width: 1%;
+    padding: 4px 8px;
 }
 
 @media (min-width: 2300px) {
