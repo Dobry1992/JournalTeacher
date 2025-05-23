@@ -28,13 +28,13 @@
                 <div class="d-flex flex-row flex-wrap">
                     @foreach (var subject in Model.Subjects)
                     {
-                        @if (subject.Arch == false && subject.DepartmentID == departmemt.DepartmentID && !User.IsInRole("ANB-UMCH"))
+                        @if (subject.Arch == false && subject.DepartmentID == departmemt.DepartmentID && !(User.IsInRole("ANB-UMCH") || User.IsInRole("SuperAdmin")))
                         {
                             <a asp-controller="Journals" asp-action="Journal" asp-route-GroupID="@ViewBag.GroupID" asp-route-SubjectID="@subject.SubjectID" class="groups d-block p-4 mr-3 mb-3 text-decoration-none rounded shadow-lg bg-@colors[i]">
                                 <h6 class="text-center">@subject.Name</h6>
                             </a>
                         }
-                        if (subject.Arch == false && subject.DepartmentID == departmemt.DepartmentID && User.IsInRole("ANB-UMCH"))
+                        if (subject.Arch == false && subject.DepartmentID == departmemt.DepartmentID && (User.IsInRole("ANB-UMCH") || User.IsInRole("SuperAdmin")))
                         {
                             <a asp-controller="Journals" asp-action="AdjustedJournal" asp-route-GroupID="@ViewBag.GroupID" asp-route-SubjectID="@subject.SubjectID" class="groups d-block p-4 mr-3 mb-3 text-decoration-none rounded shadow-lg bg-@colors[i]">
                                 <h6 class="text-center">@subject.Name</h6>
@@ -49,5 +49,7 @@
 }
 
 @section Scripts {
-    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
 }

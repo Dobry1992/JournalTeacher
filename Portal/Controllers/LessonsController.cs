@@ -97,7 +97,7 @@ namespace Portal
             return View(lessons);
         }
 
-        [Authorize(Roles = "ANB-UMCH")]
+        [Authorize(Roles = "SuperAdmin,ANB-UMCH")]
         public IActionResult AdjustmentCreateF(int? GroupID, int? SubjectID)
         {
             string teacher = _userNameService.GetDisplayName();
@@ -122,7 +122,7 @@ namespace Portal
             return View();
         }
 
-        [Authorize(Roles = "ANB-UMCH")]
+        [Authorize(Roles = "SuperAdmin,ANB-UMCH")]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> AdjustmentCreateF(int GroupID, int SubjectID, [Bind("LessonID,Date,Comment,FlagF,ThemeID,TypeOfExerciseID,GroupID,SubjectID,Signature")] Lesson lessonF)
@@ -563,7 +563,7 @@ namespace Portal
             return RedirectToAction("Journal", "Journals", new { GroupID, SubjectID });
         }
 
-        [Authorize(Roles = "ANB-UMCH")]
+        [Authorize(Roles = "SuperAdmin,ANB-UMCH")]
         public IActionResult AdjustmentCreate(int? GroupID, int? SubjectID)
         {
             string teacher = _userNameService.GetDisplayName();
@@ -593,7 +593,7 @@ namespace Portal
             return View();
         }
 
-        [Authorize(Roles = "ANB-UMCH")]
+        [Authorize(Roles = "SuperAdmin,ANB-UMCH")]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> AdjustmentCreate(int GroupID, int SubjectID, [Bind("LessonID,Date,Comment,FlagF,ThemeID,TypeOfExerciseID,GroupID,SubjectID,Signature")] Lesson lesson)
@@ -900,7 +900,7 @@ namespace Portal
             return RedirectToAction("Journal", "Journals", new { GroupID, SubjectID });
         }
 
-        [Authorize(Roles = "ANB-UMCH")]
+        [Authorize(Roles = "SuperAdmin,ANB-UMCH")]
         public IActionResult AdjustmentCreateK(int? GroupID, int? SubjectID)
         {
 
@@ -918,7 +918,7 @@ namespace Portal
             return View();
         }
 
-        [Authorize(Roles = "ANB-UMCH")]
+        [Authorize(Roles = "SuperAdmin,ANB-UMCH")]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> AdjustmentCreateK(int GroupID, int SubjectID, [Bind("LessonID,Date,Comment,FlagX,FlagF,ThemeID,TypeOfExerciseID,GroupID,SubjectID,Signature")] Lesson lessonK)
@@ -1110,7 +1110,7 @@ namespace Portal
             return RedirectToAction("Journal", "Journals", new { GroupID, SubjectID });
         }
 
-        [Authorize(Roles = "ANB-UMCH")]
+        [Authorize(Roles = "SuperAdmin,ANB-UMCH")]
         public async Task<IActionResult> AdjustmentDelete(int? id, int? GroupID, int? SubjectID)
         {
             if (id == null)
@@ -1133,7 +1133,7 @@ namespace Portal
             return View(lesson);
         }
 
-        [Authorize(Roles = "ANB-UMCH")]
+        [Authorize(Roles = "SuperAdmin,ANB-UMCH")]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> AdjustmentDelete(int id, int GroupID, int SubjectID)

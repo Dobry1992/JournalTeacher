@@ -181,7 +181,7 @@ namespace Portal
             return View(controlViewModel);
         }
 
-        [Authorize(Roles = "ANB-UMCH")]
+        [Authorize(Roles = "SuperAdmin,ANB-UMCH")]
         public async Task<IActionResult> AdjustedJournal(int GroupID, int SubjectID)
         {
             return await PrepareJournalView(GroupID, SubjectID, "AdjustedJournal");
