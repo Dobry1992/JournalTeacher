@@ -1177,6 +1177,10 @@ namespace Portal
                 await DeleteLessonWithMarksAsync(lesson.LessonID);
                 await RecalculateAdmissionAsync(GroupID, SubjectID, lesson.FlagF, typeIO.TypeOfExerciseID, typeIds);
             }
+            else
+            {
+                await DeleteLessonWithMarksAsync(lesson.LessonID);
+            }
 
             var subject = await _context.Subjects.FindAsync(lesson.SubjectID);
             var theme = await _context.Themes.FindAsync(lesson.ThemeID);
