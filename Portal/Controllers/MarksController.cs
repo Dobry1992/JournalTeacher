@@ -130,112 +130,127 @@ namespace Portal.Controllers
                         typeExam.TypeOfExerciseID
                     };
 
-                    var markIA = await _context.Marks.FirstOrDefaultAsync(m =>
+                    var IALessons= await _context.Lessons
+                        .Where(l =>
+                            l.GroupID == mark.GroupID &&
+                            l.FlagF == mark.FlagF &&
+                            l.SubjectID == mark.SubjectID)
+                        .ToListAsync();
+
+                    if (IALessons.Count > 1)
+                    {
+                        //продолжить логику здесь
+                        return Content("Изменение зачёта и экзамена!");
+                    }
+                    else
+                    {
+                        var markIA = await _context.Marks.FirstOrDefaultAsync(m =>
                         m.FlagF == mark.FlagF &&
                         requiredTypeIds.Contains(m.TypeOfExerciseID) &&
                         m.StudentID == mark.StudentID);
 
-                    var markIO = await _context.Marks.FirstOrDefaultAsync(m =>
-                        m.FlagF == mark.FlagF &&
-                        m.TypeOfExerciseID == typeItog.TypeOfExerciseID &&
-                        m.StudentID == mark.StudentID);
+                        var markIO = await _context.Marks.FirstOrDefaultAsync(m =>
+                            m.FlagF == mark.FlagF &&
+                            m.TypeOfExerciseID == typeItog.TypeOfExerciseID &&
+                            m.StudentID == mark.StudentID);
 
-                    if (markIA == null || markIO == null)
-                        return RedirectToAction("Journal", "Journals", new { GroupID, SubjectID });
+                        if (markIA == null || markIO == null)
+                            return RedirectToAction("Journal", "Journals", new { GroupID, SubjectID });
 
-                    var marks = await _context.Marks
-                        .Where(m => m.FlagF == mark.FlagF &&
-                                    m.StudentID == mark.StudentID &&
-                                    m.TypeOfExerciseID != markIA.TypeOfExerciseID &&
-                                    m.TypeOfExerciseID != markIO.TypeOfExerciseID)
-                        .ToListAsync();
+                        var marks = await _context.Marks
+                            .Where(m => m.FlagF == mark.FlagF &&
+                                        m.StudentID == mark.StudentID &&
+                                        m.TypeOfExerciseID != markIA.TypeOfExerciseID &&
+                                        m.TypeOfExerciseID != markIO.TypeOfExerciseID)
+                            .ToListAsync();
 
-                    List<double> doubleMarks = new();
-                    List<double> doubleControlMarks = new();
+                        List<double> doubleMarks = new();
+                        List<double> doubleControlMarks = new();
 
-                    foreach (var m in marks)
-                    {
-                        if (TryParseMarkValue(m.Value, out double number))
+                        foreach (var m in marks)
                         {
-                            doubleMarks.Add(number);
-                            if (m.TypeOfExerciseID == typeKontrol.TypeOfExerciseID)
-                                doubleControlMarks.Add(number);
+                            if (TryParseMarkValue(m.Value, out double number))
+                            {
+                                doubleMarks.Add(number);
+                                if (m.TypeOfExerciseID == typeKontrol.TypeOfExerciseID)
+                                    doubleControlMarks.Add(number);
+                            }
                         }
-                    }
 
-                    if (mark.TypeOfExerciseID == markIA.TypeOfExerciseID)
-                    {
-                        bool updatedIO = false;
-
-                        if (markIA.TypeOfExerciseID == typeZachet.TypeOfExerciseID)
+                        if (mark.TypeOfExerciseID == markIA.TypeOfExerciseID)
                         {
-                            if (mark.Value == "З")
+                            bool updatedIO = false;
+
+                            if (markIA.TypeOfExerciseID == typeZachet.TypeOfExerciseID)
                             {
-                                markIO.Value = "Зачтено";
-                                updatedIO = true;
+                                if (mark.Value == "З")
+                                {
+                                    markIO.Value = "Зачтено";
+                                    updatedIO = true;
+                                }
+                                else if (mark.Value == "НЗ")
+                                {
+                                    markIO.Value = "Не зачтено";
+                                    updatedIO = true;
+                                }
                             }
-                            else if (mark.Value == "НЗ")
+                            else
                             {
-                                markIO.Value = "Не зачтено";
-                                updatedIO = true;
+                                if (new[] { "1", "2", "3" }.Contains(markIA.Value))
+                                {
+                                    markIO.Value = markIA.Value;
+                                    updatedIO = true;
+                                }
+                                else if (TryParseMarkValue(markIA.Value, out double num) && doubleMarks.Any())
+                                {
+                                    double average = doubleMarks.Average();
+                                    double finalValue = average * 0.6 + num * 0.4;
+                                    markIO.Value = Math.Round(finalValue).ToString(CultureInfo.InvariantCulture);
+                                    updatedIO = true;
+                                }
                             }
+
+                            if (updatedIO)
+                            {
+                                markIO.ChangeCounter = 3;
+                                _context.Marks.Update(markIO);
+                            }
+                        }
+
+                        bool hasLowControlMark = doubleControlMarks.Any(x => x <= 3);
+                        bool noControlMarks = !doubleControlMarks.Any();
+                        bool lowAverage = doubleMarks.Any() && doubleMarks.Average() < 4;
+
+                        if (lowAverage || hasLowControlMark || noControlMarks)
+                        {
+                            markIA.Value = "Недопуск";
+                            markIO.Value = "Недопуск";
+                            markIA.ChangeCounter = 3;
+                            markIO.ChangeCounter = 3;
+                            _context.Marks.Update(markIA);
+                            _context.Marks.Update(markIO);
                         }
                         else
                         {
-                            if (new[] { "1", "2", "3" }.Contains(markIA.Value))
+                            if (mark.TypeOfExerciseID != typeZachet.TypeOfExerciseID)
                             {
-                                markIO.Value = markIA.Value;
-                                updatedIO = true;
+                                if (markIA.Value == "Недопуск")
+                                {
+                                    markIA.Value = "";
+                                    markIO.Value = "";
+                                }
+                                else if (double.TryParse(markIA.Value, out double number))
+                                {
+                                    double average = doubleMarks.Average();
+                                    double finalValue = average * 0.6 + number * 0.4;
+                                    markIO.Value = Math.Round(finalValue).ToString(CultureInfo.InvariantCulture);
+                                }
                             }
-                            else if (TryParseMarkValue(markIA.Value, out double num) && doubleMarks.Any())
-                            {
-                                double average = doubleMarks.Average();
-                                double finalValue = average * 0.6 + num * 0.4;
-                                markIO.Value = Math.Round(finalValue).ToString(CultureInfo.InvariantCulture);
-                                updatedIO = true;
-                            }
-                        }
-
-                        if (updatedIO)
-                        {
-                            markIO.ChangeCounter = 3;
                             _context.Marks.Update(markIO);
                         }
-                    }
 
-                    bool hasLowControlMark = doubleControlMarks.Any(x => x <= 3);
-                    bool noControlMarks = !doubleControlMarks.Any();
-                    bool lowAverage = doubleMarks.Any() && doubleMarks.Average() < 4;
-
-                    if (lowAverage || hasLowControlMark || noControlMarks)
-                    {
-                        markIA.Value = "Недопуск";
-                        markIO.Value = "Недопуск";
-                        markIA.ChangeCounter = 3;
-                        markIO.ChangeCounter = 3;
-                        _context.Marks.Update(markIA);
-                        _context.Marks.Update(markIO);
+                        await _context.SaveChangesAsync();
                     }
-                    else
-                    {
-                        if (mark.TypeOfExerciseID != typeZachet.TypeOfExerciseID)
-                        {
-                            if (markIA.Value == "Недопуск")
-                            {
-                                markIA.Value = "";
-                                markIO.Value = "";
-                            }
-                            else if (double.TryParse(markIA.Value, out double number))
-                            {
-                                double average = doubleMarks.Average();
-                                double finalValue = average * 0.6 + number * 0.4;
-                                markIO.Value = Math.Round(finalValue).ToString(CultureInfo.InvariantCulture);
-                            }
-                        }
-                        _context.Marks.Update(markIO);
-                    }
-
-                    await _context.SaveChangesAsync();
                 }
             }
             catch (DbUpdateConcurrencyException)
@@ -305,7 +320,7 @@ namespace Portal.Controllers
             mark.HistoryOfMark = (mark.HistoryOfMark ?? string.Empty) +
                                  $"{mark.Value} - {DateTime.Now:dd.MM.yyyy} - {mark.SignatureOfTeacher}</br>";
             mark.ChangeCounter++;
-            
+
             _context.Marks.Update(mark);
             await _context.SaveChangesAsync();
 

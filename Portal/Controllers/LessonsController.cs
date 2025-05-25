@@ -357,6 +357,9 @@ namespace Portal
         public async Task<IActionResult> CreateF(int GroupID, int SubjectID, [Bind("LessonID,Date,Comment,FlagF,ThemeID,TypeOfExerciseID,GroupID,SubjectID,Signature")] Lesson lessonF)
         {
             string teacher = _userNameService.GetDisplayName();
+            var subject = await _context.Subjects.FindAsync(SubjectID);
+            var group = await _context.Groups.FindAsync(GroupID);
+            var students = await _context.Students.Where(s => s.GroupID == GroupID).ToListAsync();
 
             if (!IsLessonDateValid(lessonF.Date, out string errorMessage))
             {
@@ -398,12 +401,156 @@ namespace Portal
 
             if (!simpleLessons.Any())
             {
-                return RedirectToAction("ErrorF", "Lessons", new { GroupID, SubjectID });
-            }
+                var typeEKZ = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Экзамен");
+                var typeZ = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Зачёт");
+                var lessons = await _context.Lessons
+                    .Where(l => l.GroupID == GroupID && l.SubjectID == SubjectID &&
+                                l.Date < lessonF.Date &&
+                                l.TypeOfExerciseID != typeKR.TypeOfExerciseID &&
+                                l.TypeOfExerciseID != typeKP.TypeOfExerciseID)
+                    .ToListAsync();
+                var lessonZ = lessons.FirstOrDefault(l => l.TypeOfExerciseID == typeZ.TypeOfExerciseID);
+                var zPreviousMarks = await _context.Marks
+                       .Where(m => m.SubjectID == SubjectID && m.GroupID == GroupID &&
+                                   m.FlagF == lessonZ.FlagF &&
+                                   m.Date < lessonF.Date &&
+                                   m.TypeOfExerciseID != typeKR.TypeOfExerciseID &&
+                                   m.TypeOfExerciseID != typeKP.TypeOfExerciseID)
+                       .ToListAsync();
+                var lessonZOldFlagF = lessonZ.FlagF;
 
-            var subject = await _context.Subjects.FindAsync(SubjectID);
-            var group = await _context.Groups.FindAsync(GroupID);
-            var students = await _context.Students.Where(s => s.GroupID == GroupID).ToListAsync();
+                if (lessonZ == null || lessonF.TypeOfExerciseID != typeEKZ.TypeOfExerciseID)
+                {
+                    return RedirectToAction("ErrorF", "Lessons", new { GroupID, SubjectID });
+                }
+                else if (lessonF.TypeOfExerciseID == typeEKZ.TypeOfExerciseID && lessonZ != null)
+                {
+                    var zLessons = lessons
+                        .Where(l => l.FlagF == lessonZ.FlagF)
+                        .ToList();
+
+                    lessonF.SubjectID = SubjectID;
+                    lessonF.GroupID = GroupID;
+                    if (!User.IsInRole("ICDA-writer") && !User.IsInRole("K-8Writer"))
+                        lessonF.Signature = teacher;
+                    _context.Lessons.Add(lessonF);
+                    await _context.SaveChangesAsync();
+                    lessonF.FlagF = lessonF.LessonID;
+                    _context.Lessons.Update(lessonF);
+                    await _context.SaveChangesAsync();
+
+                    Lesson finalLesson = new Lesson
+                    {
+                        Date = lessonF.Date.AddMinutes(10),
+                        FlagF = lessonF.FlagF,
+                        SubjectID = SubjectID,
+                        GroupID = GroupID,
+                        ThemeID = lessonF.ThemeID,
+                        TypeOfExerciseID = typeFinal.TypeOfExerciseID,
+                        Signature = (!User.IsInRole("ICDA-writer") && !User.IsInRole("K-8Writer")) ? teacher : lessonF.Signature
+                    };
+                    _context.Lessons.Add(finalLesson);
+                    await _context.SaveChangesAsync();
+
+                    foreach (var lesson in zLessons)
+                    {
+                        lesson.FlagF = lessonF.FlagF;
+                        _context.Lessons.Update(lesson);
+                    }
+
+                    foreach (var mark in zPreviousMarks)
+                    {
+                        mark.FlagF = lessonF.FlagF;
+                        _context.Marks.Update(mark);
+                    }
+
+                    foreach (var student in students)
+                    {
+                        var zMark = await _context.Marks
+                            .FirstOrDefaultAsync(m => m.TypeOfExerciseID == typeZ.TypeOfExerciseID &&
+                                m.StudentID == student.StudentID &&
+                                m.SubjectID == SubjectID &&
+                                m.FlagF == lessonZOldFlagF
+                            );
+
+                        if (zMark != null && zMark.Value == "З")
+                        {
+                            _context.Marks.AddRange(
+                               new Mark
+                               {
+                                   Value = "",
+                                   Date = lessonF.Date,
+                                   SubjectID = SubjectID,
+                                   GroupID = GroupID,
+                                   LessonID = lessonF.LessonID,
+                                   TypeOfExerciseID = lessonF.TypeOfExerciseID,
+                                   DepartmentID = subject.DepartmentID,
+                                   InstituteID = group.InstituteID,
+                                   SpecialityID = group.SpecialityID,
+                                   ThemeID = lessonF.ThemeID,
+                                   StudentID = student.StudentID,
+                                   FlagF = lessonF.FlagF,
+                                   ChangeCounter = 0
+                               },
+                               new Mark
+                               {
+                                   Value = "",
+                                   Date = finalLesson.Date,
+                                   SubjectID = SubjectID,
+                                   GroupID = GroupID,
+                                   LessonID = finalLesson.LessonID,
+                                   TypeOfExerciseID = typeFinal.TypeOfExerciseID,
+                                   DepartmentID = subject.DepartmentID,
+                                   InstituteID = group.InstituteID,
+                                   SpecialityID = group.SpecialityID,
+                                   ThemeID = finalLesson.ThemeID,
+                                   StudentID = student.StudentID,
+                                   FlagF = finalLesson.FlagF,
+                                   ChangeCounter = 3
+                               });
+                        }
+                        else
+                        {
+                            _context.Marks.AddRange(
+                               new Mark
+                               {
+                                   Value = "Недопуск",
+                                   Date = lessonF.Date,
+                                   SubjectID = SubjectID,
+                                   GroupID = GroupID,
+                                   LessonID = lessonF.LessonID,
+                                   TypeOfExerciseID = lessonF.TypeOfExerciseID,
+                                   DepartmentID = subject.DepartmentID,
+                                   InstituteID = group.InstituteID,
+                                   SpecialityID = group.SpecialityID,
+                                   ThemeID = lessonF.ThemeID,
+                                   StudentID = student.StudentID,
+                                   FlagF = lessonF.FlagF,
+                                   ChangeCounter = 3
+                               },
+                               new Mark
+                               {
+                                   Value = "Недопуск",
+                                   Date = finalLesson.Date,
+                                   SubjectID = SubjectID,
+                                   GroupID = GroupID,
+                                   LessonID = finalLesson.LessonID,
+                                   TypeOfExerciseID = typeFinal.TypeOfExerciseID,
+                                   DepartmentID = subject.DepartmentID,
+                                   InstituteID = group.InstituteID,
+                                   SpecialityID = group.SpecialityID,
+                                   ThemeID = finalLesson.ThemeID,
+                                   StudentID = student.StudentID,
+                                   FlagF = finalLesson.FlagF,
+                                   ChangeCounter = 3
+                               });
+                        }
+                    }
+                }
+                await _context.SaveChangesAsync();
+
+                return RedirectToAction("Journal", "Journals", new { GroupID, SubjectID });
+            }
 
             lessonF.SubjectID = SubjectID;
             lessonF.GroupID = GroupID;
