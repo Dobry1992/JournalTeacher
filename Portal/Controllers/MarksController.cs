@@ -130,7 +130,7 @@ namespace Portal.Controllers
                         typeExam.TypeOfExerciseID
                     };
 
-                    var IALessons= await _context.Lessons
+                    var IALessons = await _context.Lessons
                         .Where(l =>
                             l.GroupID == mark.GroupID &&
                             l.FlagF == mark.FlagF &&
@@ -139,17 +139,90 @@ namespace Portal.Controllers
 
                     if (IALessons.Count > 1)
                     {
-                        //продолжить логику здесь
-                        return Content("Изменение зачёта и экзамена!");
+                        var student = await _context.Students.FindAsync(mark.StudentID);
+                        var lessonExam = IALessons.FirstOrDefault(l => l.TypeOfExerciseID == typeExam.TypeOfExerciseID);
+                        var lessonZ = IALessons.FirstOrDefault(l => l.TypeOfExerciseID == typeZachet.TypeOfExerciseID);
+                        var lessonIOExam = await _context.Lessons.FirstOrDefaultAsync(l =>
+                            l.FlagF == mark.FlagF &&
+                            l.TypeOfExerciseID == typeItog.TypeOfExerciseID &&
+                            l.SubjectID == SubjectID &&
+                            l.GroupID == GroupID &&
+                            l.Date == lessonExam.Date);
+                        var lessonIOZ = await _context.Lessons.FirstOrDefaultAsync(l =>
+                            l.FlagF == mark.FlagF &&
+                            l.TypeOfExerciseID == typeItog.TypeOfExerciseID &&
+                            l.SubjectID == SubjectID &&
+                            l.GroupID == GroupID &&
+                            l.Date == lessonZ.Date);
+
+                        if (lessonExam == null || lessonZ == null || lessonIOExam == null || lessonIOZ == null)
+                        {
+                            return RedirectToAction("Journal", "Journals", new { GroupID, SubjectID });
+                        }
+
+                        var markExam = await _context.Marks.FirstOrDefaultAsync(m =>
+                            m.StudentID == mark.StudentID &&
+                            m.LessonID == lessonExam.LessonID &&
+                            m.TypeOfExerciseID == typeExam.TypeOfExerciseID);
+                        var markZ = await _context.Marks.FirstOrDefaultAsync(m =>
+                            m.StudentID == mark.StudentID &&
+                            m.LessonID == lessonZ.LessonID &&
+                            m.TypeOfExerciseID == typeZachet.TypeOfExerciseID);
+                        var markIOExam = await _context.Marks.FirstOrDefaultAsync(m =>
+                            m.StudentID == mark.StudentID &&
+                            m.LessonID == lessonIOExam.LessonID &&
+                            m.TypeOfExerciseID == typeItog.TypeOfExerciseID);
+                        var markIOZ = await _context.Marks.FirstOrDefaultAsync(m =>
+                            m.StudentID == mark.StudentID &&
+                            m.LessonID == lessonIOZ.LessonID &&
+                            m.TypeOfExerciseID == typeItog.TypeOfExerciseID);
+
+                        if (markExam == null || markZ == null || markIOExam == null || markIOZ == null)
+                        {
+                            return RedirectToAction("Journal", "Journals", new { GroupID, SubjectID });
+                        }
+
+                        var simpleMarks = await _context.Marks
+                            .Where(m => m.FlagF == mark.FlagF &&
+                                        m.StudentID == mark.StudentID &&
+                                        m.SubjectID == SubjectID &&
+                                        m.TypeOfExerciseID != markExam.TypeOfExerciseID &&
+                                        m.TypeOfExerciseID != markIOExam.TypeOfExerciseID &&
+                                        m.TypeOfExerciseID != markZ.TypeOfExerciseID &&
+                                        m.TypeOfExerciseID != markIOZ.TypeOfExerciseID)
+                            .ToListAsync();
+
+                        var controlMarks = await _context.Marks
+                            .Where(m => m.FlagF == mark.FlagF &&
+                                        m.StudentID == mark.StudentID &&
+                                        m.TypeOfExerciseID == typeKontrol.TypeOfExerciseID)
+                            .ToListAsync();
+
+                        List<double> simpleDoubleMarks = new();
+                        List<double> controlDoubleMarks = new();
+
+                        foreach (var m in simpleMarks)
+                        {
+                            if (TryParseMarkValue(m.Value, out double number))
+                            {
+                                simpleDoubleMarks.Add(number);
+                                if (m.TypeOfExerciseID == typeKontrol.TypeOfExerciseID)
+                                    controlDoubleMarks.Add(number);
+                            }
+                        }
+
+                        //продолжить код здесь
                     }
                     else
                     {
                         var markIA = await _context.Marks.FirstOrDefaultAsync(m =>
-                        m.FlagF == mark.FlagF &&
-                        requiredTypeIds.Contains(m.TypeOfExerciseID) &&
-                        m.StudentID == mark.StudentID);
+                            m.SubjectID == SubjectID &&
+                            m.FlagF == mark.FlagF &&
+                            requiredTypeIds.Contains(m.TypeOfExerciseID) &&
+                            m.StudentID == mark.StudentID);
 
                         var markIO = await _context.Marks.FirstOrDefaultAsync(m =>
+                            m.SubjectID == SubjectID &&
                             m.FlagF == mark.FlagF &&
                             m.TypeOfExerciseID == typeItog.TypeOfExerciseID &&
                             m.StudentID == mark.StudentID);
@@ -159,6 +232,7 @@ namespace Portal.Controllers
 
                         var marks = await _context.Marks
                             .Where(m => m.FlagF == mark.FlagF &&
+                                        m.SubjectID == SubjectID &&
                                         m.StudentID == mark.StudentID &&
                                         m.TypeOfExerciseID != markIA.TypeOfExerciseID &&
                                         m.TypeOfExerciseID != markIO.TypeOfExerciseID)
