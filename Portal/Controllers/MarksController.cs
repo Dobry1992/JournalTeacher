@@ -147,13 +147,17 @@ namespace Portal.Controllers
                             l.TypeOfExerciseID == typeItog.TypeOfExerciseID &&
                             l.SubjectID == SubjectID &&
                             l.GroupID == GroupID &&
-                            l.Date == lessonExam.Date);
+                            l.Date.Year == lessonExam.Date.Year &&
+                            l.Date.Month == lessonExam.Date.Month &&
+                            l.Date.Day == lessonExam.Date.Day);
                         var lessonIOZ = await _context.Lessons.FirstOrDefaultAsync(l =>
                             l.FlagF == mark.FlagF &&
                             l.TypeOfExerciseID == typeItog.TypeOfExerciseID &&
                             l.SubjectID == SubjectID &&
                             l.GroupID == GroupID &&
-                            l.Date == lessonZ.Date);
+                            l.Date.Year == lessonZ.Date.Year &&
+                            l.Date.Month == lessonZ.Date.Month &&
+                            l.Date.Day == lessonZ.Date.Day);
 
                         if (lessonExam == null || lessonZ == null || lessonIOExam == null || lessonIOZ == null)
                         {
@@ -192,26 +196,33 @@ namespace Portal.Controllers
                                         m.TypeOfExerciseID != markIOZ.TypeOfExerciseID)
                             .ToListAsync();
 
-                        var controlMarks = await _context.Marks
-                            .Where(m => m.FlagF == mark.FlagF &&
-                                        m.StudentID == mark.StudentID &&
-                                        m.TypeOfExerciseID == typeKontrol.TypeOfExerciseID)
-                            .ToListAsync();
-
                         List<double> simpleDoubleMarks = new();
-                        List<double> controlDoubleMarks = new();
 
                         foreach (var m in simpleMarks)
                         {
                             if (TryParseMarkValue(m.Value, out double number))
                             {
                                 simpleDoubleMarks.Add(number);
-                                if (m.TypeOfExerciseID == typeKontrol.TypeOfExerciseID)
-                                    controlDoubleMarks.Add(number);
                             }
                         }
 
-                        //продолжить код здесь
+                        if (mark.MarkID == markExam.MarkID)
+                        {
+                            if (new[] { "1", "2", "3" }.Contains(mark.Value))
+                            {
+                                markIOExam.Value = mark.Value;
+                                markIOExam.ChangeCounter = 3;
+                            }
+                            else if (TryParseMarkValue(mark.Value, out double num))
+                            {
+                                double average = simpleDoubleMarks.Average();
+                                double finalValue = average * 0.6 + num * 0.4;
+                                markIOExam.Value = Math.Round(finalValue).ToString(CultureInfo.InvariantCulture);
+                                markIOExam.ChangeCounter = 3;
+                            }
+                        }
+
+                        await _context.SaveChangesAsync();
                     }
                     else
                     {
