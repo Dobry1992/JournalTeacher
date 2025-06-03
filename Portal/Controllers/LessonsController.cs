@@ -128,6 +128,9 @@ namespace Portal
         public async Task<IActionResult> AdjustmentCreateF(int GroupID, int SubjectID, [Bind("LessonID,Date,Comment,FlagF,ThemeID,TypeOfExerciseID,GroupID,SubjectID,Signature")] Lesson lessonF)
         {
             string teacher = _userNameService.GetDisplayName();
+            var subject = await _context.Subjects.FindAsync(SubjectID);
+            var group = await _context.Groups.FindAsync(GroupID);
+            var students = await _context.Students.Where(s => s.GroupID == GroupID).ToListAsync();
 
             if (!ModelState.IsValid)
             {
@@ -164,12 +167,41 @@ namespace Portal
 
             if (!simpleLessons.Any())
             {
-                return RedirectToAction("ErrorF", "Lessons", new { GroupID, SubjectID });
-            }
+                var typeEKZ = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Экзамен");
+                var typeZ = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Зачёт");
+                var lessons = await _context.Lessons
+                    .Where(l => l.GroupID == GroupID && l.SubjectID == SubjectID &&
+                                l.Date < lessonF.Date &&
+                                l.TypeOfExerciseID != typeKR.TypeOfExerciseID &&
+                                l.TypeOfExerciseID != typeKP.TypeOfExerciseID)
+                    .ToListAsync();
+                var zLessons = lessons
+                    .Where(l => l.TypeOfExerciseID == typeZ.TypeOfExerciseID)
+                    .ToList();
 
-            var subject = await _context.Subjects.FindAsync(SubjectID);
-            var group = await _context.Groups.FindAsync(GroupID);
-            var students = await _context.Students.Where(s => s.GroupID == GroupID).ToListAsync();
+                if (zLessons.Any())
+                {
+                    return Content("Невозможно создать занятие!");
+                }
+                else
+                {
+                    zLessons.Add(lessonF);
+                    zLessons.OrderBy(l => l.Date).ToList();
+                    int indexLessonF = zLessons.IndexOf(lessonF);
+                    var lessonZ = zLessons[indexLessonF - 1];
+                    var zPreviousMarks = await _context.Marks
+                       .Where(m => m.SubjectID == SubjectID && m.GroupID == GroupID &&
+                                   m.FlagF == lessonZ.FlagF &&
+                                   m.Date < lessonF.Date &&
+                                   m.TypeOfExerciseID != typeKR.TypeOfExerciseID &&
+                                   m.TypeOfExerciseID != typeKP.TypeOfExerciseID)
+                       .ToListAsync();
+                    var lessonZOldFlagF = lessonZ.FlagF;
+
+                }
+
+                
+            }
 
             lessonF.SubjectID = SubjectID;
             lessonF.GroupID = GroupID;
