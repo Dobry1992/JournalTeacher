@@ -134,7 +134,8 @@ namespace Portal.Controllers
                         .Where(l =>
                             l.GroupID == mark.GroupID &&
                             l.FlagF == mark.FlagF &&
-                            l.SubjectID == mark.SubjectID)
+                            l.SubjectID == mark.SubjectID &&
+                            (l.TypeOfExerciseID == typeExam.TypeOfExerciseID || l.TypeOfExerciseID == typeZachet.TypeOfExerciseID))
                         .ToListAsync();
 
                     if (IALessons.Count > 1)
@@ -429,6 +430,8 @@ namespace Portal.Controllers
                         typeDiffZachet.TypeOfExerciseID,
                         typeExam.TypeOfExerciseID
                     };
+
+                    //фрагмент кода
 
                     var markIA = await _context.Marks.FirstOrDefaultAsync(m =>
                         m.FlagF == mark.FlagF &&

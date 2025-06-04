@@ -181,7 +181,7 @@ namespace Portal
 
                 if (!zLessons.Any())
                 {
-                    RedirectToAction("ErrorF", "Lessons", new { GroupID, SubjectID });
+                    return RedirectToAction("ErrorF", "Lessons", new { GroupID, SubjectID });
                 }
                 else
                 {
@@ -196,7 +196,7 @@ namespace Portal
                         var EKZlesson = EKZlessons.FirstOrDefault(l => l.FlagF == lessonZ.FlagF);
                         if (EKZlesson != null)
                         {
-                            RedirectToAction("ErrorF", "Lessons", new { GroupID, SubjectID });
+                            return RedirectToAction("ErrorF", "Lessons", new { GroupID, SubjectID });
                         }
                     }
 
@@ -589,7 +589,7 @@ namespace Portal
 
                 if (!zLessons.Any())
                 {
-                    RedirectToAction("ErrorF", "Lessons", new { GroupID, SubjectID });
+                    return RedirectToAction("ErrorF", "Lessons", new { GroupID, SubjectID });
                 }
                 else
                 {
@@ -598,13 +598,13 @@ namespace Portal
                     int indexLessonF = zLessons.IndexOf(lessonF);
                     var lessonZ = zLessons[indexLessonF - 1];
 
-                    var EKZlessons = lessons.Where(l => l.TypeOfExerciseID == typeEKZ.TypeOfExerciseID);
+                    var EKZlessons = lessons.Where(l => l.TypeOfExerciseID == typeEKZ.TypeOfExerciseID).ToList();
                     if (EKZlessons.Any())
                     {
                         var EKZlesson = EKZlessons.FirstOrDefault(l => l.FlagF == lessonZ.FlagF);
                         if (EKZlesson != null)
                         {
-                            RedirectToAction("ErrorF", "Lessons", new { GroupID, SubjectID });
+                            return RedirectToAction("ErrorF", "Lessons", new { GroupID, SubjectID });
                         }
                     }
 
