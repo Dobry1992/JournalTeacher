@@ -181,7 +181,7 @@ namespace Portal
 
                 if (!zLessons.Any())
                 {
-                    return Content("Невозможно создать занятие!");
+                    RedirectToAction("ErrorF", "Lessons", new { GroupID, SubjectID });
                 }
                 else
                 {
@@ -189,6 +189,17 @@ namespace Portal
                     zLessons.OrderBy(l => l.Date).ToList();
                     int indexLessonF = zLessons.IndexOf(lessonF);
                     var lessonZ = zLessons[indexLessonF - 1];
+
+                    var EKZlessons = lessons.Where(l => l.TypeOfExerciseID == typeEKZ.TypeOfExerciseID);
+                    if (EKZlessons.Any())
+                    {
+                        var EKZlesson = EKZlessons.FirstOrDefault(l => l.FlagF == lessonZ.FlagF);
+                        if (EKZlesson != null)
+                        {
+                            RedirectToAction("ErrorF", "Lessons", new { GroupID, SubjectID });
+                        }
+                    }
+
                     var zPreviousMarks = await _context.Marks
                        .Where(m => m.SubjectID == SubjectID && m.GroupID == GroupID &&
                                    m.FlagF == lessonZ.FlagF &&
@@ -564,19 +575,21 @@ namespace Portal
             {
                 var typeEKZ = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Экзамен");
                 var typeZ = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Зачёт");
+
                 var lessons = await _context.Lessons
                     .Where(l => l.GroupID == GroupID && l.SubjectID == SubjectID &&
                                 l.Date < lessonF.Date &&
                                 l.TypeOfExerciseID != typeKR.TypeOfExerciseID &&
                                 l.TypeOfExerciseID != typeKP.TypeOfExerciseID)
                     .ToListAsync();
+
                 var zLessons = lessons
                     .Where(l => l.TypeOfExerciseID == typeZ.TypeOfExerciseID)
                     .ToList();
 
                 if (!zLessons.Any())
                 {
-                    return Content("Невозможно создать занятие!");
+                    RedirectToAction("ErrorF", "Lessons", new { GroupID, SubjectID });
                 }
                 else
                 {
@@ -584,6 +597,17 @@ namespace Portal
                     zLessons.OrderBy(l => l.Date).ToList();
                     int indexLessonF = zLessons.IndexOf(lessonF);
                     var lessonZ = zLessons[indexLessonF - 1];
+
+                    var EKZlessons = lessons.Where(l => l.TypeOfExerciseID == typeEKZ.TypeOfExerciseID);
+                    if (EKZlessons.Any())
+                    {
+                        var EKZlesson = EKZlessons.FirstOrDefault(l => l.FlagF == lessonZ.FlagF);
+                        if (EKZlesson != null)
+                        {
+                            RedirectToAction("ErrorF", "Lessons", new { GroupID, SubjectID });
+                        }
+                    }
+
                     var zPreviousMarks = await _context.Marks
                        .Where(m => m.SubjectID == SubjectID && m.GroupID == GroupID &&
                                    m.FlagF == lessonZ.FlagF &&
