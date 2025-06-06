@@ -498,12 +498,19 @@ namespace Portal.Controllers
                                         m.TypeOfExerciseID != markIOZ.TypeOfExerciseID)
                             .ToListAsync();
 
+                        var control_marks = simpleMarks.Where(m => m.TypeOfExerciseID == typeKontrol.TypeOfExerciseID);
+
                         List<double> simpleDoubleMarks = new();
+                        List<double> control_double_marks = new();
 
                         foreach (var m in simpleMarks)
                         {
                             if (TryParseMarkValue(m.Value, out double number))
                             {
+                                if (m.TypeOfExerciseID == typeKontrol.TypeOfExerciseID)
+                                {
+                                    control_double_marks.Add(number);
+                                }
                                 simpleDoubleMarks.Add(number);
                             }
                         }
@@ -521,6 +528,49 @@ namespace Portal.Controllers
                                 double finalValue = average * 0.6 + num * 0.4;
                                 markIOExam.Value = Math.Round(finalValue).ToString(CultureInfo.InvariantCulture);
                                 markIOExam.ChangeCounter = 3;
+                            }
+                        }
+                        else if (mark.TypeOfExerciseID != typeZachet.TypeOfExerciseID &&
+                            mark.TypeOfExerciseID != typeDiffZachet.TypeOfExerciseID &&
+                            mark.TypeOfExerciseID != typeExam.TypeOfExerciseID &&
+                            mark.TypeOfExerciseID != typeItog.TypeOfExerciseID && mark.TypeOfExerciseID != typeKontrol.TypeOfExerciseID)
+                        {
+                            double average = simpleDoubleMarks.Average();
+                            if (average < 4)
+                            {
+                                markExam.Value = "Недопуск";
+                                markIOExam.Value = "Недопуск";
+                                markZ.Value = "Недопуск";
+                                markIOZ.Value = "Недопуск";
+                            }
+                            else if (average >= 4)
+                            {
+                                List<double> targets = new() { 1, 2, 3 };
+                                if (control_marks.Count() > control_double_marks.Count() || targets.Any(m => control_double_marks.Contains(m)))
+                                {
+                                    markExam.Value = "Недопуск";
+                                    markIOExam.Value = "Недопуск";
+                                    markZ.Value = "Недопуск";
+                                    markIOZ.Value = "Недопуск";
+                                }
+                                else if (markZ.Value == "Недопуск")
+                                {
+                                    markZ.Value = "";
+                                    markIOZ.Value = "";
+                                }
+                                else
+                                {
+                                    if (markZ.Value == "З")
+                                    {
+                                        if (TryParseMarkValue(markExam.Value, out double exam))
+                                        {
+                                            if (exam != 1 || exam != 2 || exam != 3)
+                                            {
+                                                markIOExam.Value = (average * 0.6 + exam * 0.4).ToString();
+                                            }
+                                        }
+                                    }
+                                }
                             }
                         }
 
