@@ -546,7 +546,7 @@ namespace Portal.Controllers
                             else if (average >= 4)
                             {
                                 List<double> targets = new() { 1, 2, 3 };
-                                if (control_marks.Count() > control_double_marks.Count() || targets.Any(m => control_double_marks.Contains(m)))
+                                if (control_marks.Count() != control_double_marks.Count() || targets.Any(m => control_double_marks.Contains(m)))
                                 {
                                     markExam.Value = "Недопуск";
                                     markIOExam.Value = "Недопуск";
@@ -566,11 +566,54 @@ namespace Portal.Controllers
                                         {
                                             if (exam != 1 || exam != 2 || exam != 3)
                                             {
-                                                markIOExam.Value = (average * 0.6 + exam * 0.4).ToString();
+                                                markIOExam.Value = Math.Round(average * 0.6 + exam * 0.4).ToString(CultureInfo.InvariantCulture);
                                             }
                                         }
                                     }
                                 }
+                            }
+                        }
+                        else if (mark.TypeOfExerciseID == typeKontrol.TypeOfExerciseID)
+                        {
+                            if (TryParseMarkValue(mark.Value, out double controlMark))
+                            {
+                                if (controlMark == 1 || controlMark == 2 || controlMark == 3)
+                                {
+                                    markExam.Value = "Недопуск";
+                                    markIOExam.Value = "Недопуск";
+                                    markZ.Value = "Недопуск";
+                                    markIOZ.Value = "Недопуск";
+                                }
+                                else
+                                {
+                                    double average = simpleDoubleMarks.Average();
+                                    if (markZ.Value == "З")
+                                    {
+                                        if (TryParseMarkValue(markExam.Value, out double exam))
+                                        {
+                                            if (exam != 1 || exam != 2 || exam != 3)
+                                            {
+                                                markIOExam.Value = Math.Round(average * 0.6 + exam * 0.4).ToString(CultureInfo.InvariantCulture);
+                                            }
+                                        }
+                                    }
+                                    else if (markZ.Value == "Недопуск")
+                                    {
+                                        List<double> targets = new() { 1, 2, 3 };
+                                        if (average >= 4 && control_marks.Count() == control_double_marks.Count() && !targets.Any(m => control_double_marks.Contains(m)))
+                                        {
+                                            markZ.Value = "";
+                                            markIOZ.Value = "";
+                                        }
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                markExam.Value = "Недопуск";
+                                markIOExam.Value = "Недопуск";
+                                markZ.Value = "Недопуск";
+                                markIOZ.Value = "Недопуск";
                             }
                         }
 
