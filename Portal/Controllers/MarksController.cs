@@ -616,6 +616,33 @@ namespace Portal.Controllers
                                 markIOZ.Value = "Недопуск";
                             }
                         }
+                        else if (mark.TypeOfExerciseID == typeZachet.TypeOfExerciseID)
+                        {
+                            List<double> targets = new() { 1, 2, 3 };
+                            double average = simpleDoubleMarks.Average();
+                            if (average >= 4 && control_marks.Count() == control_double_marks.Count() && !targets.Any(m => control_double_marks.Contains(m)))
+                            {
+                                if (mark.Value == "З")
+                                {
+                                    markExam.Value = "";
+                                    markIOExam.Value = "";
+                                    markIOZ.Value = "Зачтено";
+                                }
+                                else
+                                {
+                                    markExam.Value = "Недопуск";
+                                    markIOExam.Value = "Недопуск";
+                                    markIOZ.Value = "Не зачтено";
+                                }
+                            }
+                            else
+                            {
+                                markExam.Value = "Недопуск";
+                                markIOExam.Value = "Недопуск";
+                                markZ.Value = "Недопуск";
+                                markIOZ.Value = "Недопуск";
+                            }
+                        }
 
                         await _context.SaveChangesAsync();
                     }
