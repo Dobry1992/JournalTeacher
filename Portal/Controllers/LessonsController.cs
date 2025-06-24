@@ -1489,23 +1489,119 @@ namespace Portal
             if (lesson == null)
                 return NotFound();
 
-            var lessons = await _context.Lessons
-                .Where(l => l.FlagF == lesson.FlagF)
-                .ToListAsync();
-
             var typeIO = await _context.Types.FirstOrDefaultAsync(t => t.Name == TypeNames.Final);
             if (typeIO == null)
                 return BadRequest("Тип 'Итоговая оценка' не найден.");
-            var typeZ = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Зачёт");
-            var typeExam = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Экзамен");
 
-            var lessonZ = lessons.FirstOrDefault(l => l.TypeOfExerciseID == typeZ.TypeOfExerciseID);
-            var lessonExam = lessons.FirstOrDefault(l => l.TypeOfExerciseID == typeExam.TypeOfExerciseID);
-
-            if (lessonZ != null && lessonExam != null)
+            if (lesson.FlagF != 0)
             {
-                //продолжить логику здесь
+                var lessons = await _context.Lessons
+                   .Where(l => l.FlagF == lesson.FlagF)
+                   .ToListAsync();
 
+                var typeZ = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Зачёт");
+                var typeExam = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Экзамен");
+                var typeIo = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Итоговая оценка");
+
+                var lessonZ = lessons.FirstOrDefault(l => l.TypeOfExerciseID == typeZ.TypeOfExerciseID);
+                var lessonExam = lessons.FirstOrDefault(l => l.TypeOfExerciseID == typeExam.TypeOfExerciseID);
+
+                if (lessonZ != null && lessonExam != null)
+                {
+                    var lessonIoZ = lessons.FirstOrDefault(l =>
+                        l.TypeOfExerciseID == typeIo.TypeOfExerciseID &&
+                        l.Date.Year == lessonZ.Date.Year &&
+                        l.Date.Month == lessonZ.Date.Month &&
+                        l.Date.Day == lessonZ.Date.Day);
+
+                    var lessonIoExam = lessons.FirstOrDefault(l =>
+                        l.TypeOfExerciseID == typeIo.TypeOfExerciseID &&
+                        l.Date.Year == lessonExam.Date.Year &&
+                        l.Date.Month == lessonExam.Date.Month &&
+                        l.Date.Day == lessonExam.Date.Day);
+
+                    if (lesson.LessonID == lessonExam.LessonID || lesson.LessonID == lessonIoExam.LessonID)
+                    {
+                        var examMarks = await _context.Marks
+                            .Where(m => m.LessonID == lessonExam.LessonID)
+                            .ToListAsync();
+
+                        var ioExamMarks = await _context.Marks
+                            .Where(m => m.LessonID == lessonIoExam.LessonID)
+                            .ToListAsync();
+
+                        _context.Marks.RemoveRange(examMarks);
+                        _context.Marks.RemoveRange(ioExamMarks);
+                        _context.Lessons.Remove(lessonExam);
+                        _context.Lessons.Remove(lessonIoExam);
+
+                        await _context.SaveChangesAsync();
+
+                        return RedirectToAction("AdjustedJournal", "Journals", new { GroupID, SubjectID });
+                    }
+                    else if (lesson.LessonID == lessonZ.LessonID || lesson.LessonID == lessonIoZ.LessonID)
+                    {
+                        var marks = await _context.Marks
+                            .Where(m => m.FlagF == lesson.FlagF)
+                            .ToListAsync();
+
+                        var examMarks = marks
+                            .Where(m => m.LessonID == lessonExam.LessonID)
+                            .ToList();
+
+                        var ioExamMarks = marks
+                            .Where(m => m.LessonID == lessonIoExam.LessonID)
+                            .ToList();
+
+                        var zMarks = marks
+                            .Where(m => m.LessonID == lessonZ.LessonID)
+                            .ToList();
+
+                        var zIoMarks = marks
+                            .Where(m => m.LessonID == lessonIoZ.LessonID)
+                            .ToList();
+
+                        _context.Marks.RemoveRange(examMarks);
+                        _context.Marks.RemoveRange(ioExamMarks);
+                        marks.RemoveAll(m => examMarks.Contains(m));
+                        marks.RemoveAll(m => ioExamMarks.Contains(m));
+                        _context.Lessons.Remove(lessonExam);
+                        _context.Lessons.Remove(lessonIoExam);
+                        lessons.Remove(lessonExam);
+                        lessons.Remove(lessonIoExam);
+
+                        _context.Marks.RemoveRange(zMarks);
+                        _context.Marks.RemoveRange(zIoMarks);
+                        marks.RemoveAll(m => zMarks.Contains(m));
+                        marks.RemoveAll(m => zIoMarks.Contains(m));
+                        _context.Lessons.Remove(lessonZ);
+                        _context.Lessons.Remove(lessonIoZ);
+                        lessons.Remove(lessonZ);
+                        lessons.Remove(lessonIoZ);
+
+                        foreach (var l in lessons)
+                        {
+                            l.FlagF = 0;
+                        }
+
+                        _context.Lessons.UpdateRange(lessons);
+
+                        foreach (var mark in marks)
+                        {
+                            mark.FlagF = 0;
+                        }
+
+                        _context.Marks.UpdateRange(marks);
+
+                        await _context.SaveChangesAsync();
+
+                        return RedirectToAction("AdjustedJournal", "Journals", new { GroupID, SubjectID });
+                    }
+                    else
+                    {
+                        //продолжить код здесь
+                    }
+                }
             }
 
             var typeIds = await _context.Types
