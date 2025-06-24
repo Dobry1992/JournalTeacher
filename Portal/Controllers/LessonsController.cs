@@ -1489,9 +1489,24 @@ namespace Portal
             if (lesson == null)
                 return NotFound();
 
+            var lessons = await _context.Lessons
+                .Where(l => l.FlagF == lesson.FlagF)
+                .ToListAsync();
+
             var typeIO = await _context.Types.FirstOrDefaultAsync(t => t.Name == TypeNames.Final);
             if (typeIO == null)
                 return BadRequest("Тип 'Итоговая оценка' не найден.");
+            var typeZ = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Зачёт");
+            var typeExam = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Экзамен");
+
+            var lessonZ = lessons.FirstOrDefault(l => l.TypeOfExerciseID == typeZ.TypeOfExerciseID);
+            var lessonExam = lessons.FirstOrDefault(l => l.TypeOfExerciseID == typeExam.TypeOfExerciseID);
+
+            if (lessonZ != null && lessonExam != null)
+            {
+                //продолжить логику здесь
+
+            }
 
             var typeIds = await _context.Types
                 .Where(t => TypeNames.ExamTypes.Contains(t.Name))
