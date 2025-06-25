@@ -1685,19 +1685,58 @@ namespace Portal
                                     }
                                 }
 
+                                if (doubleControlMarks.Count != controlMarks.Count)
+                                {
+                                    await SetNotAllowedMarksAsync(zMark, ioZMark, examMark, ioExamMark);
+                                    return RedirectToAction("AdjustedJournal", "Journals", new { GroupID, SubjectID });
+                                }
+                                else
+                                {
+                                    if (doubleControlMarks.Any(n => n is 1 or 2 or 3))
+                                    {
+                                        await SetNotAllowedMarksAsync(zMark, ioZMark, examMark, ioExamMark);
+                                        return RedirectToAction("AdjustedJournal", "Journals", new { GroupID, SubjectID });
+                                    }
+                                    else
+                                    {
+                                        var avarage = doubleSimpleMarks.Average();
+                                        if (avarage < 4)
+                                        {
+                                            await SetNotAllowedMarksAsync(zMark, ioZMark, examMark, ioExamMark);
+                                            return RedirectToAction("AdjustedJournal", "Journals", new { GroupID, SubjectID });
+                                        }
+                                        else
+                                        {
+                                            if (zMark.Value == "Не зачтено")
+                                            {
+                                                examMark.Value = "Недопуск";
+                                                ioExamMark.Value = "Недопуск";
 
+                                                _context.Marks.UpdateRange(examMark, ioExamMark);
+                                                return RedirectToAction("AdjustedJournal", "Journals", new { GroupID, SubjectID });
+                                            }
+                                            else if (zMark.Value == "Зачтено")
+                                            {
+                                                if (double.TryParse(examMark.Value, out double exam))
+                                                {
+                                                    if (exam != 1 || exam != 2 || exam != 3)
+                                                    {
+                                                        var value = avarage * 0.6 + exam * 0.4;
+                                                        ioExamMark.Value = Math.Round(value).ToString(CultureInfo.InvariantCulture);
+
+                                                        _context.Marks.Update(ioExamMark);
+
+                                                        return RedirectToAction("AdjustedJournal", "Journals", new { GroupID, SubjectID });
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
                             }
                             else
                             {
-                                zMark.Value = "Недопуск";
-                                ioZMark.Value = "Недопуск";
-                                examMark.Value = "Недопуск";
-                                ioExamMark.Value = "Недопуск";
-                                List<Mark> finalMarks = new List<Mark> { zMark, ioZMark, examMark, ioExamMark };
-
-                                _context.Marks.UpdateRange(finalMarks);
-                                await _context.SaveChangesAsync();
-
+                                await SetNotAllowedMarksAsync(zMark, ioZMark, examMark, ioExamMark);
                                 return RedirectToAction("AdjustedJournal", "Journals", new { GroupID, SubjectID });
                             }
                         }
@@ -1766,7 +1805,9 @@ namespace Portal
 
         private async Task DeleteLessonWithMarksAsync(int lessonId)
         {
-            var marks = await _context.Marks.Where(m => m.LessonID == lessonId).ToListAsync();
+            var marks = await _context.Marks
+                .Where(m => m.LessonID == lessonId)
+                .ToListAsync();
             _context.Marks.RemoveRange(marks);
 
             var lesson = await _context.Lessons.FindAsync(lessonId);
@@ -1851,6 +1892,19 @@ namespace Portal
                 }
             }
 
+            await _context.SaveChangesAsync();
+        }
+
+        private async Task SetNotAllowedMarksAsync(Mark zMark, Mark ioZMark, Mark examMark, Mark ioExamMark)
+        {
+            zMark.Value = "Недопуск";
+            ioZMark.Value = "Недопуск";
+            examMark.Value = "Недопуск";
+            ioExamMark.Value = "Недопуск";
+
+            List<Mark> finalMarks = new List<Mark> { zMark, ioZMark, examMark, ioExamMark };
+
+            _context.Marks.UpdateRange(finalMarks);
             await _context.SaveChangesAsync();
         }
 
