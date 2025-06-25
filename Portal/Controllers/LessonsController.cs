@@ -1501,7 +1501,6 @@ namespace Portal
 
                 var typeZ = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Зачёт");
                 var typeExam = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Экзамен");
-                var typeIo = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Итоговая оценка");
 
                 var lessonZ = lessons.FirstOrDefault(l => l.TypeOfExerciseID == typeZ.TypeOfExerciseID);
                 var lessonExam = lessons.FirstOrDefault(l => l.TypeOfExerciseID == typeExam.TypeOfExerciseID);
@@ -1509,13 +1508,13 @@ namespace Portal
                 if (lessonZ != null && lessonExam != null)
                 {
                     var lessonIoZ = lessons.FirstOrDefault(l =>
-                        l.TypeOfExerciseID == typeIo.TypeOfExerciseID &&
+                        l.TypeOfExerciseID == typeIO.TypeOfExerciseID &&
                         l.Date.Year == lessonZ.Date.Year &&
                         l.Date.Month == lessonZ.Date.Month &&
                         l.Date.Day == lessonZ.Date.Day);
 
                     var lessonIoExam = lessons.FirstOrDefault(l =>
-                        l.TypeOfExerciseID == typeIo.TypeOfExerciseID &&
+                        l.TypeOfExerciseID == typeIO.TypeOfExerciseID &&
                         l.Date.Year == lessonExam.Date.Year &&
                         l.Date.Month == lessonExam.Date.Month &&
                         l.Date.Day == lessonExam.Date.Day);
@@ -1599,7 +1598,109 @@ namespace Portal
                     }
                     else
                     {
-                        //продолжить код здесь
+                        var lessonMarks = await _context.Marks
+                            .Where(m => m.LessonID == lesson.LessonID)
+                            .ToListAsync();
+                        _context.Marks.RemoveRange(lessonMarks);
+                        _context.Lessons.Remove(lesson);
+
+                        var students = await _context.Students
+                            .Where(s => s.GroupID == GroupID)
+                            .ToListAsync();
+
+                        foreach (var student in students)
+                        {
+                            var controlType = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Контрольное мероприятие");
+
+                            var simpleMarks = await _context.Marks
+                                .Where(m =>
+                                    m.StudentID == student.StudentID &&
+                                    m.SubjectID == SubjectID &&
+                                    m.FlagF == lesson.FlagF &&
+                                    m.TypeOfExerciseID != typeIO.TypeOfExerciseID &&
+                                    m.TypeOfExerciseID != typeExam.TypeOfExerciseID &&
+                                    m.TypeOfExerciseID != typeZ.TypeOfExerciseID
+                                )
+                                .ToListAsync();
+
+                            var controlMarks = await _context.Marks
+                                .Where(m =>
+                                    m.StudentID == student.StudentID &&
+                                    m.SubjectID == SubjectID &&
+                                    m.FlagF == lesson.FlagF &&
+                                    m.TypeOfExerciseID == controlType.TypeOfExerciseID
+                                )
+                                .ToListAsync();
+
+                            var examMark = await _context.Marks
+                                .FirstOrDefaultAsync(m =>
+                                    m.StudentID == student.StudentID &&
+                                    m.SubjectID == SubjectID &&
+                                    m.FlagF == lesson.FlagF &&
+                                    m.TypeOfExerciseID == typeExam.TypeOfExerciseID
+                                );
+
+                            var ioExamMark = await _context.Marks
+                                .FirstOrDefaultAsync(m =>
+                                    m.StudentID == student.StudentID &&
+                                    m.SubjectID == SubjectID &&
+                                    m.FlagF == lesson.FlagF &&
+                                    m.LessonID == lessonIoExam.LessonID
+                                );
+
+                            var zMark = await _context.Marks
+                                .FirstOrDefaultAsync(m =>
+                                    m.StudentID == student.StudentID &&
+                                    m.SubjectID == SubjectID &&
+                                    m.FlagF == lesson.FlagF &&
+                                    m.TypeOfExerciseID == typeZ.TypeOfExerciseID
+                                );
+
+                            var ioZMark = await _context.Marks
+                                .FirstOrDefaultAsync(m =>
+                                    m.StudentID == student.StudentID &&
+                                    m.SubjectID == SubjectID &&
+                                    m.FlagF == lesson.FlagF &&
+                                    m.LessonID == lessonIoZ.LessonID
+                                );
+
+                            List<double> doubleSimpleMarks = new();
+                            List<double> doubleControlMarks = new();
+
+                            foreach (var mark in simpleMarks)
+                            {
+                                if (double.TryParse(mark.Value, out double number))
+                                {
+                                    doubleSimpleMarks.Add(number);
+                                }
+                            }
+
+                            if (controlMarks.Any())
+                            {
+                                foreach (var mark in controlMarks)
+                                {
+                                    if (double.TryParse(mark.Value, out double number))
+                                    {
+                                        doubleControlMarks.Add(number);
+                                    }
+                                }
+
+
+                            }
+                            else
+                            {
+                                zMark.Value = "Недопуск";
+                                ioZMark.Value = "Недопуск";
+                                examMark.Value = "Недопуск";
+                                ioExamMark.Value = "Недопуск";
+                                List<Mark> finalMarks = new List<Mark> { zMark, ioZMark, examMark, ioExamMark };
+
+                                _context.Marks.UpdateRange(finalMarks);
+                                await _context.SaveChangesAsync();
+
+                                return RedirectToAction("AdjustedJournal", "Journals", new { GroupID, SubjectID });
+                            }
+                        }
                     }
                 }
             }
