@@ -1604,6 +1604,8 @@ namespace Portal
                         _context.Marks.RemoveRange(lessonMarks);
                         _context.Lessons.Remove(lesson);
 
+                        await _context.SaveChangesAsync();
+
                         var students = await _context.Students
                             .Where(s => s.GroupID == GroupID)
                             .ToListAsync();
@@ -1688,14 +1690,12 @@ namespace Portal
                                 if (doubleControlMarks.Count != controlMarks.Count)
                                 {
                                     await SetNotAllowedMarksAsync(zMark, ioZMark, examMark, ioExamMark);
-                                    return RedirectToAction("AdjustedJournal", "Journals", new { GroupID, SubjectID });
                                 }
                                 else
                                 {
                                     if (doubleControlMarks.Any(n => n is 1 or 2 or 3))
                                     {
                                         await SetNotAllowedMarksAsync(zMark, ioZMark, examMark, ioExamMark);
-                                        return RedirectToAction("AdjustedJournal", "Journals", new { GroupID, SubjectID });
                                     }
                                     else
                                     {
@@ -1703,19 +1703,18 @@ namespace Portal
                                         if (avarage < 4)
                                         {
                                             await SetNotAllowedMarksAsync(zMark, ioZMark, examMark, ioExamMark);
-                                            return RedirectToAction("AdjustedJournal", "Journals", new { GroupID, SubjectID });
                                         }
                                         else
                                         {
-                                            if (zMark.Value == "Не зачтено")
+                                            if (zMark.Value == "НЗ")
                                             {
                                                 examMark.Value = "Недопуск";
                                                 ioExamMark.Value = "Недопуск";
 
                                                 _context.Marks.UpdateRange(examMark, ioExamMark);
-                                                return RedirectToAction("AdjustedJournal", "Journals", new { GroupID, SubjectID });
+                                                await _context.SaveChangesAsync();
                                             }
-                                            else if (zMark.Value == "Зачтено")
+                                            else if (zMark.Value == "З")
                                             {
                                                 if (double.TryParse(examMark.Value, out double exam))
                                                 {
@@ -1725,8 +1724,7 @@ namespace Portal
                                                         ioExamMark.Value = Math.Round(value).ToString(CultureInfo.InvariantCulture);
 
                                                         _context.Marks.Update(ioExamMark);
-
-                                                        return RedirectToAction("AdjustedJournal", "Journals", new { GroupID, SubjectID });
+                                                        await _context.SaveChangesAsync();
                                                     }
                                                 }
                                             }
@@ -1737,9 +1735,10 @@ namespace Portal
                             else
                             {
                                 await SetNotAllowedMarksAsync(zMark, ioZMark, examMark, ioExamMark);
-                                return RedirectToAction("AdjustedJournal", "Journals", new { GroupID, SubjectID });
                             }
                         }
+
+                        return RedirectToAction("AdjustedJournal", "Journals", new { GroupID, SubjectID });
                     }
                 }
             }
