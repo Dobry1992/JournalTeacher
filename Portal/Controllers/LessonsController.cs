@@ -976,6 +976,9 @@ namespace Portal
             lesson.GroupID = GroupID;
             lesson.Signature = teacher;
 
+            var typeZ = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Зачёт");
+            var typeExam = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Экзамен");
+
             var finalTypeNames = new[] { "Экзамен", "Зачёт", "Дифференцированный зачёт" };
 
             var typeIds = await _context.Types
@@ -985,12 +988,16 @@ namespace Portal
 
             var finalLessons = await _context.Lessons
                 .Where(l => typeIds.Contains(l.TypeOfExerciseID) &&
-                            l.GroupID == GroupID && l.SubjectID == SubjectID)
+                            l.GroupID == GroupID
+                            && l.SubjectID == SubjectID
+                )
                 .ToListAsync();
 
             if (finalLessons.Any())
             {
-                var lessons = finalLessons.Append(lesson).OrderBy(l => l.Date).ToList();
+                var lessons = finalLessons
+                    .Append(lesson)
+                    .OrderBy(l => l.Date).ToList();
 
                 var indexLesson = lessons.IndexOf(lesson);
 
