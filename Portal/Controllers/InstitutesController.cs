@@ -36,7 +36,6 @@ namespace Portal
                 var students = await _context.Students.Where(s => s.GroupID == g.GroupID).ToListAsync();
                 var journals = await _context.Journals.Where(j => j.GroupID == g.GroupID).ToListAsync();
 
-                // Заранее загружаем все нужные предметы
                 var subjectIds = journals.Select(j => j.SubjectID).Distinct().ToList();
                 var subjectsDict = await _context.Subjects
                     .Where(s => subjectIds.Contains(s.SubjectID))
@@ -379,11 +378,6 @@ namespace Portal
                         marksValue.Add(m);
                     }
                 }
-                if (marksValue.Count != 0)
-                {
-                    double raitingStudent = Math.Round(marksValue.Sum() / marksValue.Count, 2);
-                    studentRaiting.CommonRaiting = raitingStudent;
-                }
 
                 var subGrMarks = from mark in msds
                                  group mark by mark.SubjectID;
@@ -701,7 +695,7 @@ namespace Portal
                 return NotFound();
             }
 
-            var bestStudent = studentRaitings.OrderByDescending(s => s.CommonRaiting).FirstOrDefault();
+            var bestStudent = studentRaitings.OrderByDescending(s => s.Raiting).FirstOrDefault();
             if (bestStudent == null)
             {
                 InstStudRaiting i = new();
@@ -712,7 +706,7 @@ namespace Portal
             {
                 ViewBag.BestStudent = bestStudent;
             }
-            var worseStudent = studentRaitings.OrderByDescending(s => s.CommonRaiting).LastOrDefault();
+            var worseStudent = studentRaitings.OrderByDescending(s => s.Raiting).LastOrDefault();
             if (worseStudent == null)
             {
                 InstStudRaiting i = new();

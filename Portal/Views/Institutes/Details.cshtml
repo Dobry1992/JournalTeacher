@@ -77,8 +77,7 @@
                                     <tr>
                                         <th class="text-center align-middle">#</th>
                                         <th class="text-center fixed fix align-middle">Ф.И.О.</th>
-                                        <th class="text-center align-middle">Ср. балл "общий"</th>
-                                        <th class="text-center align-middle">Ср. балл "по предметам"</th>
+                                        <th class="text-center align-middle">Средний балл</th>
                                         <th class="text-center align-middle">Группа</th>
                                     </tr>
                                 </thead>
@@ -88,7 +87,6 @@
                                         <tr class="text-center" style="font-size:small;">
                                             <td class="align-middle">@i</td>
                                             <td class="fix fixed"><a class="nav-link text-dark" asp-controller="Students" asp-action="Details" asp-route-id="@student.Student.StudentID">@student.Student.LastName @student.Student.Name[0]. @student.Student.Surname[0].</a></td>
-                                            <td class="align-middle">@student.CommonRaiting.ToString().Replace(",", ".")</td>
                                             <td class="align-middle">@student.Raiting.ToString().Replace(",", ".")</td>
                                             <td><a class="nav-link text-dark" asp-controller="Groups" asp-action="DetailsGroup" asp-route-id="@student.Group.GroupID">@student.Group.Name.ToString()</a></td>
                                         </tr>
@@ -155,7 +153,7 @@
                         <div class="info-box-content">
                             <span class="info-box-text mb-1">Лучший слушатель/курсант:<br />@ViewBag.BestStudent.Student.LastName @ViewBag.BestStudent.Student.Name[0].@ViewBag.BestStudent.Student.Surname[0].</span>
                             <span class="info-box-text">Группа: @ViewBag.BestStudent.Group.Name</span>
-                            <span class="info-box-number">Средний балл: @ViewBag.BestStudent.CommonRaiting.ToString()</span>
+                            <span class="info-box-number">Средний балл: @ViewBag.BestStudent.Raiting.ToString()</span>
                         </div>
                         <div class="info-box-content">
                             <a asp-controller="Students" asp-action="Details" asp-route-id="@ViewBag.BestStudent.Student.StudentID" class="btn btn-outline-light text-center w-50">Перейти</a>
@@ -169,7 +167,7 @@
                         <div class="info-box-content">
                             <span class="info-box-text mb-1">Худший слушатель/курсант:<br />@ViewBag.WorseStudent.Student.LastName @ViewBag.WorseStudent.Student.Name[0].@ViewBag.WorseStudent.Student.Surname[0].</span>
                             <span class="info-box-text">Группа: @ViewBag.WorseStudent.Group.Name</span>
-                            <span class="info-box-number">Средний балл: @ViewBag.WorseStudent.CommonRaiting.ToString()</span>
+                            <span class="info-box-number">Средний балл: @ViewBag.WorseStudent.Raiting.ToString()</span>
                         </div>
                         <div class="info-box-content">
                             <a asp-controller="Students" asp-action="Details" asp-route-id="@ViewBag.WorseStudent.Student.StudentID" class="btn btn-outline-light text-center w-50">Перейти</a>
