@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore;
 using Portal.Data;
 using Portal.Models;
 using Portal.Models.Model;
+using Portal.Services;
 using Portal.ViewModel;
 using Portal.ViewModel.Raiting;
 using Portal.ViewModel.Statement;
@@ -17,10 +18,12 @@ namespace Portal
     public class InstitutesController : Controller
     {
         private readonly AcademyContext _context;
+        private readonly StudentAverageMarkService _studentAverageMarkService;
 
-        public InstitutesController(AcademyContext context)
+        public InstitutesController(AcademyContext context, StudentAverageMarkService studentAverageMarkService)
         {
             _context = context;
+            _studentAverageMarkService = studentAverageMarkService;
         }
 
         public async Task<IActionResult> Statement(int id)
@@ -300,13 +303,27 @@ namespace Portal
             var typeKM = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Контрольное мероприятие");
             var typeGPZ = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Городское практическое занятие");
             List<double> marksAverage = new();
-            IQueryable<Mark> marks;
+            List<Mark> marks = new();
             List<Mark> marksDouble = new();
             if (DateTime.Now.Month.ToString() == "9" || DateTime.Now.Month.ToString() == "10" || DateTime.Now.Month.ToString() == "11" || DateTime.Now.Month.ToString() == "12")
             {
                 term = "первый семестр";
-                marks = _context.Marks.Where(m => m.InstituteID == id && (m.TypeOfExerciseID == typeKM.TypeOfExerciseID || m.TypeOfExerciseID == typeGPZ.TypeOfExerciseID || m.TypeOfExerciseID == typeSZ.TypeOfExerciseID || m.TypeOfExerciseID == typePZ.TypeOfExerciseID || m.TypeOfExerciseID == typeLZ.TypeOfExerciseID || m.TypeOfExerciseID == typeL.TypeOfExerciseID) && m.Date.Year == DateTime.Now.Year
-                    && (m.Date.Month.ToString() == "9" || m.Date.Month.ToString() == "10" || m.Date.Month.ToString() == "11" || m.Date.Month.ToString() == "12"));
+                marks = await _context.Marks
+                    .Where(m =>
+                        m.InstituteID == id &&
+                        (m.TypeOfExerciseID == typeKM.TypeOfExerciseID ||
+                            m.TypeOfExerciseID == typeGPZ.TypeOfExerciseID ||
+                            m.TypeOfExerciseID == typeSZ.TypeOfExerciseID ||
+                            m.TypeOfExerciseID == typePZ.TypeOfExerciseID ||
+                            m.TypeOfExerciseID == typeLZ.TypeOfExerciseID ||
+                            m.TypeOfExerciseID == typeL.TypeOfExerciseID) &&
+                        m.Date.Year == DateTime.Now.Year &&
+                            (m.Date.Month.ToString() == "9" ||
+                            m.Date.Month.ToString() == "10" ||
+                            m.Date.Month.ToString() == "11" ||
+                            m.Date.Month.ToString() == "12")
+                    )
+                    .ToListAsync();
                 if (marks != null)
                 {
                     foreach (var mark in marks)
@@ -322,7 +339,26 @@ namespace Portal
             else if (DateTime.Now.Month.ToString() == "1")
             {
                 term = "первый семестр";
-                marks = _context.Marks.Where(m => m.InstituteID == id && (m.TypeOfExerciseID == typeKM.TypeOfExerciseID || m.TypeOfExerciseID == typeGPZ.TypeOfExerciseID || m.TypeOfExerciseID == typeSZ.TypeOfExerciseID || m.TypeOfExerciseID == typePZ.TypeOfExerciseID || m.TypeOfExerciseID == typeLZ.TypeOfExerciseID || m.TypeOfExerciseID == typeL.TypeOfExerciseID) && ((m.Date.Year == DateTime.Now.Year && (m.Date.Month.ToString() == "1") || m.Date.Year == date.Year && (m.Date.Month.ToString() == "9" || m.Date.Month.ToString() == "10" || m.Date.Month.ToString() == "11" || m.Date.Month.ToString() == "12"))));
+                marks = await _context.Marks
+                    .Where(m => 
+                        m.InstituteID == id && 
+                            (
+                                m.TypeOfExerciseID == typeKM.TypeOfExerciseID || 
+                                m.TypeOfExerciseID == typeGPZ.TypeOfExerciseID || 
+                                m.TypeOfExerciseID == typeSZ.TypeOfExerciseID ||
+                                m.TypeOfExerciseID == typePZ.TypeOfExerciseID || 
+                                m.TypeOfExerciseID == typeLZ.TypeOfExerciseID || 
+                                m.TypeOfExerciseID == typeL.TypeOfExerciseID
+                            ) && 
+                        ((m.Date.Year == DateTime.Now.Year && 
+                        (m.Date.Month.ToString() == "1") || 
+                            m.Date.Year == date.Year && 
+                            (m.Date.Month.ToString() == "9" ||
+                            m.Date.Month.ToString() == "10" || 
+                            m.Date.Month.ToString() == "11" ||
+                            m.Date.Month.ToString() == "12")))
+                    )
+                    .ToListAsync();
                 if (marks != null)
                 {
                     foreach (var mark in marks)
@@ -338,7 +374,25 @@ namespace Portal
             else
             {
                 term = "второй семестр";
-                marks = _context.Marks.Where(m => m.InstituteID == id && (m.TypeOfExerciseID == typeKM.TypeOfExerciseID || m.TypeOfExerciseID == typeGPZ.TypeOfExerciseID || m.TypeOfExerciseID == typeSZ.TypeOfExerciseID || m.TypeOfExerciseID == typePZ.TypeOfExerciseID || m.TypeOfExerciseID == typeLZ.TypeOfExerciseID || m.TypeOfExerciseID == typeL.TypeOfExerciseID) && ((m.Date.Year == DateTime.Now.Year && (m.Date.Month.ToString() == "2" || m.Date.Month.ToString() == "3" || m.Date.Month.ToString() == "4" || m.Date.Month.ToString() == "5" || m.Date.Month.ToString() == "6" || m.Date.Month.ToString() == "7" || m.Date.Month.ToString() == "8"))));
+                marks = await _context.Marks
+                    .Where(m => m.InstituteID == id && 
+                        (
+                            m.TypeOfExerciseID == typeKM.TypeOfExerciseID ||
+                            m.TypeOfExerciseID == typeGPZ.TypeOfExerciseID || 
+                            m.TypeOfExerciseID == typeSZ.TypeOfExerciseID || 
+                            m.TypeOfExerciseID == typePZ.TypeOfExerciseID || 
+                            m.TypeOfExerciseID == typeLZ.TypeOfExerciseID || 
+                            m.TypeOfExerciseID == typeL.TypeOfExerciseID) && 
+                    ((m.Date.Year == DateTime.Now.Year && 
+                        (m.Date.Month.ToString() == "2" || 
+                        m.Date.Month.ToString() == "3" || 
+                        m.Date.Month.ToString() == "4" ||
+                        m.Date.Month.ToString() == "5" || 
+                        m.Date.Month.ToString() == "6" || 
+                        m.Date.Month.ToString() == "7" || 
+                        m.Date.Month.ToString() == "8")))
+                    )
+                    .ToListAsync();
                 if (marks != null)
                 {
                     foreach (var mark in marks)
@@ -364,52 +418,19 @@ namespace Portal
             List<StudentRaiting> studentRaitings = new();
             foreach (var student in students)
             {
-                StudentRaiting studentRaiting = new();
-                studentRaiting.SubjectRaitings = new List<SubjectRaiting>();
-                studentRaiting.Student = student;
-
-                List<Mark> msds = new();
-                msds = marksDouble.Where(m => m.StudentID == student.StudentID).ToList();
-                List<double> marksValue = new();
-                foreach (var mark in msds)
+                double? rating = _studentAverageMarkService.GetStudentAverageMark(student, marks);
+                if (rating == null)
                 {
-                    if (double.TryParse(mark.Value, out var m))
-                    {
-                        marksValue.Add(m);
-                    }
+                    rating = 0;
                 }
-
-                var subGrMarks = from mark in msds
-                                 group mark by mark.SubjectID;
-
-                foreach (var mark in subGrMarks)
+                StudentRaiting sr = new StudentRaiting()
                 {
-                    SubjectRaiting subjectRaiting = new();
-                    subjectRaiting.SubjectID = mark.Key;
+                    Group = student.Group,
+                    Student = student,
+                    Raiting = rating,
+                };
 
-                    List<double> mds = new();
-                    foreach (var m in mark)
-                    {
-                        if (double.TryParse(m.Value, out double number))
-                        {
-                            mds.Add(number);
-                        }
-                    }
-
-                    subjectRaiting.Raiting = Math.Round(mds.Sum() / mds.Count, 2);
-                    studentRaiting.SubjectRaitings.Add(subjectRaiting);
-                }
-
-                List<double> rmds = new();
-                foreach (var r in studentRaiting.SubjectRaitings)
-                {
-                    rmds.Add(r.Raiting);
-                }
-
-                studentRaiting.Raiting = Math.Round(rmds.Sum() / rmds.Count, 2);
-                studentRaiting.Group = student.Group;
-
-                studentRaitings.Add(studentRaiting);
+                studentRaitings.Add(sr);
             }
 
             //Кол-во групп

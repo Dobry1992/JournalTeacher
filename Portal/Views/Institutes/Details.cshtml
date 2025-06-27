@@ -87,7 +87,10 @@
                                         <tr class="text-center" style="font-size:small;">
                                             <td class="align-middle">@i</td>
                                             <td class="fix fixed"><a class="nav-link text-dark" asp-controller="Students" asp-action="Details" asp-route-id="@student.Student.StudentID">@student.Student.LastName @student.Student.Name[0]. @student.Student.Surname[0].</a></td>
-                                            <td class="align-middle">@student.Raiting.ToString().Replace(",", ".")</td>
+                                            @if (@student.Raiting != null)
+                                            {
+                                                <td class="align-middle">@student.Raiting.ToString().Replace(",", ".")</td>
+                                            }
                                             <td><a class="nav-link text-dark" asp-controller="Groups" asp-action="DetailsGroup" asp-route-id="@student.Group.GroupID">@student.Group.Name.ToString()</a></td>
                                         </tr>
                                         i++;

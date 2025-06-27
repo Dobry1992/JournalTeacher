@@ -32,6 +32,7 @@ namespace Portal
             services.AddAuthentication(IISDefaults.AuthenticationScheme);
             services.AddHttpContextAccessor();
             services.AddScoped<UserNameService>();
+            services.AddScoped<StudentAverageMarkService>();
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
