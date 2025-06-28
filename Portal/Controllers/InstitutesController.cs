@@ -28,40 +28,79 @@ namespace Portal
 
         public async Task<IActionResult> Statement(int id)
         {
-            Institute institute = await _context.Institutes.FindAsync(id);
-            List<Group> groups = await _context.Groups.Where(g => g.InstituteID == id).ToListAsync();
+            var institute = await _context.Institutes.FindAsync(id);
+            var groups = await _context.Groups
+                .Where(g => g.InstituteID == id)
+                .ToListAsync();
+
             var typeIO = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Итоговая оценка");
+            if (typeIO == null)
+            {
+                return NotFound("Тип 'Итоговая оценка' не найден.");
+            }
+
+            var groupIds = groups.Select(g => g.GroupID).ToList();
+
+            var allStudents = await _context.Students
+                .Where(s => groupIds.Contains(s.GroupID))
+                .ToListAsync();
+
+            var allJournals = await _context.Journals
+                .Where(j => groupIds.Contains(j.GroupID))
+                .ToListAsync();
+
+            var subjectIds = allJournals.Select(j => j.SubjectID).Distinct().ToList();
+            var allSubjects = await _context.Subjects
+                .Where(s => subjectIds.Contains(s.SubjectID))
+                .ToDictionaryAsync(s => s.SubjectID);
+
+            var studentIds = allStudents.Select(s => s.StudentID).ToList();
+
+            var allMarks = await _context.Marks
+                .Where(m => studentIds.Contains(m.StudentID) && subjectIds.Contains(m.SubjectID))
+                .ToListAsync();
+
+            // Группировки для быстрого доступа
+            var studentsByGroup = allStudents.GroupBy(s => s.GroupID).ToDictionary(g => g.Key, g => g.ToList());
+            var journalsByGroup = allJournals.GroupBy(j => j.GroupID).ToDictionary(g => g.Key, g => g.ToList());
+            var marksByStudent = allMarks.GroupBy(m => m.StudentID).ToDictionary(g => g.Key, g => g.ToList());
 
             List<ViewModel.Statement.GroupRaiting> groupRaitings = new();
 
-            foreach (Group g in groups)
+            foreach (var group in groups)
             {
-                var students = await _context.Students.Where(s => s.GroupID == g.GroupID).ToListAsync();
-                var journals = await _context.Journals.Where(j => j.GroupID == g.GroupID).ToListAsync();
+                var students = studentsByGroup.GetValueOrDefault(group.GroupID) ?? new List<Student>();
+                var journals = journalsByGroup.GetValueOrDefault(group.GroupID) ?? new List<Journal>();
+                var subjects = journals
+                    .Select(j => j.SubjectID)
+                    .Distinct()
+                    .Where(allSubjects.ContainsKey)
+                    .Select(id => allSubjects[id])
+                    .OrderBy(s => s.Name)
+                    .ToList();
 
-                var subjectIds = journals.Select(j => j.SubjectID).Distinct().ToList();
-                var subjectsDict = await _context.Subjects
-                    .Where(s => subjectIds.Contains(s.SubjectID))
-                    .ToDictionaryAsync(s => s.SubjectID);
-
-                List<Subject> subjects = subjectsDict.Values.OrderBy(s => s.Name).ToList();
                 List<StudRaiting> studRaitings = new();
 
-                foreach (Student student in students)
+                foreach (var student in students)
                 {
+                    var studentMarks = marksByStudent.GetValueOrDefault(student.StudentID) ?? new List<Mark>();
+
                     List<SubRaiting> subRaitings = new();
 
                     foreach (var journal in journals)
                     {
-                        var subject = subjectsDict[journal.SubjectID];
+                        if (!allSubjects.ContainsKey(journal.SubjectID))
+                            continue;
 
-                        var marks = await _context.Marks
-                            .Where(m => m.StudentID == student.StudentID && m.SubjectID == journal.SubjectID && m.FlagF == 0)
-                            .ToListAsync();
+                        var subject = allSubjects[journal.SubjectID];
 
-                        var finalMarks = await _context.Marks
-                            .Where(m => m.StudentID == student.StudentID && m.SubjectID == journal.SubjectID && m.TypeOfExerciseID == typeIO.TypeOfExerciseID)
-                            .ToListAsync();
+                        var marks = studentMarks
+                            .Where(m => m.SubjectID == journal.SubjectID && m.FlagF == 0)
+                            .ToList();
+
+                        var finalMarks = studentMarks
+                            .Where(m => m.SubjectID == journal.SubjectID && m.TypeOfExerciseID == typeIO.TypeOfExerciseID)
+                            .ToList();
 
                         if (finalMarks.Any() && !marks.Any())
                         {
@@ -83,8 +122,8 @@ namespace Portal
                                 .Select(m => m.Value)
                                 .ToList();
 
-                            string raiting = numericMarks.Count > 0
-                                ? Math.Round(numericMarks.Average(), 2).ToString()
+                            string raiting = numericMarks.Any()
+                                ? Math.Round(numericMarks.Average(), 1).ToString()
                                 : "-";
 
                             subRaitings.Add(new SubRaiting
@@ -106,7 +145,7 @@ namespace Portal
 
                 groupRaitings.Add(new ViewModel.Statement.GroupRaiting
                 {
-                    Group = g,
+                    Group = group,
                     Subjects = subjects,
                     Raitings = studRaitings.OrderBy(s => s.Student.LastName).ToList()
                 });
@@ -521,7 +560,6 @@ namespace Portal
                 raitingTime.Add("Сентябрь", "0");
             }
 
-
             var octoberMarks = marks.Where(m => m.Date.Month.ToString() == "10");
             List<double> octMarks = new();
             foreach (var m in octoberMarks)
@@ -539,7 +577,6 @@ namespace Portal
             {
                 raitingTime.Add("Октябрь", "0");
             }
-
 
             var novemberMarks = marks.Where(m => m.Date.Month.ToString() == "11");
             List<double> novMarks = new();
