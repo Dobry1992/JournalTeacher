@@ -304,7 +304,6 @@ namespace Portal
             var typeGPZ = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Городское практическое занятие");
             List<double> marksAverage = new();
             List<Mark> marks = new();
-            List<Mark> marksDouble = new();
             if (DateTime.Now.Month.ToString() == "9" || DateTime.Now.Month.ToString() == "10" || DateTime.Now.Month.ToString() == "11" || DateTime.Now.Month.ToString() == "12")
             {
                 term = "первый семестр";
@@ -331,7 +330,6 @@ namespace Portal
                         if (double.TryParse(mark.Value, out var m))
                         {
                             marksAverage.Add(m);
-                            marksDouble.Add(mark);
                         }
                     }
                 }
@@ -366,7 +364,6 @@ namespace Portal
                         if (double.TryParse(mark.Value, out var m))
                         {
                             marksAverage.Add(m);
-                            marksDouble.Add(mark);
                         }
                     }
                 }
@@ -400,12 +397,10 @@ namespace Portal
                         if (double.TryParse(mark.Value, out var m))
                         {
                             marksAverage.Add(m);
-                            marksDouble.Add(mark);
                         }
                     }
                 }
             }
-            double raiting = marksAverage.Sum() / marksAverage.Count;
 
             //Количество обучающихся
             var students = _context.Students
@@ -464,7 +459,13 @@ namespace Portal
                     groupStudentRatings.Add((double)studentRating);
                 }
 
-                var groupRating = Math.Round(groupStudentRatings.Average(), 1);
+                groupStudentRatings.RemoveAll(m => m == 0);
+                double groupRating = 0;
+
+                if (groupStudentRatings.Any())
+                {
+                    groupRating = Math.Round(groupStudentRatings.Average(), 1);
+                }
 
                 InstGroupRaiting instGroupRaiting = new()
                 {
@@ -473,6 +474,16 @@ namespace Portal
                 };
 
                 groupsRating.Add(instGroupRaiting);
+            }
+
+            //Средний балл института
+            double instRating = 0;
+            var filterGroupsRatig = groupsRating
+                .Where(m => m.Raiting != 0)
+                .ToList();
+            if (filterGroupsRatig.Any())
+            {
+                instRating = Math.Round(filterGroupsRatig.Average(g => g.Raiting), 1);
             }
 
             //Оценочные показатели института
@@ -783,7 +794,7 @@ namespace Portal
             }
 
             ViewBag.Term = term;
-            ViewBag.Raiting = Math.Round(raiting, 2);
+            ViewBag.Raiting = Math.Round(instRating, 2);
             ViewBag.Students = studentNumber;
             ViewBag.Groups = groups.Count();
             ViewBag.Specialities = specialities.Count();
