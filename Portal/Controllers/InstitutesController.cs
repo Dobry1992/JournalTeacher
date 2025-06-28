@@ -340,21 +340,21 @@ namespace Portal
             {
                 term = "первый семестр";
                 marks = await _context.Marks
-                    .Where(m => 
-                        m.InstituteID == id && 
+                    .Where(m =>
+                        m.InstituteID == id &&
                             (
-                                m.TypeOfExerciseID == typeKM.TypeOfExerciseID || 
-                                m.TypeOfExerciseID == typeGPZ.TypeOfExerciseID || 
+                                m.TypeOfExerciseID == typeKM.TypeOfExerciseID ||
+                                m.TypeOfExerciseID == typeGPZ.TypeOfExerciseID ||
                                 m.TypeOfExerciseID == typeSZ.TypeOfExerciseID ||
-                                m.TypeOfExerciseID == typePZ.TypeOfExerciseID || 
-                                m.TypeOfExerciseID == typeLZ.TypeOfExerciseID || 
+                                m.TypeOfExerciseID == typePZ.TypeOfExerciseID ||
+                                m.TypeOfExerciseID == typeLZ.TypeOfExerciseID ||
                                 m.TypeOfExerciseID == typeL.TypeOfExerciseID
-                            ) && 
-                        ((m.Date.Year == DateTime.Now.Year && 
-                        (m.Date.Month.ToString() == "1") || 
-                            m.Date.Year == date.Year && 
+                            ) &&
+                        ((m.Date.Year == DateTime.Now.Year &&
+                        (m.Date.Month.ToString() == "1") ||
+                            m.Date.Year == date.Year &&
                             (m.Date.Month.ToString() == "9" ||
-                            m.Date.Month.ToString() == "10" || 
+                            m.Date.Month.ToString() == "10" ||
                             m.Date.Month.ToString() == "11" ||
                             m.Date.Month.ToString() == "12")))
                     )
@@ -375,21 +375,21 @@ namespace Portal
             {
                 term = "второй семестр";
                 marks = await _context.Marks
-                    .Where(m => m.InstituteID == id && 
+                    .Where(m => m.InstituteID == id &&
                         (
                             m.TypeOfExerciseID == typeKM.TypeOfExerciseID ||
-                            m.TypeOfExerciseID == typeGPZ.TypeOfExerciseID || 
-                            m.TypeOfExerciseID == typeSZ.TypeOfExerciseID || 
-                            m.TypeOfExerciseID == typePZ.TypeOfExerciseID || 
-                            m.TypeOfExerciseID == typeLZ.TypeOfExerciseID || 
-                            m.TypeOfExerciseID == typeL.TypeOfExerciseID) && 
-                    ((m.Date.Year == DateTime.Now.Year && 
-                        (m.Date.Month.ToString() == "2" || 
-                        m.Date.Month.ToString() == "3" || 
+                            m.TypeOfExerciseID == typeGPZ.TypeOfExerciseID ||
+                            m.TypeOfExerciseID == typeSZ.TypeOfExerciseID ||
+                            m.TypeOfExerciseID == typePZ.TypeOfExerciseID ||
+                            m.TypeOfExerciseID == typeLZ.TypeOfExerciseID ||
+                            m.TypeOfExerciseID == typeL.TypeOfExerciseID) &&
+                    ((m.Date.Year == DateTime.Now.Year &&
+                        (m.Date.Month.ToString() == "2" ||
+                        m.Date.Month.ToString() == "3" ||
                         m.Date.Month.ToString() == "4" ||
-                        m.Date.Month.ToString() == "5" || 
-                        m.Date.Month.ToString() == "6" || 
-                        m.Date.Month.ToString() == "7" || 
+                        m.Date.Month.ToString() == "5" ||
+                        m.Date.Month.ToString() == "6" ||
+                        m.Date.Month.ToString() == "7" ||
                         m.Date.Month.ToString() == "8")))
                     )
                     .ToListAsync();
@@ -418,16 +418,18 @@ namespace Portal
             List<StudentRaiting> studentRaitings = new();
             foreach (var student in students)
             {
-                double? rating = _studentAverageMarkService.GetStudentAverageMark(student, marks);
-                if (rating == null)
+                double? studentRating = _studentAverageMarkService.GetStudentAverageMark(student, marks);
+
+                if (studentRating == null)
                 {
-                    rating = 0;
+                    studentRating = 0;
                 }
+
                 StudentRaiting sr = new StudentRaiting()
                 {
                     Group = student.Group,
                     Student = student,
-                    Raiting = rating,
+                    Raiting = studentRating,
                 };
 
                 studentRaitings.Add(sr);
@@ -440,26 +442,37 @@ namespace Portal
             var specialities = _context.Specialities.Where(s => s.InstituteID == id && s.Arch == false);
 
             //Рейтинг учебных групп
-            List<InstGroupRaiting> groupsRaiting = new();
+            List<InstGroupRaiting> groupsRating = new();
             foreach (var group in groups)
             {
-                List<double> marksValue = new();
-                var marksGroup = marks.Where(m => m.GroupID == group.GroupID);
-                foreach (var mark in marksGroup)
+                var groupStudents = students
+                    .Where(s => s.GroupID == group.GroupID)
+                    .ToList();
+
+                var groupMarks = marks.
+                    Where(m => m.GroupID == group.GroupID)
+                    .ToList();
+
+                List<double> groupStudentRatings = new();
+                foreach (var student in groupStudents)
                 {
-                    if (double.TryParse(mark.Value, out var m))
+                    double? studentRating = _studentAverageMarkService.GetStudentAverageMark(student, groupMarks);
+                    if (studentRating == null)
                     {
-                        marksValue.Add(m);
+                        studentRating = 0;
                     }
+                    groupStudentRatings.Add((double)studentRating);
                 }
-                if (marksValue.Count != 0)
+
+                var groupRating = Math.Round(groupStudentRatings.Average(), 1);
+
+                InstGroupRaiting instGroupRaiting = new()
                 {
-                    double raitingGroup = marksValue.Sum() / marksValue.Count;
-                    InstGroupRaiting instGroupR = new();
-                    instGroupR.Group = group;
-                    instGroupR.Raiting = Math.Round(raitingGroup, 2);
-                    groupsRaiting.Add(instGroupR);
-                }
+                    Group = group,
+                    Raiting = groupRating
+                };
+
+                groupsRating.Add(instGroupRaiting);
             }
 
             //Оценочные показатели института
@@ -725,6 +738,10 @@ namespace Portal
             }
             else
             {
+                if (bestStudent.Raiting == null)
+                {
+                    bestStudent.Raiting = 0;
+                }
                 ViewBag.BestStudent = bestStudent;
             }
             var worseStudent = studentRaitings.OrderByDescending(s => s.Raiting).LastOrDefault();
@@ -736,9 +753,13 @@ namespace Portal
             }
             else
             {
+                if (worseStudent.Raiting == null)
+                {
+                    worseStudent.Raiting = 0;
+                }
                 ViewBag.WorseStudent = worseStudent;
             }
-            var bestGroup = groupsRaiting.OrderByDescending(g => g.Raiting).FirstOrDefault();
+            var bestGroup = groupsRating.OrderByDescending(g => g.Raiting).FirstOrDefault();
             if (bestGroup == null)
             {
                 InstStudRaiting i = new();
@@ -749,7 +770,7 @@ namespace Portal
             {
                 ViewBag.BestGroup = bestGroup;
             }
-            var worseGroup = groupsRaiting.OrderByDescending(g => g.Raiting).LastOrDefault();
+            var worseGroup = groupsRating.OrderByDescending(g => g.Raiting).LastOrDefault();
             if (worseGroup == null)
             {
                 InstStudRaiting i = new();
@@ -767,7 +788,7 @@ namespace Portal
             ViewBag.Groups = groups.Count();
             ViewBag.Specialities = specialities.Count();
             ViewBag.StudentsRaiting = studentRaitings.OrderByDescending(s => s.Raiting);
-            ViewBag.GroupsRaiting = groupsRaiting.OrderByDescending(g => g.Raiting);
+            ViewBag.GroupsRaiting = groupsRating.OrderByDescending(g => g.Raiting);
             ViewBag.MarksNumber = marksNumber;
             ViewBag.MarksPercent = marksPercent;
             ViewBag.TimeRaiting = raitingTime;
