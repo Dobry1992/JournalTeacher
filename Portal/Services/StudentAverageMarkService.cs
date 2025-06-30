@@ -1,8 +1,8 @@
-﻿using Portal.Data;
-using System.Linq;
+﻿using Portal.Models;
 using System;
-using Portal.Models;
 using System.Collections.Generic;
+using System.Globalization;
+using System.Linq;
 
 namespace Portal.Services
 {
@@ -35,13 +35,9 @@ namespace Portal.Services
 
         private double? TryParseMarkValue(string value)
         {
-            if (double.TryParse(value.Replace(",", "."), System.Globalization.NumberStyles.Any,
-                                System.Globalization.CultureInfo.InvariantCulture, out double result))
-            {
-                return result;
-            }
-
-            return null;
+            return double.TryParse(value, NumberStyles.Any, CultureInfo.InvariantCulture, out var result)
+                ? result
+                : (double?)null;
         }
     }
 }

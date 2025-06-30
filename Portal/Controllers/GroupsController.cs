@@ -213,6 +213,7 @@ namespace Portal
                         .FirstOrDefaultAsync(m => m.GroupID == id);
 
             //Текущий средний балл
+            string term;
             var date = DateTime.Now.AddYears(-1);
             var typeSZ = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Семинарское занятие");
             var typePZ = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Практическое занятие");
@@ -222,11 +223,62 @@ namespace Portal
             var typeGPZ = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Городское практическое занятие");
             var institute = await _context.Institutes.FirstOrDefaultAsync(i => i.InstituteID == group.InstituteID);
             List<double> marksAverage = new();
-            IQueryable<Mark> marks;
+            List<Mark> marks = new();
+
+            //выборка оценок.
             if (DateTime.Now.Month.ToString() == "9" || DateTime.Now.Month.ToString() == "10" || DateTime.Now.Month.ToString() == "11" || DateTime.Now.Month.ToString() == "12")
             {
-                marks = _context.Marks.Where(m => m.GroupID == id && (m.TypeOfExerciseID == typeKM.TypeOfExerciseID || m.TypeOfExerciseID == typeGPZ.TypeOfExerciseID || m.TypeOfExerciseID == typeSZ.TypeOfExerciseID || m.TypeOfExerciseID == typePZ.TypeOfExerciseID || m.TypeOfExerciseID == typeLZ.TypeOfExerciseID || m.TypeOfExerciseID == typeL.TypeOfExerciseID) && m.Date.Year == DateTime.Now.Year
-                    && (m.Date.Month.ToString() == "9" || m.Date.Month.ToString() == "10" || m.Date.Month.ToString() == "11" || m.Date.Month.ToString() == "12"));
+                term = "первый семестр";
+                marks = await _context.Marks
+                    .Where(m =>
+                        m.GroupID == id &&
+                        (m.TypeOfExerciseID == typeKM.TypeOfExerciseID ||
+                            m.TypeOfExerciseID == typeGPZ.TypeOfExerciseID ||
+                            m.TypeOfExerciseID == typeSZ.TypeOfExerciseID ||
+                            m.TypeOfExerciseID == typePZ.TypeOfExerciseID ||
+                            m.TypeOfExerciseID == typeLZ.TypeOfExerciseID ||
+                            m.TypeOfExerciseID == typeL.TypeOfExerciseID) &&
+                        m.Date.Year == DateTime.Now.Year &&
+                            (m.Date.Month.ToString() == "9" ||
+                            m.Date.Month.ToString() == "10" ||
+                            m.Date.Month.ToString() == "11" ||
+                            m.Date.Month.ToString() == "12")
+                    )
+                    .ToListAsync();
+                if (marks != null)
+                {
+                    foreach (var mark in marks)
+                    {
+                        if (double.TryParse(mark.Value, out var m))
+                        {
+                            marksAverage.Add(m);
+                        }
+                    }
+                }
+            }
+            else if (DateTime.Now.Month.ToString() == "1")
+            {
+                term = "первый семестр";
+                marks = await _context.Marks
+                    .Where(m =>
+                        m.GroupID == id &&
+                            (
+                                m.TypeOfExerciseID == typeKM.TypeOfExerciseID ||
+                                m.TypeOfExerciseID == typeGPZ.TypeOfExerciseID ||
+                                m.TypeOfExerciseID == typeSZ.TypeOfExerciseID ||
+                                m.TypeOfExerciseID == typePZ.TypeOfExerciseID ||
+                                m.TypeOfExerciseID == typeLZ.TypeOfExerciseID ||
+                                m.TypeOfExerciseID == typeL.TypeOfExerciseID
+                            ) &&
+                        ((m.Date.Year == DateTime.Now.Year &&
+                        (m.Date.Month.ToString() == "1") ||
+                            m.Date.Year == date.Year &&
+                            (m.Date.Month.ToString() == "9" ||
+                            m.Date.Month.ToString() == "10" ||
+                            m.Date.Month.ToString() == "11" ||
+                            m.Date.Month.ToString() == "12")))
+                    )
+                    .ToListAsync();
                 if (marks != null)
                 {
                     foreach (var mark in marks)
@@ -240,7 +292,26 @@ namespace Portal
             }
             else
             {
-                marks = _context.Marks.Where(m => m.GroupID == id && (m.TypeOfExerciseID == typeKM.TypeOfExerciseID || m.TypeOfExerciseID == typeGPZ.TypeOfExerciseID || m.TypeOfExerciseID == typeSZ.TypeOfExerciseID || m.TypeOfExerciseID == typePZ.TypeOfExerciseID || m.TypeOfExerciseID == typeLZ.TypeOfExerciseID || m.TypeOfExerciseID == typeL.TypeOfExerciseID) && ((m.Date.Year == DateTime.Now.Year && (m.Date.Month.ToString() == "1" || m.Date.Month.ToString() == "2" || m.Date.Month.ToString() == "3" || m.Date.Month.ToString() == "4" || m.Date.Month.ToString() == "5" || m.Date.Month.ToString() == "6" || m.Date.Month.ToString() == "7" || m.Date.Month.ToString() == "8") || m.Date.Year == date.Year && (m.Date.Month.ToString() == "9" || m.Date.Month.ToString() == "10" || m.Date.Month.ToString() == "11" || m.Date.Month.ToString() == "12"))));
+                term = "второй семестр";
+                marks = await _context.Marks
+                    .Where(m => m.GroupID == id &&
+                        (
+                            m.TypeOfExerciseID == typeKM.TypeOfExerciseID ||
+                            m.TypeOfExerciseID == typeGPZ.TypeOfExerciseID ||
+                            m.TypeOfExerciseID == typeSZ.TypeOfExerciseID ||
+                            m.TypeOfExerciseID == typePZ.TypeOfExerciseID ||
+                            m.TypeOfExerciseID == typeLZ.TypeOfExerciseID ||
+                            m.TypeOfExerciseID == typeL.TypeOfExerciseID) &&
+                    ((m.Date.Year == DateTime.Now.Year &&
+                        (m.Date.Month.ToString() == "2" ||
+                        m.Date.Month.ToString() == "3" ||
+                        m.Date.Month.ToString() == "4" ||
+                        m.Date.Month.ToString() == "5" ||
+                        m.Date.Month.ToString() == "6" ||
+                        m.Date.Month.ToString() == "7" ||
+                        m.Date.Month.ToString() == "8")))
+                    )
+                    .ToListAsync();
                 if (marks != null)
                 {
                     foreach (var mark in marks)
@@ -249,10 +320,10 @@ namespace Portal
                         {
                             marksAverage.Add(m);
                         }
-
                     }
                 }
             }
+
             double raiting = marksAverage.Sum() / marksAverage.Count;
 
             //Текущий средний балл за предмет по месяцам

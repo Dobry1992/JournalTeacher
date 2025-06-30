@@ -33,6 +33,7 @@ namespace Portal
             services.AddHttpContextAccessor();
             services.AddScoped<UserNameService>();
             services.AddScoped<StudentAverageMarkService>();
+            services.AddScoped<InstituteAverageMarkService>();
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
