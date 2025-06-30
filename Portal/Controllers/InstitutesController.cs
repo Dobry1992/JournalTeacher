@@ -29,131 +29,144 @@ namespace Portal
         public async Task<IActionResult> Statement(int id)
         {
             var institute = await _context.Institutes.FindAsync(id);
+            if (institute == null)
+                return NotFound("Институт не найден.");
+
             var groups = await _context.Groups
                 .Where(g => g.InstituteID == id)
+                .OrderBy(g => g.Name)
                 .ToListAsync();
+
+            if (!groups.Any())
+                return View(new List<ViewModel.Statement.GroupRaiting>());
 
             var typeIO = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Итоговая оценка");
             if (typeIO == null)
-            {
                 return NotFound("Тип 'Итоговая оценка' не найден.");
-            }
 
             var groupIds = groups.Select(g => g.GroupID).ToList();
 
-            var allStudents = await _context.Students
+            var students = await _context.Students
                 .Where(s => groupIds.Contains(s.GroupID))
                 .ToListAsync();
 
-            var allJournals = await _context.Journals
+            var journals = await _context.Journals
                 .Where(j => groupIds.Contains(j.GroupID))
                 .ToListAsync();
 
-            var subjectIds = allJournals.Select(j => j.SubjectID).Distinct().ToList();
-            var allSubjects = await _context.Subjects
+            var subjectIds = journals.Select(j => j.SubjectID).Distinct().ToList();
+
+            var subjects = await _context.Subjects
                 .Where(s => subjectIds.Contains(s.SubjectID))
                 .ToDictionaryAsync(s => s.SubjectID);
 
-            var studentIds = allStudents.Select(s => s.StudentID).ToList();
+            var studentIds = students.Select(s => s.StudentID).ToList();
 
-            var allMarks = await _context.Marks
-                .Where(m => studentIds.Contains(m.StudentID) && subjectIds.Contains(m.SubjectID))
+            // Загрузка всех оценок как Mark
+            var marks = await _context.Marks
+                .Where(m =>
+                    studentIds.Contains(m.StudentID) &&
+                    subjectIds.Contains(m.SubjectID) &&
+                    (m.FlagF == 0 || m.TypeOfExerciseID == typeIO.TypeOfExerciseID))
                 .ToListAsync();
 
-            // Группировки для быстрого доступа
-            var studentsByGroup = allStudents.GroupBy(s => s.GroupID).ToDictionary(g => g.Key, g => g.ToList());
-            var journalsByGroup = allJournals.GroupBy(j => j.GroupID).ToDictionary(g => g.Key, g => g.ToList());
-            var marksByStudent = allMarks.GroupBy(m => m.StudentID).ToDictionary(g => g.Key, g => g.ToList());
+            // Группировки
+            var studentsByGroup = students.GroupBy(s => s.GroupID).ToDictionary(g => g.Key, g => g.ToList());
+            var journalsByGroup = journals.GroupBy(j => j.GroupID).ToDictionary(g => g.Key, g => g.ToList());
+            var markLookup = marks
+                .GroupBy(m => (m.StudentID, m.SubjectID))
+                .ToDictionary(g => g.Key, g => g.ToList());
 
             List<ViewModel.Statement.GroupRaiting> groupRaitings = new();
 
             foreach (var group in groups)
             {
-                var students = studentsByGroup.GetValueOrDefault(group.GroupID) ?? new List<Student>();
-                var journals = journalsByGroup.GetValueOrDefault(group.GroupID) ?? new List<Journal>();
-                var subjects = journals
+                var groupStudents = studentsByGroup.GetValueOrDefault(group.GroupID) ?? new List<Student>();
+                var groupJournals = journalsByGroup.GetValueOrDefault(group.GroupID) ?? new List<Journal>();
+
+                var groupSubjectIds = groupJournals
                     .Select(j => j.SubjectID)
                     .Distinct()
-                    .Where(allSubjects.ContainsKey)
-                    .Select(id => allSubjects[id])
+                    .Where(subjects.ContainsKey)
+                    .ToList();
+
+                var groupSubjects = groupSubjectIds
+                    .Select(id => subjects[id])
                     .OrderBy(s => s.Name)
                     .ToList();
 
                 List<StudRaiting> studRaitings = new();
 
-                foreach (var student in students)
+                foreach (var student in groupStudents)
                 {
-                    var studentMarks = marksByStudent.GetValueOrDefault(student.StudentID) ?? new List<Mark>();
-
                     List<SubRaiting> subRaitings = new();
 
-                    foreach (var journal in journals)
+                    foreach (var subject in groupSubjects)
                     {
-                        if (!allSubjects.ContainsKey(journal.SubjectID))
-                            continue;
-
-                        var subject = allSubjects[journal.SubjectID];
-
-                        var marks = studentMarks
-                            .Where(m => m.SubjectID == journal.SubjectID && m.FlagF == 0)
-                            .ToList();
+                        var key = (student.StudentID, subject.SubjectID);
+                        markLookup.TryGetValue(key, out var studentMarks);
+                        studentMarks ??= new List<Mark>();
 
                         var finalMarks = studentMarks
-                            .Where(m => m.SubjectID == journal.SubjectID && m.TypeOfExerciseID == typeIO.TypeOfExerciseID)
+                            .Where(m => m.TypeOfExerciseID == typeIO.TypeOfExerciseID)
+                            .OrderByDescending(m => m.Date)
                             .ToList();
 
-                        if (finalMarks.Any() && !marks.Any())
-                        {
-                            var finalMark = finalMarks.OrderByDescending(m => m.Date).First();
+                        var regularMarks = studentMarks
+                            .Where(m => m.FlagF == 0 && m.TypeOfExerciseID != typeIO.TypeOfExerciseID)
+                            .ToList();
 
-                            subRaitings.Add(new SubRaiting
-                            {
-                                Subject = subject,
-                                Raiting = finalMark.Value,
-                                Color = "#ebc509",
-                                FinalMarks = finalMarks
-                            });
+                        string rating;
+                        string color;
+
+                        if (finalMarks.Any() && !regularMarks.Any())
+                        {
+                            rating = finalMarks.First().Value;
+                            color = "#ebc509";
                         }
                         else
                         {
-                            var numericMarks = marks
+                            var numericMarks = regularMarks
                                 .Select(m => int.TryParse(m.Value, out int val) ? (int?)val : null)
-                                .Where(m => m.HasValue)
-                                .Select(m => m.Value)
+                                .Where(v => v.HasValue)
+                                .Select(v => v.Value)
                                 .ToList();
 
-                            string raiting = numericMarks.Any()
+                            rating = numericMarks.Any()
                                 ? Math.Round(numericMarks.Average(), 1).ToString()
                                 : "-";
 
-                            subRaitings.Add(new SubRaiting
-                            {
-                                Subject = subject,
-                                Raiting = raiting,
-                                Color = "#FFFFFF",
-                                FinalMarks = finalMarks
-                            });
+                            color = "#FFFFFF";
                         }
+
+                        subRaitings.Add(new SubRaiting
+                        {
+                            Subject = subject,
+                            Raiting = rating,
+                            Color = color,
+                            FinalMarks = finalMarks
+                        });
                     }
 
                     studRaitings.Add(new StudRaiting
                     {
                         Student = student,
-                        SubRaitings = subRaitings.OrderBy(s => s.Subject.Name).ToList()
+                        SubRaitings = subRaitings
                     });
                 }
 
                 groupRaitings.Add(new ViewModel.Statement.GroupRaiting
                 {
                     Group = group,
-                    Subjects = subjects,
-                    Raitings = studRaitings.OrderBy(s => s.Student.LastName).ToList()
+                    Subjects = groupSubjects,
+                    Raitings = studRaitings
                 });
             }
 
             ViewBag.Institute = institute;
-            return View(groupRaitings.OrderBy(g => g.Group.Name).ToList());
+            return View(groupRaitings);
         }
+
 
         public async Task<IActionResult> Start()
         {
