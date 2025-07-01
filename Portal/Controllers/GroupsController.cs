@@ -20,11 +20,13 @@ namespace Portal
     {
         private readonly AcademyContext _context;
         private readonly GroupRatingService _groupRating;
+        private readonly StudentAverageMarkService _studentRating;
 
-        public GroupsController(AcademyContext context, GroupRatingService groupRating)
+        public GroupsController(AcademyContext context, GroupRatingService groupRating, StudentAverageMarkService studentRating)
         {
             _context = context;
             _groupRating = groupRating;
+            _studentRating = studentRating;
         }
 
         public async Task<IActionResult> ChooseGroup(int SubjectID)
@@ -353,9 +355,9 @@ namespace Portal
                 var monthMarks = subjectMarks
                     .Where(m => m.Date.Month.ToString() == monthNumber.ToString())
                     .ToList();
-                raitingTimeSubject.Add(month, (await _groupRating.CalculateGroupRatingAsync(monthMarks)).ToString().Replace(",", "."));
+                raitingTimeSubject.Add(month, Math.Round(await _groupRating.CalculateGroupRatingAsync(monthMarks), 1).ToString().Replace(",", "."));
             }
-            
+
             //Количество слушателей/курсантов
             var students = _context.Students.Where(s => s.Status == true && s.GroupID == id);
 
@@ -364,7 +366,9 @@ namespace Portal
             foreach (var student in students)
             {
                 List<double> marksValue = new();
-                var marksStudent = marks.Where(m => m.StudentID == student.StudentID);
+                var marksStudent = marks
+                    .Where(m => m.StudentID == student.StudentID)
+                    .ToList();
                 foreach (var mark in marksStudent)
                 {
                     if (double.TryParse(mark.Value, out var m))
@@ -374,20 +378,24 @@ namespace Portal
                 }
                 if (marksValue.Count != 0)
                 {
-                    double raitingStudent = marksValue.Sum() / marksValue.Count;
-                    GroupRaiting groupRaitingStud = new();
-                    groupRaitingStud.Student = student;
-                    groupRaitingStud.Raiting = Math.Round(raitingStudent, 2);
-                    groupRaitingStud.NumberOfMark = marksValue.Count;
+                    double? ratingStudent = _studentRating.GetStudentAverageMark(student, marksStudent);
+                    GroupRaiting groupRaitingStud = new()
+                    {
+                        Student = student,
+                        Raiting = Math.Round((double)ratingStudent, 1),
+                        NumberOfMark = marksValue.Count
+                    };
                     groupRaiting.Add(groupRaitingStud);
                 }
                 else
                 {
-                    double raitingStudent = 0;
-                    GroupRaiting groupRaitingStud = new();
-                    groupRaitingStud.Student = student;
-                    groupRaitingStud.Raiting = Math.Round(raitingStudent, 2);
-                    groupRaitingStud.NumberOfMark = 0;
+                    double ratingStudent = 0;
+                    GroupRaiting groupRaitingStud = new()
+                    {
+                        Student = student,
+                        Raiting = ratingStudent,
+                        NumberOfMark = 0
+                    };
                     groupRaiting.Add(groupRaitingStud);
                 }
             }
