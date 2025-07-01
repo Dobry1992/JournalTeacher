@@ -34,6 +34,7 @@ namespace Portal
             services.AddScoped<UserNameService>();
             services.AddScoped<StudentAverageMarkService>();
             services.AddScoped<InstituteAverageMarkService>();
+            services.AddScoped<GroupRatingService>();
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
