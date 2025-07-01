@@ -362,7 +362,7 @@ namespace Portal
             var students = _context.Students.Where(s => s.Status == true && s.GroupID == id);
 
             //Рейтинг слушателей группы
-            List<GroupRaiting> groupRaiting = new();
+            List<GroupRaiting> groupRating = new();
             foreach (var student in students)
             {
                 List<double> marksValue = new();
@@ -379,26 +379,28 @@ namespace Portal
                 if (marksValue.Count != 0)
                 {
                     double? ratingStudent = _studentRating.GetStudentAverageMark(student, marksStudent);
-                    GroupRaiting groupRaitingStud = new()
+                    GroupRaiting groupRatingStud = new()
                     {
                         Student = student,
                         Raiting = Math.Round((double)ratingStudent, 1),
                         NumberOfMark = marksValue.Count
                     };
-                    groupRaiting.Add(groupRaitingStud);
+                    groupRating.Add(groupRatingStud);
                 }
                 else
                 {
                     double ratingStudent = 0;
-                    GroupRaiting groupRaitingStud = new()
+                    GroupRaiting groupRatingStud = new()
                     {
                         Student = student,
                         Raiting = ratingStudent,
                         NumberOfMark = 0
                     };
-                    groupRaiting.Add(groupRaitingStud);
+                    groupRating.Add(groupRatingStud);
                 }
             }
+
+            double rating = Math.Round(groupRating.Average(g => g.Raiting), 1);
 
             //Оценочные показатели группы
             Dictionary<int, int> marksNumber = new();
@@ -654,11 +656,11 @@ namespace Portal
             }
 
             @ViewBag.Term = term;
-            ViewBag.Raiting = 7.56;
+            ViewBag.Raiting = rating;
             ViewBag.Students = students.Count();
-            ViewBag.GroupRaiting = groupRaiting.OrderByDescending(s => s.Raiting);
-            ViewBag.BestStudent = groupRaiting.OrderByDescending(s => s.Raiting).FirstOrDefault();
-            ViewBag.WorseStudent = groupRaiting.OrderByDescending(s => s.Raiting).LastOrDefault();
+            ViewBag.GroupRaiting = groupRating.OrderByDescending(s => s.Raiting);
+            ViewBag.BestStudent = groupRating.OrderByDescending(s => s.Raiting).FirstOrDefault();
+            ViewBag.WorseStudent = groupRating.OrderByDescending(s => s.Raiting).LastOrDefault();
             ViewBag.Institute = institute;
             ViewBag.MarksNumber = marksNumber;
             ViewBag.MarksPercent = marksPercent;
