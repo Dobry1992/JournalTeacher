@@ -347,8 +347,6 @@ namespace Portal
             var subjectMarks = marks.Where(m => m.SubjectID == subjectID);
             Dictionary<string, string> raitingTimeSubject = new();
             List<string> months = new List<string>() { "Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь" };
-
-            var septemberMarksSubject = subjectMarks.Where(m => m.Date.Month.ToString() == "9");
             foreach (var month in months)
             {
                 int monthNumber = months.IndexOf(month) + 1;
@@ -432,222 +430,13 @@ namespace Portal
 
             //Общая среднемесячная успеваемость
             Dictionary<string, string> raitingTime = new();
-            var septemberMarks = marks.Where(m => m.Date.Month.ToString() == "9");
-            List<double> sepMarks = new();
-            foreach (var m in septemberMarks)
+            foreach (var month in months)
             {
-                if (double.TryParse(m.Value, out var mark))
-                {
-                    sepMarks.Add(mark);
-                }
-            }
-            if (sepMarks.Count != 0)
-            {
-                raitingTime.Add("Сентябрь", (Math.Round(sepMarks.Sum() / sepMarks.Count, 2)).ToString().Replace(",", "."));
-            }
-            else
-            {
-                raitingTime.Add("Сентябрь", "0");
-            }
-
-            var octoberMarks = marks.Where(m => m.Date.Month.ToString() == "10");
-            List<double> octMarks = new();
-            foreach (var m in octoberMarks)
-            {
-                if (double.TryParse(m.Value, out var mark))
-                {
-                    octMarks.Add(mark);
-                }
-            }
-            if (octMarks.Count != 0)
-            {
-                raitingTime.Add("Октябрь", (Math.Round(octMarks.Sum() / octMarks.Count, 2)).ToString().ToString().Replace(",", "."));
-            }
-            else
-            {
-                raitingTime.Add("Октябрь", "0");
-            }
-
-
-            var novemberMarks = marks.Where(m => m.Date.Month.ToString() == "11");
-            List<double> novMarks = new();
-            foreach (var m in novemberMarks)
-            {
-                if (double.TryParse(m.Value, out var mark))
-                {
-                    novMarks.Add(mark);
-                }
-            }
-            if (novMarks.Count != 0)
-            {
-                raitingTime.Add("Ноябрь", (Math.Round(novMarks.Sum() / novMarks.Count, 2)).ToString().Replace(",", "."));
-            }
-            else
-            {
-                raitingTime.Add("Ноябрь", "0");
-            }
-
-
-            var decemberMarks = marks.Where(m => m.Date.Month.ToString() == "12");
-            List<double> decMarks = new();
-            foreach (var m in decemberMarks)
-            {
-                if (double.TryParse(m.Value, out var mark))
-                {
-                    decMarks.Add(mark);
-                }
-            }
-            if (decMarks.Count != 0)
-            {
-                raitingTime.Add("Декабрь", (Math.Round(decMarks.Sum() / decMarks.Count, 2)).ToString().Replace(",", "."));
-            }
-            else
-            {
-                raitingTime.Add("Декабрь", "0");
-            }
-
-            var januaryMarks = marks.Where(m => m.Date.Month.ToString() == "1");
-            List<double> janMarks = new();
-            foreach (var m in januaryMarks)
-            {
-                if (double.TryParse(m.Value, out var mark))
-                {
-                    janMarks.Add(mark);
-                }
-            }
-            if (janMarks.Count != 0)
-            {
-                raitingTime.Add("Январь", (Math.Round(janMarks.Sum() / janMarks.Count, 2)).ToString().Replace(",", "."));
-            }
-            else
-            {
-                raitingTime.Add("Январь", "0");
-            }
-
-            var februaryMarks = marks.Where(m => m.Date.Month.ToString() == "2");
-            List<double> febMarks = new();
-            foreach (var m in februaryMarks)
-            {
-                if (double.TryParse(m.Value, out var mark))
-                {
-                    febMarks.Add(mark);
-                }
-            }
-            if (febMarks.Count != 0)
-            {
-                raitingTime.Add("Февраль", (Math.Round(febMarks.Sum() / febMarks.Count, 2)).ToString().Replace(",", "."));
-            }
-            else
-            {
-                raitingTime.Add("Февраль", "0");
-            }
-
-            var marchMarks = marks.Where(m => m.Date.Month.ToString() == "3");
-            List<double> marMarks = new();
-            foreach (var m in marchMarks)
-            {
-                if (double.TryParse(m.Value, out var mark))
-                {
-                    marMarks.Add(mark);
-                }
-            }
-            if (marMarks.Count != 0)
-            {
-                raitingTime.Add("Март", (Math.Round(marMarks.Sum() / marMarks.Count, 2)).ToString().Replace(",", "."));
-            }
-            else
-            {
-                raitingTime.Add("Март", "0");
-            }
-
-            var aprilMarks = marks.Where(m => m.Date.Month.ToString() == "4");
-            List<double> aprMarks = new();
-            foreach (var m in aprilMarks)
-            {
-                if (double.TryParse(m.Value, out var mark))
-                {
-                    aprMarks.Add(mark);
-                }
-            }
-            if (aprMarks.Count != 0)
-            {
-                raitingTime.Add("Апрель", (Math.Round(aprMarks.Sum() / aprMarks.Count, 2)).ToString().Replace(",", "."));
-            }
-            else
-            {
-                raitingTime.Add("Апрель", "0");
-            }
-
-            var mayMarks = marks.Where(m => m.Date.Month.ToString() == "5");
-            List<double> mMarks = new();
-            foreach (var m in mayMarks)
-            {
-                if (double.TryParse(m.Value, out var mark))
-                {
-                    mMarks.Add(mark);
-                }
-            }
-            if (mMarks.Count != 0)
-            {
-                raitingTime.Add("Май", (Math.Round(mMarks.Sum() / mMarks.Count, 2)).ToString().Replace(",", "."));
-            }
-            else
-            {
-                raitingTime.Add("Май", "0");
-            }
-
-            var juneMarks = marks.Where(m => m.Date.Month.ToString() == "6");
-            List<double> junMarks = new();
-            foreach (var m in juneMarks)
-            {
-                if (double.TryParse(m.Value, out var mark))
-                {
-                    junMarks.Add(mark);
-                }
-            }
-            if (junMarks.Count != 0)
-            {
-                raitingTime.Add("Июнь", (Math.Round(junMarks.Sum() / junMarks.Count, 2)).ToString().Replace(",", "."));
-            }
-            else
-            {
-                raitingTime.Add("Июнь", "0");
-            }
-
-            var julyMarks = marks.Where(m => m.Date.Month.ToString() == "7");
-            List<double> julMarks = new();
-            foreach (var m in julyMarks)
-            {
-                if (double.TryParse(m.Value, out var mark))
-                {
-                    julMarks.Add(mark);
-                }
-            }
-            if (julMarks.Count != 0)
-            {
-                raitingTime.Add("Июль", (Math.Round(julMarks.Sum() / julMarks.Count, 2)).ToString().Replace(",", "."));
-            }
-            else
-            {
-                raitingTime.Add("Июль", "0");
-            }
-
-            var augustMarks = marks.Where(m => m.Date.Month.ToString() == "8");
-            List<double> augMarks = new();
-            foreach (var m in augustMarks)
-            {
-                if (double.TryParse(m.Value, out var mark))
-                {
-                    augMarks.Add(mark);
-                }
-            }
-            if (augMarks.Count != 0)
-            {
-                raitingTime.Add("Август", (Math.Round(augMarks.Sum() / augMarks.Count)).ToString().Replace(",", "."));
-            }
-            else
-            {
-                raitingTime.Add("Август", "0");
+                int monthNumber = months.IndexOf(month) + 1;
+                var monthMarks = marks
+                    .Where(m => m.Date.Month.ToString() == monthNumber.ToString())
+                    .ToList();
+                raitingTime.Add(month, Math.Round(await _groupRating.CalculateGroupRatingAsync(monthMarks), 1).ToString().Replace(",", "."));
             }
 
             if (group == null)
@@ -655,7 +444,7 @@ namespace Portal
                 return NotFound();
             }
 
-            @ViewBag.Term = term;
+            ViewBag.Term = term;
             ViewBag.Raiting = rating;
             ViewBag.Students = students.Count();
             ViewBag.GroupRaiting = groupRating.OrderByDescending(s => s.Raiting);
