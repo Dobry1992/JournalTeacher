@@ -127,7 +127,7 @@ namespace Portal.Controllers
                     decimal n1 = marksAverage.Where(x => x == i).Count();
                     decimal n2 = marksAverage.Count;
                     decimal mp = n1 / n2 * 100;
-                    marksPercent.Add(i, Math.Round(mp, 2));
+                    marksPercent.Add(i, Math.Round(mp, 3));
                 }
                 marksNumber.Add(i, marksAverage.Where(x => x == i).Count());
             }
@@ -165,13 +165,13 @@ namespace Portal.Controllers
             nump = ((double)num / mNumber) * 100;
             Dictionary<string, double> attendancePercent = new Dictionary<string, double>()
             {
-                {"Болезнь", Math.Round(bp, 2)},
-                {"Наряд", Math.Round(nrp, 2)},
-                {"Отпуск", Math.Round(op, 2) },
-                {"Коммандировка", Math.Round(kmp, 2)},
-                {"Отсутствие по мотивированный рапорт", Math.Round(rp, 2)},
-                {"Отсутствие без уважительной причины", Math.Round(nbp, 2)},
-                {"Присутствие", Math.Round(nump, 2)}
+                {"Болезнь", Math.Round(bp, 3)},
+                {"Наряд", Math.Round(nrp, 3)},
+                {"Отпуск", Math.Round(op, 3) },
+                {"Коммандировка", Math.Round(kmp, 3)},
+                {"Отсутствие по мотивированный рапорт", Math.Round(rp, 3)},
+                {"Отсутствие без уважительной причины", Math.Round(nbp, 3)},
+                {"Присутствие", Math.Round(nump, 3)}
             };
 
             //Текущий средний балл за предмет по месяцам

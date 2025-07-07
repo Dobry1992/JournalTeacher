@@ -48,7 +48,7 @@ namespace Portal
                     }
                 }
                 resultStudent.Student = student;
-                resultStudent.Value = Math.Round(marks.Sum() / marks.Count, 2);
+                resultStudent.Value = Math.Round(marks.Sum() / marks.Count, 3);
                 resultsStudent.Add(resultStudent);
             }
 

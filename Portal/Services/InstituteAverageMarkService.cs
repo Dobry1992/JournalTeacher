@@ -13,7 +13,7 @@ namespace Portal.Services
             return Task.Run(() =>
             {
                 if (marks == null || marks.Count == 0)
-                    return 0.0;
+                    return 0.000;
 
                 var studentSubjectAverages = marks
                     .GroupBy(m => new { m.StudentID, m.SubjectID })
@@ -25,7 +25,7 @@ namespace Portal.Services
                             .Select(v => v.Value)
                             .ToList();
 
-                        double subjectAvg = validValues.Any() ? validValues.Average() : 0.0;
+                        double subjectAvg = validValues.Any() ? validValues.Average() : 0.000;
 
                         return new
                         {
@@ -57,11 +57,11 @@ namespace Portal.Services
                    .Select(g =>
                    {
                        var studentAvgs = g.SelectMany(x => x.saGroup.Select(a => a.StudentAverage)).ToList();
-                       return studentAvgs.Any() ? studentAvgs.Average() : 0.0;
+                       return studentAvgs.Any() ? studentAvgs.Average() : 0.000;
                    })
                    .ToList();
 
-                return groupAverages.Any() ? groupAverages.Average() : 0.0;
+                return groupAverages.Any() ? groupAverages.Average() : 0.000;
             });
         }
 

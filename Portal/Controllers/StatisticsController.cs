@@ -91,7 +91,7 @@ namespace Portal.Controllers
                 }
                 InstTeacherRaiting instTeacherRaiting = new();
                 instTeacherRaiting.Teacher = teacher.NickName;
-                instTeacherRaiting.Raiting = Math.Round(mrks.Sum() / mrks.Count, 2);
+                instTeacherRaiting.Raiting = Math.Round(mrks.Sum() / mrks.Count, 3);
                 teacherRaiting.Add(instTeacherRaiting);
             }
 
@@ -114,7 +114,7 @@ namespace Portal.Controllers
                         subjectMarksDouble.Add(number);
                     }
                 }
-                teachersSubView.SubValue = (Math.Round((subjectMarksDouble.Sum() / subjectMarksDouble.Count), 2)).ToString().Replace(",", ".");
+                teachersSubView.SubValue = (Math.Round((subjectMarksDouble.Sum() / subjectMarksDouble.Count), 3)).ToString().Replace(",", ".");
                 teachersSubViews.Add(teachersSubView);
             }
 
@@ -137,7 +137,7 @@ namespace Portal.Controllers
                         depMarksDouble.Add(number);
                     }
                 }
-                teachersDepView.DepValue = (Math.Round((depMarksDouble.Sum() / depMarksDouble.Count), 2)).ToString().Replace(",", ".");
+                teachersDepView.DepValue = (Math.Round((depMarksDouble.Sum() / depMarksDouble.Count), 3)).ToString().Replace(",", ".");
                 teachersDepViews.Add(teachersDepView);
             }
 
@@ -160,7 +160,7 @@ namespace Portal.Controllers
                         groupMarksDouble.Add(number);
                     }
                 }
-                teachersGroupView.GroupValue = (Math.Round((groupMarksDouble.Sum() / groupMarksDouble.Count), 2)).ToString().Replace(",", ".");
+                teachersGroupView.GroupValue = (Math.Round((groupMarksDouble.Sum() / groupMarksDouble.Count), 3)).ToString().Replace(",", ".");
                 teachersGroupViews.Add(teachersGroupView);
             }
 
