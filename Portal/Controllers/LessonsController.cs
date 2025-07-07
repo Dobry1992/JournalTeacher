@@ -1095,6 +1095,24 @@ namespace Portal
         {
             string teacher = _userNameService.GetDisplayName();
 
+            var checklessons = await _context.Lessons
+                .Where(l => 
+                    l.GroupID == GroupID &&
+                    l.SubjectID == SubjectID &&
+                    l.FlagF != 0
+                )
+                .ToListAsync();
+
+            if (checklessons.Any())
+            {
+                checklessons.Add(lesson);
+                var sortedCheckLessons = checklessons.OrderByDescending(l => l.Date).ToList();
+                if (sortedCheckLessons[0].Date > lesson.Date && sortedCheckLessons[sortedCheckLessons.Count - 1].Date < lesson.Date)
+                {
+                    return Content("Невозможно создать занятие, обратитесь в УМЧ.");
+                }
+            }
+
             if (!IsLessonDateValid(lesson.Date, out var errorMessage))
             {
                 ModelState.AddModelError("", errorMessage);
