@@ -58,9 +58,8 @@ namespace Portal.Controllers
             {
                 return NotFound();
             }
-
+           
             //Текущий средний балл
-            string term = "";
             var date = DateTime.Now.AddYears(-1);
             var typeSZ = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Семинарское занятие");
             var typePZ = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Практическое занятие");
@@ -68,16 +67,21 @@ namespace Portal.Controllers
             var typeL = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Лекция");
             var typeKM = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Контрольное мероприятие");
             var typeGPZ = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Городское практическое занятие");
+
+            var typeEKZ = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Экзамен");
+            var typeDZ = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Дифференцированный зачёт");
+            var typeZ = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Зачёт");
+            var typeF = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Итоговая оценка");
+            var typeKP = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Курсовой проект");
+            var typeKR = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Курсовая работа");
             List<double> marksAverage = new();
             List<Mark> marks = new();
 
             //выборка оценок
             if (DateTime.Now.Month.ToString() == "9" || DateTime.Now.Month.ToString() == "10" || DateTime.Now.Month.ToString() == "11" || DateTime.Now.Month.ToString() == "12")
             {
-                term = "первый семестр";
-                marks = await _context.Marks
+                marks = student.Marks
                     .Where(m =>
-                        m.StudentID == id &&
                         (m.TypeOfExerciseID == typeKM.TypeOfExerciseID ||
                             m.TypeOfExerciseID == typeGPZ.TypeOfExerciseID ||
                             m.TypeOfExerciseID == typeSZ.TypeOfExerciseID ||
@@ -90,7 +94,7 @@ namespace Portal.Controllers
                             m.Date.Month.ToString() == "11" ||
                             m.Date.Month.ToString() == "12")
                     )
-                    .ToListAsync();
+                    .ToList();
                 if (marks != null)
                 {
                     foreach (var mark in marks)
@@ -104,10 +108,8 @@ namespace Portal.Controllers
             }
             else if (DateTime.Now.Month.ToString() == "1")
             {
-                term = "первый семестр";
-                marks = await _context.Marks
+                marks = student.Marks
                     .Where(m =>
-                        m.StudentID == id &&
                             (
                                 m.TypeOfExerciseID == typeKM.TypeOfExerciseID ||
                                 m.TypeOfExerciseID == typeGPZ.TypeOfExerciseID ||
@@ -124,7 +126,7 @@ namespace Portal.Controllers
                             m.Date.Month.ToString() == "11" ||
                             m.Date.Month.ToString() == "12")))
                     )
-                    .ToListAsync();
+                    .ToList();
                 if (marks != null)
                 {
                     foreach (var mark in marks)
@@ -138,9 +140,8 @@ namespace Portal.Controllers
             }
             else
             {
-                term = "второй семестр";
-                marks = await _context.Marks
-                    .Where(m => m.StudentID == id &&
+                marks = student.Marks
+                    .Where(m =>
                         (
                             m.TypeOfExerciseID == typeKM.TypeOfExerciseID ||
                             m.TypeOfExerciseID == typeGPZ.TypeOfExerciseID ||
@@ -157,7 +158,7 @@ namespace Portal.Controllers
                         m.Date.Month.ToString() == "7" ||
                         m.Date.Month.ToString() == "8")))
                     )
-                    .ToListAsync();
+                    .ToList();
                 if (marks != null)
                 {
                     foreach (var mark in marks)
@@ -169,6 +170,8 @@ namespace Portal.Controllers
                     }
                 }
             }
+
+            double raiting = (double)_studentAverageMarkService.GetStudentAverageMark(student, marks);
 
             //Учебный год
             string yearsStudy = "";
@@ -240,7 +243,7 @@ namespace Portal.Controllers
                 {"Присутствие", Math.Round(nump, 3)}
             };
 
-            //Текущий средний балл за предмет по месяцам
+            //Текущий общий средний балл и средний бал за предмет по месяцам
             int subjectID = 0;
             if (!String.IsNullOrEmpty(searchString))
             {
@@ -259,11 +262,16 @@ namespace Portal.Controllers
                 .Where(m => m.SubjectID == subjectID)
                 .ToList();
             Dictionary<string, string> raitingTimeSubject = new();
+            Dictionary<string, string> raitingTime = new();
             string[] months = { "Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь" };
 
             foreach (string month in months)
             {
                 int monthNumber = Array.IndexOf(months, month) + 1;
+                var timeMarks = marks
+                    .Where(m => m.Date.Month.ToString() == monthNumber.ToString())
+                    .ToList();
+                raitingTime.Add(month, _studentAverageMarkService.GetStudentAverageMark(student, timeMarks).ToString().Replace(",", "."));
                 var monthMarks = subjectMarks
                     .Where(m => m.Date.Month.ToString() == monthNumber.ToString())
                     .ToList();
@@ -287,235 +295,22 @@ namespace Portal.Controllers
             }
             //конец блока
 
-            var raiting = 0;
-
-            //Общая среднемесячная успеваемость
-            Dictionary<string, string> raitingTime = new();
-            var septemberMarks = marks.Where(m => m.Date.Month.ToString() == "9");
-            List<double> sepMarks = new();
-            foreach (var m in septemberMarks)
-            {
-                if (double.TryParse(m.Value, out var mark))
-                {
-                    sepMarks.Add(mark);
-                }
-            }
-            if (sepMarks.Count != 0)
-            {
-                raitingTime.Add("Сентябрь", (Math.Round(sepMarks.Sum() / sepMarks.Count, 2)).ToString().Replace(",", "."));
-            }
-            else
-            {
-                raitingTime.Add("Сентябрь", "0");
-            }
-
-            var octoberMarks = marks.Where(m => m.Date.Month.ToString() == "10");
-            List<double> octMarks = new();
-            foreach (var m in octoberMarks)
-            {
-                if (double.TryParse(m.Value, out var mark))
-                {
-                    octMarks.Add(mark);
-                }
-            }
-            if (octMarks.Count != 0)
-            {
-                raitingTime.Add("Октябрь", (Math.Round(octMarks.Sum() / octMarks.Count, 2)).ToString().ToString().Replace(",", "."));
-            }
-            else
-            {
-                raitingTime.Add("Октябрь", "0");
-            }
-
-
-            var novemberMarks = marks.Where(m => m.Date.Month.ToString() == "11");
-            List<double> novMarks = new();
-            foreach (var m in novemberMarks)
-            {
-                if (double.TryParse(m.Value, out var mark))
-                {
-                    novMarks.Add(mark);
-                }
-            }
-            if (novMarks.Count != 0)
-            {
-                raitingTime.Add("Ноябрь", (Math.Round(novMarks.Sum() / novMarks.Count, 2)).ToString().Replace(",", "."));
-            }
-            else
-            {
-                raitingTime.Add("Ноябрь", "0");
-            }
-
-
-            var decemberMarks = marks.Where(m => m.Date.Month.ToString() == "12");
-            List<double> decMarks = new();
-            foreach (var m in decemberMarks)
-            {
-                if (double.TryParse(m.Value, out var mark))
-                {
-                    decMarks.Add(mark);
-                }
-            }
-            if (decMarks.Count != 0)
-            {
-                raitingTime.Add("Декабрь", (Math.Round(decMarks.Sum() / decMarks.Count, 2)).ToString().Replace(",", "."));
-            }
-            else
-            {
-                raitingTime.Add("Декабрь", "0");
-            }
-
-            var januaryMarks = marks.Where(m => m.Date.Month.ToString() == "1");
-            List<double> janMarks = new();
-            foreach (var m in januaryMarks)
-            {
-                if (double.TryParse(m.Value, out var mark))
-                {
-                    janMarks.Add(mark);
-                }
-            }
-            if (janMarks.Count != 0)
-            {
-                raitingTime.Add("Январь", (Math.Round(janMarks.Sum() / janMarks.Count, 2)).ToString().Replace(",", "."));
-            }
-            else
-            {
-                raitingTime.Add("Январь", "0");
-            }
-
-            var februaryMarks = marks.Where(m => m.Date.Month.ToString() == "2");
-            List<double> febMarks = new();
-            foreach (var m in februaryMarks)
-            {
-                if (double.TryParse(m.Value, out var mark))
-                {
-                    febMarks.Add(mark);
-                }
-            }
-            if (febMarks.Count != 0)
-            {
-                raitingTime.Add("Февраль", (Math.Round(febMarks.Sum() / febMarks.Count, 2)).ToString().Replace(",", "."));
-            }
-            else
-            {
-                raitingTime.Add("Февраль", "0");
-            }
-
-            var marchMarks = marks.Where(m => m.Date.Month.ToString() == "3");
-            List<double> marMarks = new();
-            foreach (var m in marchMarks)
-            {
-                if (double.TryParse(m.Value, out var mark))
-                {
-                    marMarks.Add(mark);
-                }
-            }
-            if (marMarks.Count != 0)
-            {
-                raitingTime.Add("Март", (Math.Round(marMarks.Sum() / marMarks.Count, 2)).ToString().Replace(",", "."));
-            }
-            else
-            {
-                raitingTime.Add("Март", "0");
-            }
-
-            var aprilMarks = marks.Where(m => m.Date.Month.ToString() == "4");
-            List<double> aprMarks = new();
-            foreach (var m in aprilMarks)
-            {
-                if (double.TryParse(m.Value, out var mark))
-                {
-                    aprMarks.Add(mark);
-                }
-            }
-            if (aprMarks.Count != 0)
-            {
-                raitingTime.Add("Апрель", (Math.Round(aprMarks.Sum() / aprMarks.Count, 2)).ToString().Replace(",", "."));
-            }
-            else
-            {
-                raitingTime.Add("Апрель", "0");
-            }
-
-            var mayMarks = marks.Where(m => m.Date.Month.ToString() == "5");
-            List<double> mMarks = new();
-            foreach (var m in mayMarks)
-            {
-                if (double.TryParse(m.Value, out var mark))
-                {
-                    mMarks.Add(mark);
-                }
-            }
-            if (mMarks.Count != 0)
-            {
-                raitingTime.Add("Май", (Math.Round(mMarks.Sum() / mMarks.Count, 2)).ToString().Replace(",", "."));
-            }
-            else
-            {
-                raitingTime.Add("Май", "0");
-            }
-
-            var juneMarks = marks.Where(m => m.Date.Month.ToString() == "6");
-            List<double> junMarks = new();
-            foreach (var m in juneMarks)
-            {
-                if (double.TryParse(m.Value, out var mark))
-                {
-                    junMarks.Add(mark);
-                }
-            }
-            if (junMarks.Count != 0)
-            {
-                raitingTime.Add("Июнь", (Math.Round(junMarks.Sum() / junMarks.Count, 2)).ToString().Replace(",", "."));
-            }
-            else
-            {
-                raitingTime.Add("Июнь", "0");
-            }
-
-            var julyMarks = marks.Where(m => m.Date.Month.ToString() == "7");
-            List<double> julMarks = new();
-            foreach (var m in julyMarks)
-            {
-                if (double.TryParse(m.Value, out var mark))
-                {
-                    julMarks.Add(mark);
-                }
-            }
-            if (julMarks.Count != 0)
-            {
-                raitingTime.Add("Июль", (Math.Round(julMarks.Sum() / julMarks.Count, 2)).ToString().Replace(",", "."));
-            }
-            else
-            {
-                raitingTime.Add("Июль", "0");
-            }
-
-            var augustMarks = marks.Where(m => m.Date.Month.ToString() == "8");
-            List<double> augMarks = new();
-            foreach (var m in augustMarks)
-            {
-                if (double.TryParse(m.Value, out var mark))
-                {
-                    augMarks.Add(mark);
-                }
-            }
-            if (augMarks.Count != 0)
-            {
-                raitingTime.Add("Август", (Math.Round(augMarks.Sum() / augMarks.Count)).ToString().Replace(",", "."));
-            }
-            else
-            {
-                raitingTime.Add("Август", "0");
-            }
-
             //Диаграмма предметов, роза ветров
-            var journals = student.Group.Journals;
+            var journals = student.Group.Journals.ToList();
             List<object> radar = new();
             foreach (var journal in journals)
             {
                 List<double> val = new();
-                var studentSubjectMarks = marks.Where(m => m.SubjectID == journal.SubjectID);
+                var studentSubjectMarks = marks
+                    .Where(m => 
+                        m.SubjectID == journal.SubjectID &&
+                        m.TypeOfExerciseID != typeEKZ.TypeOfExerciseID &&
+                        m.TypeOfExerciseID != typeDZ.TypeOfExerciseID &&
+                        m.TypeOfExerciseID != typeZ.TypeOfExerciseID &&
+                        m.TypeOfExerciseID != typeF.TypeOfExerciseID &&
+                        m.TypeOfExerciseID != typeKM.TypeOfExerciseID &&
+                        m.TypeOfExerciseID != typeKP.TypeOfExerciseID
+                    );
                 foreach (var mark in studentSubjectMarks)
                 {
                     if (double.TryParse(mark.Value, out var m))
@@ -526,7 +321,7 @@ namespace Portal.Controllers
 
                 if (val.Count != 0)
                 {
-                    double valRaiting = Math.Round(val.Sum() / val.Count, 2);
+                    double valRaiting = Math.Round(val.Average(), 3);
                     radar.Add(new { Subject = journal.Subject.ShortName.ToString(), Value = valRaiting.ToString().Replace(",", ".") });
                 }
             }
@@ -537,7 +332,9 @@ namespace Portal.Controllers
                 .ToList();
 
             //Итоговые результаты обучения
-            var statementMarks = _context.StatementMarks.Where(m => m.StudentID == id);
+            var statementMarks = await _context.StatementMarks
+                .Where(m => m.StudentID == id)
+                .ToListAsync();
             List<FinalMark> finalMarks = new();
             foreach (var mark in statementMarks)
             {
@@ -549,18 +346,18 @@ namespace Portal.Controllers
             }
 
             //Результаты обучения по предметам
-            var typeEKZ = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Экзамен");
-            var typeDZ = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Дифференцированный зачёт");
-            var typeZ = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Зачёт");
-            var typeF = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Итоговая оценка");
-            var typeKP = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Курсовой проект");
-            var typeKR = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Курсовая работа");
-
             List<MarkSubjectFinal> markSubjectFinals = new();
-            var studentMarks = _context.Marks.Where(m => m.StudentID == id);
             foreach (var journal in journals)
             {
-                var mrks = studentMarks.Where(m => m.SubjectID == journal.SubjectID && (m.TypeOfExerciseID == typeKM.TypeOfExerciseID || m.TypeOfExerciseID == typeGPZ.TypeOfExerciseID || m.TypeOfExerciseID == typePZ.TypeOfExerciseID || m.TypeOfExerciseID == typeSZ.TypeOfExerciseID || m.TypeOfExerciseID == typeLZ.TypeOfExerciseID || m.TypeOfExerciseID == typeL.TypeOfExerciseID));
+                var mrks = student.Marks
+                    .Where(m => m.SubjectID == journal.SubjectID &&
+                        (m.TypeOfExerciseID == typeKM.TypeOfExerciseID ||
+                        m.TypeOfExerciseID == typeGPZ.TypeOfExerciseID ||
+                        m.TypeOfExerciseID == typePZ.TypeOfExerciseID ||
+                        m.TypeOfExerciseID == typeSZ.TypeOfExerciseID ||
+                        m.TypeOfExerciseID == typeLZ.TypeOfExerciseID ||
+                        m.TypeOfExerciseID == typeL.TypeOfExerciseID)
+                    );
                 List<double> simplemrks = new();
                 foreach (var m in mrks)
                 {
@@ -570,21 +367,27 @@ namespace Portal.Controllers
                     }
                 }
 
-                var controlMarks = studentMarks.Where(m => m.SubjectID == journal.SubjectID && (m.TypeOfExerciseID == typeEKZ.TypeOfExerciseID || m.TypeOfExerciseID == typeDZ.TypeOfExerciseID || m.TypeOfExerciseID == typeZ.TypeOfExerciseID));
+                var controlMarks = student.Marks
+                    .Where(m => m.SubjectID == journal.SubjectID && (m.TypeOfExerciseID == typeEKZ.TypeOfExerciseID || m.TypeOfExerciseID == typeDZ.TypeOfExerciseID || m.TypeOfExerciseID == typeZ.TypeOfExerciseID))
+                    .ToList();
                 List<Mark> controlmrks = new();
                 foreach (var m in controlMarks)
                 {
                     controlmrks.Add(m);
                 }
 
-                var fMarks = studentMarks.Where(m => m.SubjectID == journal.SubjectID && m.TypeOfExerciseID == typeF.TypeOfExerciseID);
+                var fMarks = student.Marks
+                    .Where(m => m.SubjectID == journal.SubjectID && m.TypeOfExerciseID == typeF.TypeOfExerciseID)
+                    .ToList();
                 List<Mark> fmrks = new();
                 foreach (var m in fMarks)
                 {
                     fmrks.Add(m);
                 }
 
-                var kMarks = studentMarks.Where(m => m.SubjectID == journal.SubjectID && (m.TypeOfExerciseID == typeKP.TypeOfExerciseID || m.TypeOfExerciseID == typeKR.TypeOfExerciseID));
+                var kMarks = student.Marks
+                    .Where(m => m.SubjectID == journal.SubjectID && (m.TypeOfExerciseID == typeKP.TypeOfExerciseID || m.TypeOfExerciseID == typeKR.TypeOfExerciseID))
+                    .ToList();
                 List<Mark> kmarks = new();
                 foreach (var m in kMarks)
                 {
