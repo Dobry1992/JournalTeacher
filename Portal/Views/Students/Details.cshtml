@@ -1,4 +1,4 @@
-﻿@model Portal.Models.Student
+﻿@model Portal.ViewModel.StudentDetailsView
 
 @{
     ViewData["Title"] = "Профиль";
@@ -15,14 +15,14 @@
 </section>
 <section class="content">
     <div class="container-fluid">
-        <h3 class="mb-3 text-center bg-gray-light headGroup p-2 rounded shadow">@Model.LastName @Model.Name @Model.Surname</h3>
+        <h3 class="mb-3 text-center bg-gray-light headGroup p-2 rounded shadow">@Model.Student.LastName @Model.Student.Name @Model.Student.Surname</h3>
         <div class="row">
             <div class="col-12 col-sm-6 col-md-3">
                 <div class="info-box">
                     <span class="info-box-icon bg-info elevation-1"><i class="fas fa-info"></i></span>
                     <div class="info-box-content">
                         <span class="info-box-text text-center">Текущий средний балл</span>
-                        <span class="info-box-number text-center">@ViewBag.Raiting.ToString()</span>
+                        <span class="info-box-number text-center">@Model.Raiting.ToString()</span>
                     </div>
                 </div>
             </div>
@@ -31,7 +31,7 @@
                     <span class="info-box-icon bg-warning elevation-1"><i class="fas fa-institution"></i></span>
                     <div class="info-box-content">
                         <span class="info-box-number text-center">
-                            <a class="text-decoration-none stretched-link text-dark" asp-controller="Institutes" asp-action="Details" asp-route-id="@Model.InstituteID">@Model.Group.Speciality.Institute.Name</a>
+                            <a class="text-decoration-none stretched-link text-dark" asp-controller="Institutes" asp-action="Details" asp-route-id="@Model.Student.InstituteID">@Model.Student.Group.Speciality.Institute.Name</a>
                         </span>
                     </div>
                 </div>
@@ -42,7 +42,7 @@
                     <div class="info-box-content">
                         <span class="info-box-text text-center">Группа</span>
                         <span class="info-box-number text-center">
-                            <a class="text-decoration-none stretched-link text-success" asp-controller="Groups" asp-action="DetailsGroup" asp-route-id="@Model.GroupID">@Model.Group.Name</a>
+                            <a class="text-decoration-none stretched-link text-success" asp-controller="Groups" asp-action="DetailsGroup" asp-route-id="@Model.Student.GroupID">@Model.Student.Group.Name</a>
                         </span>
                     </div>
                 </div>
@@ -51,7 +51,7 @@
                 <div class="info-box mb-3">
                     <span class="info-box-icon bg-danger elevation-1"><i class="fas fa-user"></i></span>
                     <div class="info-box-content">
-                        @if (@Model.Status == true)
+                        @if (Model.Student.Status == true)
                         {
                             <span class="info-box-text text-center">Статус: обучается</span>
                         }
@@ -59,8 +59,8 @@
                         {
                             <span class="info-box-text text-center">Статус: отчислен</span>
                         }
-                        <span class="info-box-text text-center">Дата поступления: @Model.Group.DateEnter.ToShortDateString()</span>
-                        <span class="info-box-text text-center">Дата окончания: @Model.Group.DateExit.ToShortDateString()</span>
+                        <span class="info-box-text text-center">Дата поступления: @Model.Student.Group.DateEnter.ToShortDateString()</span>
+                        <span class="info-box-text text-center">Дата окончания: @Model.Student.Group.DateExit.ToShortDateString()</span>
                     </div>
                 </div>
             </div>
@@ -100,9 +100,9 @@
                         <form asp-action="Details" method="get">
                             <div class="input-group mb-3">
                                 <select class="form-control" name="searchString">
-                                    @foreach (var journal in Model.Group.Journals)
+                                    @foreach (var journal in Model.Student.Group.Journals)
                                     {
-                                        @if (ViewBag.Subject.SubjectID == journal.SubjectID)
+                                        @if (Model.Subject.SubjectID == journal.SubjectID)
                                         {
                                             <option selected value="@journal.SubjectID">@journal.Subject.Name</option>
                                         }
@@ -144,15 +144,15 @@
                             </div>
                             <div class="col-md-5">
                                 <ul class="chart-legend clearfix">
-                                    @if (ViewBag.MarksPercent.Count != 0)
+                                    @if (Model.MarksPercent.Count != 0)
                                     {
-                                        <li><i class="fas fa-circle" style="color: #00FF00"></i> Присутствие <span>(@ViewBag.AttendancePercent["Присутствие"] %)</span></li>
-                                        <li><i class="fas fa-circle" style="color: #FFA500"></i> Болезнь <span>(@ViewBag.AttendancePercent["Болезнь"] %)</span></li>
-                                        <li><i class="fas fa-circle" style="color: #dbe028"></i> Наряд <span>(@ViewBag.AttendancePercent["Наряд"] %)</span></li>
-                                        <li><i class="fas fa-circle" style="color: #b8f60d"></i> Отпуск <span>(@ViewBag.AttendancePercent["Отпуск"] %)</span></li>
-                                        <li><i class="fas fa-circle" style="color: #0000FF"></i> Коммандировка <span>(@ViewBag.AttendancePercent["Коммандировка"] %)</span></li>
-                                        <li><i class="fas fa-circle" style="color: #00BFFF"></i> Рапорт <span>(@ViewBag.AttendancePercent["Отсутствие по мотивированный рапорт"] %)</span></li>
-                                        <li><i class="fas fa-circle" style="color: #e83513"></i> Отсутствие без причины <span>(@ViewBag.AttendancePercent["Отсутствие без уважительной причины"] %)</span></li>
+                                        <li><i class="fas fa-circle" style="color: #00FF00"></i> Присутствие <span>(@Model.AttendancePercent["Присутствие"] %)</span></li>
+                                        <li><i class="fas fa-circle" style="color: #FFA500"></i> Болезнь <span>(@Model.AttendancePercent["Болезнь"] %)</span></li>
+                                        <li><i class="fas fa-circle" style="color: #dbe028"></i> Наряд <span>(@Model.AttendancePercent["Наряд"] %)</span></li>
+                                        <li><i class="fas fa-circle" style="color: #b8f60d"></i> Отпуск <span>(@Model.AttendancePercent["Отпуск"] %)</span></li>
+                                        <li><i class="fas fa-circle" style="color: #0000FF"></i> Коммандировка <span>(@Model.AttendancePercent["Коммандировка"] %)</span></li>
+                                        <li><i class="fas fa-circle" style="color: #00BFFF"></i> Рапорт <span>(@Model.AttendancePercent["Отсутствие по мотивированный рапорт"] %)</span></li>
+                                        <li><i class="fas fa-circle" style="color: #e83513"></i> Отсутствие без причины <span>(@Model.AttendancePercent["Отсутствие без уважительной причины"] %)</span></li>
                                     }
                                 </ul>
                             </div>
@@ -183,7 +183,7 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    @foreach (var subject in ViewBag.SubjectFinals)
+                                    @foreach (var subject in Model.MarkSubjectFinals)
                                     {
                                         <tr class="text-center" style="font-size:small;">
                                             <td>@k</td>
@@ -226,7 +226,7 @@
                 <div class="info-box mb-3 bg-success">
                     <div class="info-box-content">
                         <span class="info-box-text mb-1">Специальность:</span>
-                        <span class="text-wrap p-1">@Model.Group.Speciality.Name</span>
+                        <span class="text-wrap p-1">@Model.Student.Group.Speciality.Name</span>
                     </div>
                 </div>
                 <div class="card bg-light">
@@ -247,18 +247,18 @@
                             </div>
                             <div class="col-md-4">
                                 <ul class="chart-legend clearfix">
-                                    @if (ViewBag.MarksPercent.Count != 0)
+                                    @if (Model.MarksPercent.Count != 0)
                                     {
-                                        <li><i class="fas fa-circle" style="color: #006400"></i> 10 <span>(@ViewBag.MarksPercent[10] %)</span></li>
-                                        <li><i class="fas fa-circle" style="color: #00FF00"></i> 9 <span>(@ViewBag.MarksPercent[9] %)</span></li>
-                                        <li><i class="fas fa-circle" style="color: #0000FF"></i> 8 <span>(@ViewBag.MarksPercent[8] %)</span></li>
-                                        <li><i class="fas fa-circle" style="color: #00BFFF"></i> 7 <span>(@ViewBag.MarksPercent[7] %)</span></li>
-                                        <li><i class="fas fa-circle" style="color: #DAA520"></i> 6 <span>(@ViewBag.MarksPercent[6] %)</span></li>
-                                        <li><i class="fas fa-circle" style="color: #FFD700"></i> 5 <span>(@ViewBag.MarksPercent[5] %)</span></li>
-                                        <li><i class="fas fa-circle" style="color: #FFA500"></i> 4 <span>(@ViewBag.MarksPercent[4] %)</span></li>
-                                        <li><i class="fas fa-circle" style="color: #FF4500"></i> 3 <span>(@ViewBag.MarksPercent[3] %)</span></li>
-                                        <li><i class="fas fa-circle" style="color: #FF0000"></i> 2 <span>(@ViewBag.MarksPercent[2] %)</span></li>
-                                        <li><i class="fas fa-circle" style="color: #8B0000"></i> 1 <span>(@ViewBag.MarksPercent[1] %)</span></li>
+                                        <li><i class="fas fa-circle" style="color: #006400"></i> 10 <span>(@Model.MarksPercent[10] %)</span></li>
+                                        <li><i class="fas fa-circle" style="color: #00FF00"></i> 9 <span>(@Model.MarksPercent[9] %)</span></li>
+                                        <li><i class="fas fa-circle" style="color: #0000FF"></i> 8 <span>(@Model.MarksPercent[8] %)</span></li>
+                                        <li><i class="fas fa-circle" style="color: #00BFFF"></i> 7 <span>(@Model.MarksPercent[7] %)</span></li>
+                                        <li><i class="fas fa-circle" style="color: #DAA520"></i> 6 <span>(@Model.MarksPercent[6] %)</span></li>
+                                        <li><i class="fas fa-circle" style="color: #FFD700"></i> 5 <span>(@Model.MarksPercent[5] %)</span></li>
+                                        <li><i class="fas fa-circle" style="color: #FFA500"></i> 4 <span>(@Model.MarksPercent[4] %)</span></li>
+                                        <li><i class="fas fa-circle" style="color: #FF4500"></i> 3 <span>(@Model.MarksPercent[3] %)</span></li>
+                                        <li><i class="fas fa-circle" style="color: #FF0000"></i> 2 <span>(@Model.MarksPercent[2] %)</span></li>
+                                        <li><i class="fas fa-circle" style="color: #8B0000"></i> 1 <span>(@Model.MarksPercent[1] %)</span></li>
                                     }
                                 </ul>
                             </div>
@@ -305,7 +305,7 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    @foreach (var mark in ViewBag.NegativeMarks)
+                                    @foreach (var mark in Model.NegativeMarks)
                                     {
                                         <tr class="text-center">
                                             <td>@i</td>
@@ -342,7 +342,7 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    @foreach (var mark in ViewBag.FinalMarks)
+                                    @foreach (var mark in Model.FinalMarks)
                                     {
                                         <tr class="text-center">
                                             <td>@j</td>
@@ -384,7 +384,7 @@
             ],
             datasets: [
                 {
-                    data: [@ViewBag.MarksNumber[10], @ViewBag.MarksNumber[9], @ViewBag.MarksNumber[8], @ViewBag.MarksNumber[7], @ViewBag.MarksNumber[6], @ViewBag.MarksNumber[5], @ViewBag.MarksNumber[4], @ViewBag.MarksNumber[3], @ViewBag.MarksNumber[2], @ViewBag.MarksNumber[1]],
+                    data: [@Model.MarksNumber[10], @Model.MarksNumber[9], @Model.MarksNumber[8], @Model.MarksNumber[7], @Model.MarksNumber[6], @Model.MarksNumber[5], @Model.MarksNumber[4], @Model.MarksNumber[3], @Model.MarksNumber[2], @Model.MarksNumber[1]],
                     backgroundColor: ['#006400', '#00FF00', '#0000FF', '#00BFFF', '#DAA520', '#FFD700', '#FFA500', '#FF4500', '#FF0000', '#8B0000'],
                 }
             ]
@@ -416,7 +416,7 @@
                     data: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
                 },
                 {
-                    label: '@ViewBag.Year',
+                    label: '@Model.YearsStudy',
                     backgroundColor: 'rgba(90, 0, 254, 1)',
                     borderColor: 'rgba(90, 0, 254, 1)',
                     pointRadius: false,
@@ -424,7 +424,7 @@
                     pointStrokeColor: '#bfbfbf',
                     pointHighlightFill: '#fff',
                     pointHighlightStroke: 'rgba(191, 191, 191,1)',
-                    data: [@ViewBag.SubjectRaiting["Сентябрь"], @ViewBag.SubjectRaiting["Октябрь"], @ViewBag.SubjectRaiting["Ноябрь"], @ViewBag.SubjectRaiting["Декабрь"], @ViewBag.SubjectRaiting["Январь"], @ViewBag.SubjectRaiting["Февраль"], @ViewBag.SubjectRaiting["Март"], @ViewBag.SubjectRaiting["Апрель"], @ViewBag.SubjectRaiting["Май"], @ViewBag.SubjectRaiting["Июнь"], @ViewBag.SubjectRaiting["Июль"], @ViewBag.SubjectRaiting["Август"]]
+                    data: [@Model.RaitingTimeSubject["Сентябрь"], @Model.RaitingTimeSubject["Октябрь"], @Model.RaitingTimeSubject["Ноябрь"], @Model.RaitingTimeSubject["Декабрь"], @Model.RaitingTimeSubject["Январь"], @Model.RaitingTimeSubject["Февраль"], @Model.RaitingTimeSubject["Март"], @Model.RaitingTimeSubject["Апрель"], @Model.RaitingTimeSubject["Май"], @Model.RaitingTimeSubject["Июнь"], @Model.RaitingTimeSubject["Июль"], @Model.RaitingTimeSubject["Август"]]
                 },
             ]
         }
@@ -483,7 +483,7 @@
                     pointStrokeColor: '#c1c7d1',
                     pointHighlightFill: '#c1c7d1',
                     pointHighlightStroke: 'rgba(220,220,220,1)',
-                    data: [@ViewBag.TimeRaiting["Сентябрь"], @ViewBag.TimeRaiting["Октябрь"], @ViewBag.TimeRaiting["Ноябрь"], @ViewBag.TimeRaiting["Декабрь"], @ViewBag.TimeRaiting["Январь"], @ViewBag.TimeRaiting["Февраль"], @ViewBag.TimeRaiting["Март"], @ViewBag.TimeRaiting["Апрель"], @ViewBag.TimeRaiting["Май"], @ViewBag.TimeRaiting["Июнь"], @ViewBag.TimeRaiting["Июль"], @ViewBag.TimeRaiting["Август"]]
+                    data: [@Model.RaitingTime["Сентябрь"], @Model.RaitingTime["Октябрь"], @Model.RaitingTime["Ноябрь"], @Model.RaitingTime["Декабрь"], @Model.RaitingTime["Январь"], @Model.RaitingTime["Февраль"], @Model.RaitingTime["Март"], @Model.RaitingTime["Апрель"], @Model.RaitingTime["Май"], @Model.RaitingTime["Июнь"], @Model.RaitingTime["Июль"], @Model.RaitingTime["Август"]]
                 },
             ]
         }
@@ -596,7 +596,7 @@
             ],
             datasets: [
                 {
-                    data: [@ViewBag.Attendance["Болезнь"], @ViewBag.Attendance["Наряд"], @ViewBag.Attendance["Отпуск"], @ViewBag.Attendance["Коммандировка"], @ViewBag.Attendance["Отсутствие по мотивированный рапорт"], @ViewBag.Attendance["Отсутствие без уважительной причины"], @ViewBag.Attendance["Присутствие"]],
+                    data: [@Model.AttendanceNumber["Болезнь"], @Model.AttendanceNumber["Наряд"], @Model.AttendanceNumber["Отпуск"], @Model.AttendanceNumber["Коммандировка"], @Model.AttendanceNumber["Отсутствие по мотивированный рапорт"], @Model.AttendanceNumber["Отсутствие без уважительной причины"], @Model.AttendanceNumber["Присутствие"]],
                     backgroundColor: ['#FFA500', '#dbe028', '#b8f60d', '#0000FF', '#00BFFF', '#e83513', '#00FF00'],
                 }
             ]

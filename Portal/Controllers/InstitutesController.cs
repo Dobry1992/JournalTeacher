@@ -169,7 +169,6 @@ namespace Portal
             return View(groupRaitings);
         }
 
-
         public async Task<IActionResult> Start()
         {
             var institutes = _context.Institutes
