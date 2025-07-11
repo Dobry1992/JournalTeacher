@@ -45,14 +45,14 @@ namespace Portal.Controllers
             }
 
             var student = await _context.Students
-               .Include(s => s.Group)
-                  .ThenInclude(g => g.Journals)
-                       .ThenInclude(j => j.Subject)
-               .Include(s => s.Group)
-                  .ThenInclude(g => g.Speciality)
-                       .ThenInclude(s => s.Institute)
-               .Include(s => s.Marks)
-               .FirstOrDefaultAsync(m => m.StudentID == id);
+                 .AsSplitQuery()
+                 .Include(s => s.Group.Speciality.Institute)
+                 .Include(s => s.Group.Journals)
+                     .ThenInclude(j => j.Subject)
+                 .Include(s => s.Marks)
+                     .ThenInclude(m => m.Theme)
+                         .ThenInclude(t => t.Subject)
+                 .FirstOrDefaultAsync(s => s.StudentID == id);
 
             if (student == null)
             {
@@ -60,7 +60,7 @@ namespace Portal.Controllers
             }
 
             //Текущий средний балл
-            string term;
+            string term = "";
             var date = DateTime.Now.AddYears(-1);
             var typeSZ = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Семинарское занятие");
             var typePZ = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Практическое занятие");
@@ -263,7 +263,7 @@ namespace Portal.Controllers
 
             foreach (string month in months)
             {
-                int monthNumber =Array.IndexOf(months, month) + 1;
+                int monthNumber = Array.IndexOf(months, month) + 1;
                 var monthMarks = subjectMarks
                     .Where(m => m.Date.Month.ToString() == monthNumber.ToString())
                     .ToList();
@@ -600,7 +600,7 @@ namespace Portal.Controllers
                 markSubjectFinals.Add(msf);
             }
 
-            StudentDetailsView studentDetailsView = new() 
+            StudentDetailsView studentDetailsView = new()
             {
                 Student = student,
                 AttendancePercent = attendancePercent,

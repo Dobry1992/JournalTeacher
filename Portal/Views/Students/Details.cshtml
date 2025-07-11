@@ -305,16 +305,19 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    @foreach (var mark in Model.NegativeMarks)
+                                    @if (Model.NegativeMarks != null || Model.NegativeMarks.Any())
                                     {
-                                        <tr class="text-center">
-                                            <td>@i</td>
-                                            <td class="text-white bg-danger">@mark.Value</td>
-                                            <td>@mark.Theme.Subject.ShortName</td>
-                                            <td>@mark.Theme.Name</td>
-                                            <td>@mark.Date.ToShortDateString()</td>
-                                        </tr>
-                                        i++;
+                                        foreach (var mark in Model.NegativeMarks)
+                                        {
+                                            <tr class="text-center">
+                                                <td>@i</td>
+                                                <td class="text-white bg-danger">@mark.Value</td>
+                                                <td>@mark.Theme.Subject.ShortName</td>
+                                                <td>@mark.Theme.Name</td>
+                                                <td>@mark.Date.ToShortDateString()</td>
+                                            </tr>
+                                            i++;
+                                        }
                                     }
                                 </tbody>
                             </table>
@@ -475,7 +478,7 @@
                     data: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
                 },
                 {
-                    label: '@ViewBag.Year',
+                    label: '@Model.YearsStudy',
                     backgroundColor: 'rgba(194, 48, 14, 1)',
                     borderColor: 'rgba(194, 48, 14, 1)',
                     pointRadius: false,
@@ -522,7 +525,7 @@
         //---------------------
         //- RADAR CHART -
         //---------------------
-        var obj = @Html.Raw(Json.Serialize(ViewBag.Test));
+        var obj = @Html.Raw(Json.Serialize(Model.Radar));
         var subjects = [];
         var values = [];
         for (var key in obj) {
