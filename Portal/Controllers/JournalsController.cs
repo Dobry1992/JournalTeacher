@@ -31,15 +31,29 @@ namespace Portal
             return View(await journals.ToListAsync());
         }
 
-        public IActionResult Final(int GroupID, int SubjectID)
+        public async Task<IActionResult> Final(int GroupID, int SubjectID)
         {
-            var students = _context.Students.Where(s => s.GroupID == GroupID).AsNoTracking();
+            var students = _context.Students
+                .Where(s => s.GroupID == GroupID)
+                .AsNoTracking();
+
+            TypeOfExercise typeKR = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Курсовая работа");
+            TypeOfExercise typeKP = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Курсовой проект");
             List<ResultStudent> resultsStudent = new();
             foreach (var student in students)
             {
                 ResultStudent resultStudent = new();
                 List<double> marks = new();
-                var simpleMarks = _context.Marks.Where(m => m.FlagF == 0 && m.GroupID == GroupID && m.SubjectID == SubjectID && m.StudentID == student.StudentID).AsNoTracking();
+                var simpleMarks = _context.Marks
+                    .Where(m => 
+                        m.FlagF == 0 && 
+                        m.GroupID == GroupID && 
+                        m.SubjectID == SubjectID && 
+                        m.StudentID == student.StudentID &&
+                        m.TypeOfExerciseID != typeKR.TypeOfExerciseID &&
+                        m.TypeOfExerciseID != typeKP.TypeOfExerciseID
+                    )
+                    .AsNoTracking();
                 foreach (var mark in simpleMarks)
                 {
                     if (double.TryParse(mark.Value, out double m))
