@@ -359,7 +359,10 @@ namespace Portal
             var typesDict = types.ToDictionary(t => t.Name, t => t.TypeOfExerciseID);
 
             var lessons = await _context.Lessons
-                .Where(l => l.Theme.SubjectID == SubjectID && l.GroupID == GroupID)
+                .Where(l => 
+                    l.Theme.SubjectID == SubjectID && 
+                    l.GroupID == GroupID
+                )
                 .OrderBy(l => l.Date)
                 .Include(l => l.TypeOfExercise)
                 .Include(l => l.Theme)
@@ -373,7 +376,10 @@ namespace Portal
                 .ToListAsync();
 
             var marks = await _context.Marks
-                .Where(m => m.SubjectID == SubjectID && m.GroupID == GroupID)
+                .Where(m => 
+                    m.SubjectID == SubjectID && 
+                    m.GroupID == GroupID
+                )
                 .OrderBy(m => m.Date)
                 .AsNoTracking()
                 .ToListAsync();
