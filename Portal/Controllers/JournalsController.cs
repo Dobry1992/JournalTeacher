@@ -471,7 +471,7 @@ namespace Portal
                         }
                     }
 
-                    if (doubleMark == null)
+                    if (!doubleMark.Any())
                     {
                         Mark statMark = new()
                         {
