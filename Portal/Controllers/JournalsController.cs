@@ -420,11 +420,19 @@ namespace Portal
                     GroupID = GroupID,
                     ThemeID = 0, // необходимо добавить тему контрольного занятия
                     TypeOfExerciseID = 0, // необходимо добавить тип контрольного занятия
-                    Date = keySimpleLessons[keySimpleLessons.Count - 1].Date.AddHours(1)
+                    Date = keySimpleLessons[^1].Date.AddHours(1)
                 };
 
                 statLessons.Add(statlesson);
             }
+
+            List<Mark> simpleMarks = marks
+                .Where(m =>
+                    !IsType(m.TypeOfExerciseID, typesDict, "Экзамен", "Дифференцированный зачёт", "Зачёт", "Итоговая оценка", "Курсовой проект", "Курсовая работа")
+                )
+                .ToList();
+
+
 
             //конец метода
 
