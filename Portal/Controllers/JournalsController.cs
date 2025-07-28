@@ -45,10 +45,10 @@ namespace Portal
                 ResultStudent resultStudent = new();
                 List<double> marks = new();
                 var simpleMarks = _context.Marks
-                    .Where(m => 
-                        m.FlagF == 0 && 
-                        m.GroupID == GroupID && 
-                        m.SubjectID == SubjectID && 
+                    .Where(m =>
+                        m.FlagF == 0 &&
+                        m.GroupID == GroupID &&
+                        m.SubjectID == SubjectID &&
                         m.StudentID == student.StudentID &&
                         m.TypeOfExerciseID != typeKR.TypeOfExerciseID &&
                         m.TypeOfExerciseID != typeKP.TypeOfExerciseID
@@ -359,8 +359,8 @@ namespace Portal
             var typesDict = types.ToDictionary(t => t.Name, t => t.TypeOfExerciseID);
 
             var lessons = await _context.Lessons
-                .Where(l => 
-                    l.Theme.SubjectID == SubjectID && 
+                .Where(l =>
+                    l.Theme.SubjectID == SubjectID &&
                     l.GroupID == GroupID
                 )
                 .OrderBy(l => l.Date)
@@ -370,14 +370,17 @@ namespace Portal
                 .ToListAsync();
 
             var students = await _context.Students
-                .Where(s => s.GroupID == GroupID && s.Status == true)
+                .Where(s =>
+                    s.GroupID == GroupID &&
+                    s.Status == true
+                )
                 .OrderBy(s => s.LastName)
                 .AsNoTracking()
                 .ToListAsync();
 
             var marks = await _context.Marks
-                .Where(m => 
-                    m.SubjectID == SubjectID && 
+                .Where(m =>
+                    m.SubjectID == SubjectID &&
                     m.GroupID == GroupID
                 )
                 .OrderBy(m => m.Date)
@@ -391,6 +394,40 @@ namespace Portal
 
             var journalMarks = BuildJournalMarks(marks, typesDict);
             var journalLessons = BuildJournalLessons(lessons, typesDict);
+
+            //начало метода, выделить в отдельный сервис.
+            var simpleLessons = lessons
+                .Where(l =>
+                    !IsType(l.TypeOfExerciseID, typesDict, "Экзамен", "Дифференцированный зачёт", "Зачёт", "Итоговая оценка", "Курсовой проект", "Курсовая работа")
+                )
+                .ToList();
+
+            Dictionary<int, List<Lesson>> lessonsByFlag = simpleLessons
+                .GroupBy(l => l.FlagF)
+                .ToDictionary(
+                    g => g.Key,
+                    g => g.OrderBy(l => l.Date).ToList()
+                );
+
+            List<Lesson> statLessons = new List<Lesson>();
+            foreach(var l in lessonsByFlag)
+            {
+                List<Lesson> keySimpleLessons = l.Value; 
+                Lesson statlesson = new()
+                {
+                    FlagF = l.Key,
+                    SubjectID = SubjectID,
+                    GroupID = GroupID,
+                    ThemeID = 0, // необходимо добавить тему контрольного занятия
+                    TypeOfExerciseID = 0, // необходимо добавить тип контрольного занятия
+                    Date = keySimpleLessons[keySimpleLessons.Count - 1].Date.AddHours(1)
+                };
+
+                statLessons.Add(statlesson);
+            }
+
+            //конец метода
+
 
             var journalViewModel = new JournalViewModel
             {
