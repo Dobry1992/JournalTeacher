@@ -402,6 +402,12 @@ namespace Portal
                 )
                 .ToList();
 
+            List<Mark> simpleMarks = marks
+                .Where(m =>
+                    !IsType(m.TypeOfExerciseID, typesDict, "Экзамен", "Дифференцированный зачёт", "Зачёт", "Итоговая оценка", "Курсовой проект", "Курсовая работа")
+                )
+                .ToList();
+
             Dictionary<int, List<Lesson>> lessonsByFlag = simpleLessons
                 .GroupBy(l => l.FlagF)
                 .ToDictionary(
@@ -409,33 +415,131 @@ namespace Portal
                     g => g.OrderBy(l => l.Date).ToList()
                 );
 
-            List<Lesson> statLessons = new List<Lesson>();
-            foreach(var l in lessonsByFlag)
+            List<JournalLessons> statLessons = new();
+            List<JournalMarks> statMarks = new();
+            Theme theme = await _context.Themes
+                .FirstOrDefaultAsync(t =>
+                    t.Name == "Контрольное занятие" &&
+                    t.SubjectID == subject.SubjectID
+                );
+            TypeOfExercise type = await _context.Types
+                .FirstOrDefaultAsync(t =>
+                    t.Name == "Контрольное мероприятие"
+                );
+
+            foreach (var l in lessonsByFlag)
             {
-                List<Lesson> keySimpleLessons = l.Value; 
+                List<Lesson> keySimpleLessons = l.Value;
                 Lesson statlesson = new()
                 {
                     FlagF = l.Key,
                     SubjectID = SubjectID,
                     GroupID = GroupID,
-                    ThemeID = 0, // необходимо добавить тему контрольного занятия
-                    TypeOfExerciseID = 0, // необходимо добавить тип контрольного занятия
+                    Group = group,
+                    ThemeID = theme.ThemeID,
+                    Theme = theme,
+                    TypeOfExercise = type,
+                    TypeOfExerciseID = type.TypeOfExerciseID,
                     Date = keySimpleLessons[^1].Date.AddHours(1)
                 };
 
-                statLessons.Add(statlesson);
+                JournalLessons journalLesson = new()
+                {
+                    Lesson = statlesson,
+                    Action = "",
+                    Controller = "",
+                    IsEdit = false
+                };
+
+                statLessons.Add(journalLesson);
+
+                foreach (var student in students)
+                {
+                    List<Mark> statSimpleMarks = simpleMarks
+                        .Where(m =>
+                            m.StudentID == student.StudentID &&
+                            m.FlagF == l.Key
+                        )
+                        .ToList();
+
+                    List<double> doubleMark = new();
+                    foreach (var mark in statSimpleMarks)
+                    {
+                        if (double.TryParse(mark.Value, out double number))
+                        {
+                            doubleMark.Add(number);
+                        }
+                    }
+
+                    if (doubleMark == null)
+                    {
+                        Mark statMark = new()
+                        {
+                            ChangeCounter = 3,
+                            Date = statlesson.Date,
+                            FlagF = l.Key,
+                            GroupID = GroupID,
+                            Student = student,
+                            Theme = theme,
+                            ThemeID = theme.ThemeID,
+                            StudentID = student.StudentID,
+                            TypeOfExerciseID = type.TypeOfExerciseID,
+                            SubjectID = SubjectID,
+                            DepartmentID = department.DepartmentID,
+                            InstituteID = group.InstituteID,
+                            SpecialityID = group.SpecialityID,
+                            Value = ""
+                        };
+
+                        JournalMarks journalMark = new()
+                        {
+                            Action = "",
+                            Controller = "",
+                            IsEdit = false,
+                            Mark = statMark,
+                            Property = ""
+                        };
+
+                        statMarks.Add(journalMark);
+                    }
+                    else
+                    {
+                        Mark statMark = new()
+                        {
+                            ChangeCounter = 3,
+                            Date = statlesson.Date,
+                            FlagF = l.Key,
+                            GroupID = GroupID,
+                            Student = student,
+                            Theme = theme,
+                            ThemeID = theme.ThemeID,
+                            StudentID = student.StudentID,
+                            TypeOfExerciseID = type.TypeOfExerciseID,
+                            SubjectID = SubjectID,
+                            DepartmentID = department.DepartmentID,
+                            InstituteID = group.InstituteID,
+                            SpecialityID = group.SpecialityID,
+                            Value = Math.Round(doubleMark.Average(), 3).ToString()
+                        };
+
+                        JournalMarks journalMark = new()
+                        {
+                            Action = "",
+                            Controller = "",
+                            IsEdit = false,
+                            Mark = statMark,
+                            Property = ""
+                        };
+
+                        statMarks.Add(journalMark);
+                    }
+                }
             }
-
-            List<Mark> simpleMarks = marks
-                .Where(m =>
-                    !IsType(m.TypeOfExerciseID, typesDict, "Экзамен", "Дифференцированный зачёт", "Зачёт", "Итоговая оценка", "Курсовой проект", "Курсовая работа")
-                )
-                .ToList();
-
-
 
             //конец метода
 
+            journalLessons.AddRange(statLessons);
+            journalMarks.AddRange(statMarks);
 
             var journalViewModel = new JournalViewModel
             {
