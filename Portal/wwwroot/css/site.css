@@ -282,6 +282,17 @@ body {
     transition: 0.5s;
 }
 
+.statMark {
+    background-color: #f0fff0;
+    transition: background-color 0.3s ease;
+    color: #2e7d32;
+}
+
+.statMark:hover {
+    background-color: #d4f5d4;
+    color: #1b5e20;
+}
+
 .markPP {
     background-color: white;
 }

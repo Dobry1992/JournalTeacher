@@ -235,7 +235,7 @@ namespace Portal
                 {
                     isEditAllowedByRules = false;
                 }
-                else if (mark.ChangeCounter == 1 && allowedTypes.Contains(mark.TypeOfExerciseID))
+                else if (mark.ChangeCounter >= 1 && allowedTypes.Contains(mark.TypeOfExerciseID))
                 {
                     isEditAllowedByRules = false;
                 }
@@ -395,7 +395,6 @@ namespace Portal
             var journalMarks = BuildJournalMarks(marks, typesDict);
             var journalLessons = BuildJournalLessons(lessons, typesDict);
 
-            //начало метода, выделить в отдельный сервис.
             var simpleLessons = lessons
                 .Where(l =>
                     !IsType(l.TypeOfExerciseID, typesDict, "Экзамен", "Дифференцированный зачёт", "Зачёт", "Итоговая оценка", "Курсовой проект", "Курсовая работа")
@@ -446,8 +445,6 @@ namespace Portal
                 JournalLessons journalLesson = new()
                 {
                     Lesson = statlesson,
-                    Action = "",
-                    Controller = "",
                     IsEdit = false
                 };
 
@@ -493,11 +490,8 @@ namespace Portal
 
                         JournalMarks journalMark = new()
                         {
-                            Action = "",
-                            Controller = "",
                             IsEdit = false,
-                            Mark = statMark,
-                            Property = ""
+                            Mark = statMark
                         };
 
                         statMarks.Add(journalMark);
@@ -524,19 +518,15 @@ namespace Portal
 
                         JournalMarks journalMark = new()
                         {
-                            Action = "",
-                            Controller = "",
                             IsEdit = false,
                             Mark = statMark,
-                            Property = ""
+                            Property = "statMark"
                         };
 
                         statMarks.Add(journalMark);
                     }
                 }
             }
-
-            //конец метода
 
             journalLessons.AddRange(statLessons);
             journalMarks.AddRange(statMarks);

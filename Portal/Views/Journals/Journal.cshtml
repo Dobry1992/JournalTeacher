@@ -131,19 +131,36 @@ else if (User.IsInRole("SuperAdmin") || User.IsInRole("ANB-UMCH") || User.IsInRo
                                         }
                                         else
                                         {
-                                            <th class="align-middle text-center p-0 m-0">
-                                                <span class="btn btn-outline-danger text-white border-0 p-1 m-0 btn-tooltip"
-                                                      data-toggle="tooltip"
-                                                      data-placement="left"
-                                                      data-html="true"
-                                                      data-title="Подпись: @lesson.Lesson.Signature<br />@lesson.Lesson.TypeOfExercise.Name">
-                                                    <span class="rotate-sm-90">
-                                                        @lesson.Lesson.TypeOfExercise.ShortName<br />
-                                                        @lesson.Lesson.Theme.ShortName<br />
-                                                        @lesson.Lesson.Date.ToShortDateString()
+                                            if (lesson.Lesson.LessonID != 0)
+                                            {
+                                                <th class="align-middle text-center p-0 m-0">
+                                                    <span class="btn btn-outline-danger text-white border-0 p-1 m-0 btn-tooltip"
+                                                          data-toggle="tooltip"
+                                                          data-placement="left"
+                                                          data-html="true"
+                                                          data-title="Подпись: @lesson.Lesson.Signature<br />@lesson.Lesson.TypeOfExercise.Name">
+                                                        <span class="rotate-sm-90">
+                                                            @lesson.Lesson.TypeOfExercise.ShortName<br />
+                                                            @lesson.Lesson.Theme.ShortName<br />
+                                                            @lesson.Lesson.Date.ToShortDateString()
+                                                        </span>
                                                     </span>
-                                                </span>
-                                            </th>
+                                                </th>
+                                            }
+                                            else
+                                            {
+                                                <th class="align-middle text-center p-0 m-0">
+                                                    <span class="btn btn-outline-success text-white border-0 p-1 m-0 btn-tooltip"
+                                                          data-toggle="tooltip"
+                                                          data-placement="left"
+                                                          data-html="true"
+                                                          data-title="Cредняя отметка">
+                                                        <span class="rotate-sm-90">
+                                                           СО
+                                                        </span>
+                                                    </span>
+                                                </th>
+                                            }
                                         }
                                     }
                                 </tr>
@@ -176,16 +193,32 @@ else if (User.IsInRole("SuperAdmin") || User.IsInRole("ANB-UMCH") || User.IsInRo
                                             }
                                             else
                                             {
-                                                <td class="align-middle text-center p-0 @mark.Property">
-                                                    <span class="btn border-0 text-center align-middle p-3 btn-tooltip"
-                                                          data-toggle="tooltip"
-                                                          data-placement="left"
-                                                          data-html="true"
-                                                          data-title="Подпись: @mark.Mark.SignatureOfTeacher<br>История:<br> @mark.Mark.HistoryOfMark"
-                                                          style="width:100%;">
-                                                        @mark.Mark.Value
-                                                    </span>
-                                                </td>
+                                                if (mark.Mark.MarkID != 0)
+                                                {
+                                                    <td class="align-middle text-center p-0 @mark.Property">
+                                                        <span class="btn border-0 text-center align-middle p-3 btn-tooltip"
+                                                              data-toggle="tooltip"
+                                                              data-placement="left"
+                                                              data-html="true"
+                                                              data-title="Подпись: @mark.Mark.SignatureOfTeacher<br>История:<br> @mark.Mark.HistoryOfMark"
+                                                              style="width:100%;">
+                                                            @mark.Mark.Value
+                                                        </span>
+                                                    </td>
+                                                }
+                                                else
+                                                {
+                                                    <td class="align-middle text-center p-0 @mark.Property">
+                                                        <span class="btn border-0 text-center align-middle p-3 btn-tooltip"
+                                                              data-toggle="tooltip"
+                                                              data-placement="left"
+                                                              data-html="true"
+                                                              data-title="Cредняя отметка"
+                                                              style="width:100%;">
+                                                            @mark.Mark.Value
+                                                        </span>
+                                                    </td>
+                                                }
                                             }
                                         }
                                     </tr>
