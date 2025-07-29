@@ -209,6 +209,8 @@ namespace Portal
             var previousMonth = currentMonth.AddMonths(-1);
             var tenthOfCurrentMonth = new DateTime(today.Year, today.Month, 9);
 
+            int semester = GetSemester(today);
+
             foreach (var mark in marks)
             {
                 var jm = new JournalMarks
@@ -216,6 +218,23 @@ namespace Portal
                     Mark = mark,
                     Controller = "Marks"
                 };
+
+                int semesterOfMark = GetSemester(mark.Date);
+                if (semester != semesterOfMark)
+                {
+                    jm.CollapseId = "collapse";
+                }
+                else
+                {
+                    if (mark.Date.Year != today.Year)
+                    {
+                        jm.CollapseId = "collapse";
+                    }
+                    else
+                    {
+                        jm.CollapseId = "";
+                    }
+                }
 
                 var markMonth = new DateTime(mark.Date.Year, mark.Date.Month, 1);
                 bool isInAllowedDateRange = markMonth == currentMonth || (markMonth == previousMonth && today <= tenthOfCurrentMonth);
@@ -284,6 +303,8 @@ namespace Portal
             var previousMonth = currentMonth.AddMonths(-1);
             var tenthOfCurrentMonth = new DateTime(today.Year, today.Month, 9);
 
+            int semester = GetSemester(today);
+
             foreach (var lesson in lessons)
             {
                 var jl = new JournalLessons
@@ -291,6 +312,23 @@ namespace Portal
                     Lesson = lesson,
                     Controller = "Lessons"
                 };
+
+                int semesterOfLesson = GetSemester(lesson.Date);
+                if (semesterOfLesson != semester)
+                {
+                    jl.CollapseId = "collapse";
+                }
+                else
+                {
+                    if (today.Year != lesson.Date.Year)
+                    {
+                        jl.CollapseId = "collapse";
+                    }
+                    else
+                    {
+                        jl.CollapseId = "";
+                    }
+                }
 
                 var lessonMonth = new DateTime(lesson.Date.Year, lesson.Date.Month, 1);
                 jl.IsEdit = lessonMonth == currentMonth || (lessonMonth == previousMonth && today <= tenthOfCurrentMonth);
@@ -630,5 +668,20 @@ namespace Portal
         {
             return _context.Journals.Any(e => e.JournalID == id);
         }
+
+        private static int GetSemester(DateTime date)
+        {
+            if (date.Month == 1)
+                return 1;
+
+            if (date.Month >= 9 && date.Month <= 12)
+                return 1;
+
+            if (date.Month >= 2 && date.Month <= 8)
+                return 2;
+
+            return 0;
+        }
+
     }
 }

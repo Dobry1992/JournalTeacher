@@ -8,5 +8,6 @@ namespace Portal.ViewModel
         public string Action { get; set; }
         public string Controller { get; set; }
         public bool IsEdit { get; set; }
+        public string CollapseId { get; set; }
     }
 }

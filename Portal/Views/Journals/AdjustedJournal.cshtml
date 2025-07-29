@@ -1,4 +1,6 @@
-﻿@model Portal.ViewModel.JournalViewModel
+﻿@using Portal.ViewModel
+@model JournalViewModel
+
 
 @{
     ViewData["Title"] = "Журнал";
@@ -19,185 +21,158 @@
 
 @if (ViewBag.CountFlag == 0)
 {
-    <div style="padding:15%">
-        <section class="content">
-            <div class="container-fluid">
-                <div class="card">
-                    <div class="card-body bg-warning" style="opacity:0.8">
-                        <div class="text-center p-2">
-                            <h2>Журнал не сформирован!</h2>
-                            <p class="font-italic" style="font-size:larger">
-                                Журнал оценок для выбранных Вами группы и предмета не сформирован.<br>
-                                Для его формирования обратитесь в УМЧ.
-                            </p>
-                            <a class="btn btn-danger text-white"
-                               asp-route-SubjectID="@ViewBag.SubjectID"
-                               asp-route-GroupID="@ViewBag.GroupID"
-                               asp-controller="Journals"
-                               asp-action="Create">
-                                Сформировать журнал
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
+    <div class="text-center p-5">
+        <div class="alert alert-warning" role="alert">
+            <h4 class="alert-heading">Журнал не сформирован</h4>
+            <p>Для выбранной группы и предмета журнал отсутствует.</p>
+            @if (User.IsInRole("ANB-UMCH") || User.IsInRole("SuperAdmin"))
+            {
+                <a asp-controller="Journals" asp-action="Create"
+                   asp-route-GroupID="@ViewBag.GroupID"
+                   asp-route-SubjectID="@ViewBag.SubjectID"
+                   class="btn btn-danger mt-3">Сформировать журнал</a>
+            }
+        </div>
     </div>
 }
 else
 {
-    <section class="content">
-        <div class="container-fluid">
-            <div class="card">
-                <div class="card-body">
-                    <h6 class="mb-3 text-center bg-warning headGroup p-2 rounded">
-                        Группа: @Model.Group.Name,<br />
-                        предмет: @Model.Subject.Name
-                    </h6>
+    <div class="container-fluid mt-3">
+        <div class="card">
+            <div class="card-body">
+                <h6 class="text-center mb-4 bg-warning p-2 rounded">
+                    Группа: @Model.Group.Name<br />
+                    предмет: @Model.Subject.Name
+                </h6>
 
-                    <div class="btn-group mr-2 mb-3 border rounded">
-                        <a class="btn btn-light p-2"
-                           asp-route-GroupID="@Model.Group.GroupID"
-                           asp-route-SubjectID="@Model.Subject.SubjectID"
-                           asp-controller="Lessons"
-                           asp-action="AdjustmentCreate">Занятие</a>
-                        <a class="btn btn-danger p-2"
-                           asp-route-GroupID="@Model.Group.GroupID"
-                           asp-route-SubjectID="@Model.Subject.SubjectID"
-                           asp-controller="Lessons"
-                           asp-action="AdjustmentCreateF">Экзамен/Зачёт</a>
-                        <a class="btn btn-primary p-2"
-                           asp-route-GroupID="@Model.Group.GroupID"
-                           asp-route-SubjectID="@Model.Subject.SubjectID"
-                           asp-controller="Lessons"
-                           asp-action="AdjustmentCreateK">Курсовой проект</a>
-                    </div>
-
-                    <a class="btn btn-outline-warning p-2 mb-3 mr-2"
-                       asp-action="Final"
-                       asp-route-GroupID="@Model.Group.GroupID"
-                       asp-route-SubjectID="@Model.Subject.SubjectID">
-                        Итоги обучения
+                <div class="mb-3 d-flex flex-wrap gap-2">
+                    <a class="btn btn-dark mr-2" asp-controller="Lessons" asp-action="Create"
+                       asp-route-GroupID="@Model.Group.GroupID" asp-route-SubjectID="@Model.Subject.SubjectID">
+                        Занятие
                     </a>
-
-                    <a class="btn btn-outline-info p-2 mb-3 mr-2"
+                    <a class="btn btn-danger mr-2" asp-controller="Lessons" asp-action="CreateF"
+                       asp-route-GroupID="@Model.Group.GroupID" asp-route-SubjectID="@Model.Subject.SubjectID">
+                        Экзамен/Зачёт
+                    </a>
+                    <a class="btn btn-primary mr-2" asp-controller="Lessons" asp-action="CreateK"
+                       asp-route-GroupID="@Model.Group.GroupID" asp-route-SubjectID="@Model.Subject.SubjectID">
+                        Курсовой проект
+                    </a>
+                    <a class="btn btn-info mr-2"
                        asp-action="Controls"
                        asp-route-GroupID="@Model.Group.GroupID"
                        asp-route-SubjectID="@Model.Subject.SubjectID">
                         Котрольные занятия
                     </a>
+                    <a class="btn btn-outline-warning mr-2" asp-action="Final"
+                       asp-route-GroupID="@Model.Group.GroupID" asp-route-SubjectID="@Model.Subject.SubjectID">
+                        Итоги обучения
+                    </a>
+                    <a class="btn btn-outline-success mr-2" asp-controller="Print" asp-action="PrintJournal"
+                       asp-route-subjectID="@Model.Subject.SubjectID" asp-route-groupID="@Model.Group.GroupID">
+                        Экспорт
+                    </a>
+                    <button class="btn btn-outline-danger mr-2" data-toggle="modal" data-target="#modal-content">
+                        Экзаменационная ведомость
+                    </button>
+                    <button id="collapseToggleBtn" class="btn btn-outline-secondary ml-auto">
+                        Скрыть занятия и отметки
+                    </button>
+                </div>
 
-                    <div class="btn-group mr-2 mb-3 border rounded">
-                        <a class="btn btn-outline-success"
-                           asp-controller="Print"
-                           asp-action="PrintJournal"
-                           asp-route-subjectID="@Model.Subject.SubjectID"
-                           asp-route-groupID="@Model.Group.GroupID">
-                            Экспорт
-                        </a>
-                        <button type="button"
-                                class="btn btn-outline-danger"
-                                data-toggle="modal"
-                                data-target="#modal-content">
-                            Экзаменационная ведомость
-                        </button>
-                    </div>
-                    <div class="table-wrap" id="sd">
-                        <table class="table table-bordered compact table-sm control-table">
-                            <thead class="thead-dark compact">
-                                <tr>
-                                    <th class="align-middle text-center p-1 fix">#</th>
-                                    <th class="align-middle text-center p-1 fix">Ф.И.О.</th>
-                                    @foreach (var lesson in Model.JournalLessons)
-                                    {
-                                        if (lesson.Lesson.LessonID != 0)
+                <div class="table-responsive" id="sd">
+                    <table class="table table-bordered table-sm compact">
+                        <thead class="thead-dark">
+                            <tr>
+                                <th class="align-middle text-center p-1 fix">#</th>
+                                <th class="align-middle text-center p-1 fix">Ф.И.О.</th>
+                                @foreach (var lesson in Model.JournalLessons)
+                                {
+                                    <th class="align-middle text-center p-0" id="@lesson.CollapseId">
+                                        @if (lesson.Lesson.LessonID != 0)
                                         {
-                                            <th class="align-middle text-center p-0 m-0">
-                                                <a class="btn btn-outline-danger text-white border-0 p-1 m-0 btn-tooltip"
-                                                   data-toggle="tooltip"
-                                                   data-placement="left"
-                                                   data-html="true"
-                                                   data-title="Подпись: @lesson.Lesson.Signature<br />@lesson.Lesson.TypeOfExercise.Name"
-                                                   asp-controller="Lessons"
-                                                   asp-action="AdjustmentDelete"
-                                                   asp-route-id="@lesson.Lesson.LessonID"
-                                                   asp-route-SubjectID="@Model.Subject.SubjectID"
-                                                   asp-route-GroupID="@Model.Group.GroupID">
-                                                    <span class="rotate-sm-90">
-                                                        @lesson.Lesson.TypeOfExercise.ShortName<br />
-                                                        @lesson.Lesson.Theme.ShortName<br />
-                                                        @lesson.Lesson.Date.ToShortDateString()
-                                                    </span>
-                                                </a>
-                                            </th>
+                                            <a class="btn btn-outline-danger text-white border-0 p-1 btn-tooltip"
+                                               data-toggle="tooltip"
+                                               data-placement="left"
+                                               data-html="true"
+                                               data-title="Подпись: @lesson.Lesson.Signature<br />@lesson.Lesson.TypeOfExercise.Name"
+                                               asp-controller="Lessons"
+                                               asp-action="AdjustmentDelete"
+                                               asp-route-id="@lesson.Lesson.LessonID"
+                                               asp-route-SubjectID="@Model.Subject.SubjectID"
+                                               asp-route-GroupID="@Model.Group.GroupID">
+                                                <span class="rotate-sm-90">
+                                                    @lesson.Lesson.TypeOfExercise.ShortName<br />
+                                                    @lesson.Lesson.Theme.ShortName<br />
+                                                    @lesson.Lesson.Date.ToShortDateString()
+                                                </span>
+                                            </a>
                                         }
                                         else
                                         {
-                                            <th class="align-middle text-center p-0 m-0">
-                                                <span class="btn btn-outline-success text-white border-0 p-1 m-0 btn-tooltip"
+                                            <span class="btn btn-outline-success text-white border-0 p-1 m-0 btn-tooltip"
+                                                  data-toggle="tooltip"
+                                                  data-placement="left"
+                                                  data-html="true"
+                                                  data-title="Средняя отметка">
+                                                <span class="rotate-sm-90">
+                                                    СО
+                                                </span>
+                                            </span>
+                                        }
+                                    </th>
+                                }
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white compact">
+                            @foreach (var student in Model.Students)
+                            {
+                                <tr>
+                                    <td class="align-middle text-center p-1 bg-light">@i</td>
+                                    <td class="align-middle text-center p-1 bg-light fix">@student.LastName @student.Name @student.Surname</td>
+                                    @foreach (var mark in Model.JournalMarks.Where(m => m.Mark.StudentID == student.StudentID))
+                                    {
+                                        if (mark.Mark.MarkID != 0)
+                                        {
+                                            <td class="align-middle text-center p-0 @mark.Property" id="@mark.CollapseId">
+                                                <a asp-controller="Marks"
+                                                   asp-action="AdjustmentEdit"
+                                                   asp-route-MarkID="@mark.Mark.MarkID"
+                                                   asp-route-SubjectID="@Model.Subject.SubjectID"
+                                                   asp-route-GroupID="@Model.Group.GroupID"
+                                                   class="btn border-0 p-2 btn-tooltip w-100"
+                                                   data-toggle="tooltip"
+                                                   data-placement="left"
+                                                   data-html="true"
+                                                   data-title="Подпись: @mark.Mark.SignatureOfTeacher<br>История:<br> @mark.Mark.HistoryOfMark"
+                                                   style="width:100%;">
+                                                    @mark.Mark.Value
+                                                </a>
+                                            </td>
+                                        }
+                                        else
+                                        {
+                                            <td class="align-middle text-center p-0 @mark.Property" id="@mark.CollapseId">
+                                                <span class="btn border-0 p-2 btn-tooltip w-100"
                                                       data-toggle="tooltip"
                                                       data-placement="left"
                                                       data-html="true"
-                                                      data-title="Средняя отметка">
-                                                    <span class="rotate-sm-90">
-                                                        СО
-                                                    </span>
+                                                      data-title="Средняя отметка"
+                                                      style="width:100%;">
+                                                    @mark.Mark.Value
                                                 </span>
-                                            </th>
+                                            </td>
                                         }
                                     }
                                 </tr>
-                            </thead>
-                            <tbody class="bg-white compact">
-                                @foreach (var student in Model.Students)
-                                {
-                                    <tr>
-                                        <td class="align-middle text-center p-1 bg-light fix">@i</td>
-                                        <td class="align-middle text-center p-1 bg-light fix">@student.LastName @student.Name @student.Surname</td>
-                                        @foreach (var mark in Model.JournalMarks.Where(m => m.Mark.StudentID == student.StudentID))
-                                        {
-                                            if (mark.Mark.MarkID != 0)
-                                            {
-                                                <td class="align-middle text-center p-0 @mark.Property">
-                                                    <a asp-controller="Marks"
-                                                       asp-action="AdjustmentEdit"
-                                                       asp-route-MarkID="@mark.Mark.MarkID"
-                                                       asp-route-SubjectID="@Model.Subject.SubjectID"
-                                                       asp-route-GroupID="@Model.Group.GroupID"
-                                                       class="btn border-0 text-center align-middle p-3 btn-tooltip"
-                                                       data-toggle="tooltip"
-                                                       data-placement="left"
-                                                       data-html="true"
-                                                       data-title="Подпись: @mark.Mark.SignatureOfTeacher<br>История:<br> @mark.Mark.HistoryOfMark"
-                                                       style="width:100%;">
-                                                        @mark.Mark.Value
-                                                    </a>
-                                                </td>
-                                            }
-                                            else
-                                            {
-                                                <td class="align-middle text-center p-0 @mark.Property">
-                                                    <span class="btn border-0 text-center align-middle p-3 btn-tooltip"
-                                                          data-toggle="tooltip"
-                                                          data-placement="left"
-                                                          data-html="true"
-                                                          data-title="Средняя отметка"
-                                                          style="width:100%;">
-                                                        @mark.Mark.Value
-                                                    </span>
-                                                </td>
-                                            }
-                                        }
-                                    </tr>
-                                    i++;
-                                }
-                            </tbody>
-                        </table>
-                    </div>
+                                i++;
+                            }
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
-    </section>
+    </div>
     <!-- Модальное окно -->
     <div class="modal fade" id="modal-content" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog">
@@ -253,14 +228,32 @@ else
             $('.btn-tooltip').tooltip();
         });
 
-        window.addEventListener('DOMContentLoaded', function () {
-            const div = document.querySelector('#sd');
-            const scroll = localStorage.getItem('scroll') || 0;
-            div.scrollLeft = scroll;
-            div.addEventListener('scroll', function () {
+        document.addEventListener("DOMContentLoaded", function () {
+            const div = document.getElementById('sd');
+            const savedScroll = localStorage.getItem('scroll') || 0;
+            div.scrollLeft = savedScroll;
+            div.addEventListener('scroll', () => {
                 localStorage.setItem('scroll', div.scrollLeft);
+            });
+
+            const btn = document.getElementById("collapseToggleBtn");
+            const cells = document.querySelectorAll("th[id^='collapse'], td[id^='collapse']");
+            let hidden = localStorage.getItem("collapseHidden") === "true";
+
+            function toggleCells() {
+                cells.forEach(el => el.style.display = hidden ? "none" : "");
+                btn.textContent = hidden
+                    ? "Показать занятия и отметки"
+                    : "Скрыть занятия и отметки";
+            }
+
+            toggleCells();
+
+            btn.addEventListener("click", () => {
+                hidden = !hidden;
+                localStorage.setItem("collapseHidden", hidden);
+                toggleCells();
             });
         });
     </script>
-    <script src="~/js/journal.js"></script>
 }
