@@ -46,15 +46,15 @@ else
                 </h6>
 
                 <div class="mb-3 d-flex flex-wrap gap-2">
-                    <a class="btn btn-dark mr-2" asp-controller="Lessons" asp-action="Create"
+                    <a class="btn btn-dark mr-2" asp-controller="Lessons" asp-action="AdjustmentCreate"
                        asp-route-GroupID="@Model.Group.GroupID" asp-route-SubjectID="@Model.Subject.SubjectID">
                         Занятие
                     </a>
-                    <a class="btn btn-danger mr-2" asp-controller="Lessons" asp-action="CreateF"
+                    <a class="btn btn-danger mr-2" asp-controller="Lessons" asp-action="AdjustmentCreateF"
                        asp-route-GroupID="@Model.Group.GroupID" asp-route-SubjectID="@Model.Subject.SubjectID">
                         Экзамен/Зачёт
                     </a>
-                    <a class="btn btn-primary mr-2" asp-controller="Lessons" asp-action="CreateK"
+                    <a class="btn btn-primary mr-2" asp-controller="Lessons" asp-action="AdjustmentCreateK"
                        asp-route-GroupID="@Model.Group.GroupID" asp-route-SubjectID="@Model.Subject.SubjectID">
                         Курсовой проект
                     </a>
@@ -84,11 +84,11 @@ else
                     <table class="table table-bordered table-sm compact">
                         <thead class="thead-dark">
                             <tr>
-                                <th class="align-middle text-center p-1 fix">#</th>
-                                <th class="align-middle text-center p-1 fix">Ф.И.О.</th>
+                                <th class="align-middle text-center p-1 fix tableRowSticky title-row">#</th>
+                                <th class="align-middle text-center p-1 fix tableRowSticky title-row">Ф.И.О.</th>
                                 @foreach (var lesson in Model.JournalLessons)
                                 {
-                                    <th class="align-middle text-center p-0" id="@lesson.CollapseId">
+                                    <th class="align-middle text-center p-0 tableRowSticky" id="@lesson.CollapseId">
                                         @if (lesson.Lesson.LessonID != 0)
                                         {
                                             <a class="btn btn-outline-danger text-white border-0 p-1 btn-tooltip"
@@ -128,7 +128,7 @@ else
                             @foreach (var student in Model.Students)
                             {
                                 <tr>
-                                    <td class="align-middle text-center p-1 bg-light">@i</td>
+                                    <td class="align-middle text-center p-1 bg-light fix">@i</td>
                                     <td class="align-middle text-center p-1 bg-light fix">@student.LastName @student.Name @student.Surname</td>
                                     @foreach (var mark in Model.JournalMarks.Where(m => m.Mark.StudentID == student.StudentID))
                                     {
@@ -230,10 +230,18 @@ else
 
         document.addEventListener("DOMContentLoaded", function () {
             const div = document.getElementById('sd');
-            const savedScroll = localStorage.getItem('scroll') || 0;
-            div.scrollLeft = savedScroll;
+
+            // Восстанавливаем горизонтальную и вертикальную прокрутку
+            const savedScrollLeft = localStorage.getItem('scrollLeft') || 0;
+            const savedScrollTop = localStorage.getItem('scrollTop') || 0;
+
+            div.scrollLeft = savedScrollLeft;
+            div.scrollTop = savedScrollTop;
+
+            // Сохраняем обе прокрутки при скролле
             div.addEventListener('scroll', () => {
-                localStorage.setItem('scroll', div.scrollLeft);
+                localStorage.setItem('scrollLeft', div.scrollLeft);
+                localStorage.setItem('scrollTop', div.scrollTop);
             });
 
             const btn = document.getElementById("collapseToggleBtn");

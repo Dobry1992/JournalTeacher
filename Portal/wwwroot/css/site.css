@@ -330,6 +330,10 @@ body {
     text-overflow: ellipsis;
 }
 
+.title-row {
+    z-index: 15 !important;
+}
+
 .control:hover {
     background-color: #343a40;
     color: white !important;
@@ -347,6 +351,17 @@ body {
     white-space: nowrap;
     width: 1%;
     padding: 4px 8px;
+}
+
+.tableRowSticky {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+#sd {
+    max-height: calc(100vh - 440px); 
+    overflow-y: auto !important;
 }
 
 @media (min-width: 2300px) {
