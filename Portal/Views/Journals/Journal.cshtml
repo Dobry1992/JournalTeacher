@@ -77,11 +77,11 @@ else if (User.IsInRole("SuperAdmin") || User.IsInRole("ANB-UMCH") || User.IsInRo
                     <table class="table table-bordered table-sm compact">
                         <thead class="thead-dark">
                             <tr>
-                                <th class="text-center align-middle p-1 fix">#</th>
-                                <th class="text-center align-middle p-1 fix">Ф.И.О.</th>
+                                <th class="text-center align-middle p-1 fix tableRowSticky title-row">#</th>
+                                <th class="text-center align-middle p-1 fix tableRowSticky title-row">Ф.И.О.</th>
                                 @foreach (var lesson in Model.JournalLessons)
                                 {
-                                    <th class="text-center align-middle p-0" id="@lesson.CollapseId">
+                                    <th class="text-center align-middle p-0 tableRowSticky" id="@lesson.CollapseId">
                                         @if (lesson.IsEdit)
                                         {
                                             <a class="btn btn-outline-danger border-0 p-1 text-white btn-tooltip"
@@ -130,11 +130,11 @@ else if (User.IsInRole("SuperAdmin") || User.IsInRole("ANB-UMCH") || User.IsInRo
                                 }
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody class="bg-white compact">
                             @foreach (var student in Model.Students)
                             {
                                 <tr>
-                                    <td class="text-center align-middle bg-light p-1">@i</td>
+                                    <td class="text-center align-middle bg-light p-1 fix">@i</td>
                                     <td class="text-center align-middle bg-light p-1 fix">@student.LastName @student.Name @student.Surname</td>
                                     @foreach (var mark in Model.JournalMarks.Where(m => m.Mark.StudentID == student.StudentID))
                                     {
@@ -263,10 +263,15 @@ else
 
         document.addEventListener("DOMContentLoaded", function () {
             const div = document.getElementById('sd');
-            const savedScroll = localStorage.getItem('scroll') || 0;
+            const savedScroll = localStorage.getItem('scrollLeft') || 0;
+            const savedScrollTop = localStorage.getItem('scrollTop') || 0;
+
             div.scrollLeft = savedScroll;
+            div.scrollTop = savedScrollTop;
+
             div.addEventListener('scroll', () => {
-                localStorage.setItem('scroll', div.scrollLeft);
+                localStorage.setItem('scrollLeft', div.scrollLeft);
+                localStorage.setItem('scrollTop', div.scrollTop);
             });
 
             const btn = document.getElementById("collapseToggleBtn");

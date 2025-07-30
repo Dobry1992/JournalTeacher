@@ -230,15 +230,12 @@ else
 
         document.addEventListener("DOMContentLoaded", function () {
             const div = document.getElementById('sd');
-
-            // Восстанавливаем горизонтальную и вертикальную прокрутку
             const savedScrollLeft = localStorage.getItem('scrollLeft') || 0;
             const savedScrollTop = localStorage.getItem('scrollTop') || 0;
 
             div.scrollLeft = savedScrollLeft;
             div.scrollTop = savedScrollTop;
 
-            // Сохраняем обе прокрутки при скролле
             div.addEventListener('scroll', () => {
                 localStorage.setItem('scrollLeft', div.scrollLeft);
                 localStorage.setItem('scrollTop', div.scrollTop);
