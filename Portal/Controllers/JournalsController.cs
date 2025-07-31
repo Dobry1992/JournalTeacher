@@ -267,7 +267,7 @@ namespace Portal
                     jm.Property = "tableMarkEKZ";
                     jm.Action = "Edit";
                 }
-                else if (IsType(mark.TypeOfExerciseID, types, "Итоговая оценка"))
+                else if (IsType(mark.TypeOfExerciseID, types, "Итоговая отметка"))
                 {
                     jm.Property = "tableMarkIO";
                     jm.Action = "Journal";
@@ -342,7 +342,7 @@ namespace Portal
                 {
                     jl.Action = "DeleteF";
                 }
-                else if (IsType(lesson.TypeOfExerciseID, types, "Итоговая оценка"))
+                else if (IsType(lesson.TypeOfExerciseID, types, "Итоговая отметка"))
                 {
                     jl.Action = "Journal";
                     jl.Controller = "Journals";
@@ -435,13 +435,13 @@ namespace Portal
 
             var simpleLessons = lessons
                 .Where(l =>
-                    !IsType(l.TypeOfExerciseID, typesDict, "Экзамен", "Дифференцированный зачёт", "Зачёт", "Итоговая оценка", "Курсовой проект", "Курсовая работа")
+                    !IsType(l.TypeOfExerciseID, typesDict, "Экзамен", "Дифференцированный зачёт", "Зачёт", "Итоговая отметка", "Курсовой проект", "Курсовая работа")
                 )
                 .ToList();
 
             List<Mark> simpleMarks = marks
                 .Where(m =>
-                    !IsType(m.TypeOfExerciseID, typesDict, "Экзамен", "Дифференцированный зачёт", "Зачёт", "Итоговая оценка", "Курсовой проект", "Курсовая работа")
+                    !IsType(m.TypeOfExerciseID, typesDict, "Экзамен", "Дифференцированный зачёт", "Зачёт", "Итоговая отметка", "Курсовой проект", "Курсовая работа")
                 )
                 .ToList();
 

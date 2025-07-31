@@ -66,7 +66,7 @@ namespace Portal.Controllers
             var typeOfExerciseEKZ = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Экзамен");
             var typeOfExersiceDZ = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Дифференцированный зачёт");
             var typeOfExersiceZ = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Зачёт");
-            var typeOfExersiceIO = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Итоговая оценка");
+            var typeOfExersiceIO = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Итоговая отметка");
             var typeOfExersiceKP = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Курсовой проект");
             var typeOfExersiceKR = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Курсовая работа");
 
@@ -293,7 +293,7 @@ namespace Portal.Controllers
             var typeEKZ = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Экзамен");
             var typeDZ = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Дифференцированный зачёт");
             var typeZ = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Зачёт");
-            var typeF = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Итоговая оценка");
+            var typeF = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Итоговая отметка");
             var typeKP = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Курсовой проект");
             var typeKR = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Курсовая работа");
             var typeSZ = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Семинарское занятие");

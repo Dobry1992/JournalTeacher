@@ -117,7 +117,7 @@ namespace Portal.Controllers
                     var typeZachet = types.FirstOrDefault(t => t.Name == "Зачёт");
                     var typeDiffZachet = types.FirstOrDefault(t => t.Name == "Дифференцированный зачёт");
                     var typeExam = types.FirstOrDefault(t => t.Name == "Экзамен");
-                    var typeItog = types.FirstOrDefault(t => t.Name == "Итоговая оценка");
+                    var typeItog = types.FirstOrDefault(t => t.Name == "Итоговая отметка");
                     var typeKontrol = types.FirstOrDefault(t => t.Name == "Контрольное мероприятие");
 
                     if (typeZachet == null || typeDiffZachet == null || typeExam == null || typeItog == null || typeKontrol == null)
@@ -418,7 +418,7 @@ namespace Portal.Controllers
                     var typeZachet = types.FirstOrDefault(t => t.Name == "Зачёт");
                     var typeDiffZachet = types.FirstOrDefault(t => t.Name == "Дифференцированный зачёт");
                     var typeExam = types.FirstOrDefault(t => t.Name == "Экзамен");
-                    var typeItog = types.FirstOrDefault(t => t.Name == "Итоговая оценка");
+                    var typeItog = types.FirstOrDefault(t => t.Name == "Итоговая отметка");
                     var typeKontrol = types.FirstOrDefault(t => t.Name == "Контрольное мероприятие");
 
                     if (typeZachet == null || typeDiffZachet == null || typeExam == null || typeItog == null || typeKontrol == null)

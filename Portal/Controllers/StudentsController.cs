@@ -71,7 +71,7 @@ namespace Portal.Controllers
             var typeEKZ = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Экзамен");
             var typeDZ = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Дифференцированный зачёт");
             var typeZ = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Зачёт");
-            var typeF = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Итоговая оценка");
+            var typeF = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Итоговая отметка");
             var typeKP = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Курсовой проект");
             var typeKR = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Курсовая работа");
             List<double> marksAverage = new();

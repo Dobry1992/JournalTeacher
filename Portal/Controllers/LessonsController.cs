@@ -156,7 +156,7 @@ namespace Portal
                 return View(lessonF);
             }
 
-            var typeFinal = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Итоговая оценка");
+            var typeFinal = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Итоговая отметка");
             var typeKR = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Курсовая работа");
             var typeKP = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Курсовой проект");
 
@@ -562,7 +562,7 @@ namespace Portal
                 return View(lessonF);
             }
 
-            var typeFinal = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Итоговая оценка");
+            var typeFinal = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Итоговая отметка");
             var typeKR = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Курсовая работа");
             var typeKP = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Курсовой проект");
 
@@ -1443,7 +1443,7 @@ namespace Portal
         {
             string teacher = _userNameService.GetDisplayName(); ;
 
-            var typeOfExerciseIO = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Итоговая оценка");
+            var typeOfExerciseIO = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Итоговая отметка");
 
             var lesson = await _context.Lessons.FindAsync(id);
             var marks = _context.Marks.Where(m => m.LessonID == id);
@@ -1527,7 +1527,7 @@ namespace Portal
 
             var typeIO = await _context.Types.FirstOrDefaultAsync(t => t.Name == TypeNames.Final);
             if (typeIO == null)
-                return BadRequest("Тип 'Итоговая оценка' не найден.");
+                return BadRequest("Тип 'Итоговая отметка' не найден.");
 
             if (lesson.FlagF != 0)
             {
@@ -1833,7 +1833,7 @@ namespace Portal
 
         private static class TypeNames
         {
-            public const string Final = "Итоговая оценка";
+            public const string Final = "Итоговая отметка";
             public const string Control = "Контрольное мероприятие";
             public static readonly string[] ExamTypes = { "Экзамен", "Зачёт", "Дифференцированный зачёт" };
         }

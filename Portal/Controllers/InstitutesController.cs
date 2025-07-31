@@ -42,9 +42,9 @@ namespace Portal
             if (!groups.Any())
                 return View(new List<ViewModel.Statement.GroupRaiting>());
 
-            var typeIO = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Итоговая оценка");
+            var typeIO = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Итоговая отметка");
             if (typeIO == null)
-                return NotFound("Тип 'Итоговая оценка' не найден.");
+                return NotFound("Тип 'Итоговая отметка' не найден.");
 
             var groupIds = groups.Select(g => g.GroupID).ToList();
 
