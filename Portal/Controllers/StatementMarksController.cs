@@ -93,7 +93,7 @@ namespace Portal
                 Event e = new();
                 e.Date = statementMark.Date;
                 e.Teacher = teacher;
-                e.Log = "Изменение оценки от " + statementMark.Date.ToShortDateString() + ", тип занятия: " + type.Name + ", курсант/слушатель: "
+                e.Log = "Изменение отметки от " + statementMark.Date.ToShortDateString() + ", тип занятия: " + type.Name + ", курсант/слушатель: "
                     + student.LastName + " " + student.Name[0] + "." + student.Surname[0] + "." + ", группа: " + group.Name;
                 _context.Events.Update(e);
             }

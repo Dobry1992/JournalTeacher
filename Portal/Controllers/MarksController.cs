@@ -96,7 +96,7 @@ namespace Portal.Controllers
                     {
                         Date = DateTime.Now,
                         Teacher = mark.SignatureOfTeacher,
-                        Log = $"Изменение оценки от {mark.Date:dd.MM.yyyy}, предмет: {subject.Name}, тема: {theme.Name}, тип занятия: {type.Name}, курсант/слушатель: {student.LastName} {student.Name[0]}.{student.Surname[0]}. группа: {group.Name}"
+                        Log = $"Изменение отметки от {mark.Date:dd.MM.yyyy}, предмет: {subject.Name}, тема: {theme.Name}, тип занятия: {type.Name}, курсант/слушатель: {student.LastName} {student.Name[0]}.{student.Surname[0]}. группа: {group.Name}"
                     };
                     _context.Events.Add(e);
                     await _context.SaveChangesAsync();
@@ -395,7 +395,7 @@ namespace Portal.Controllers
                     {
                         Date = DateTime.Now,
                         Teacher = teacher,
-                        Log = $"Изменение оценки от {mark.Date:dd.MM.yyyy}, предмет: {subject.Name}, тема: {theme.Name}, тип занятия: {type.Name}, курсант/слушатель: {student.LastName} {student.Name[0]}.{student.Surname[0]}. группа: {group.Name}"
+                        Log = $"Изменение отметки от {mark.Date:dd.MM.yyyy}, предмет: {subject.Name}, тема: {theme.Name}, тип занятия: {type.Name}, курсант/слушатель: {student.LastName} {student.Name[0]}.{student.Surname[0]}. группа: {group.Name}"
                     };
                     _context.Events.Add(e);
                     await _context.SaveChangesAsync();
