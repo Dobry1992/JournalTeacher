@@ -1,23 +1,27 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using Portal.Data;
+using Portal.Helpers.Comparers;
 using Portal.Models;
+using Portal.Services.Interfaces;
 using Portal.ViewModel;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace Portal.Controllers
 {
     public class SubjectsController : Controller
     {
         private readonly AcademyContext _context;
+        private readonly IShortNameParser _shortNameParser;
 
-        public SubjectsController(AcademyContext context)
+        public SubjectsController(AcademyContext context, IShortNameParser shortNameParser)
         {
             _context = context;
+            _shortNameParser = shortNameParser;
         }
 
         [Authorize(Roles = "SuperAdmin, ANB-UMCH")]
@@ -34,19 +38,20 @@ namespace Portal.Controllers
         public async Task<IActionResult> ChooseSubject(int? id)
         {
             if (id == null)
-            {
                 return NotFound();
-            }
 
             var subject = await _context.Subjects
                 .Include(s => s.Department)
-                .Include(t => t.Themes.OrderBy(t => t.ShortName))
-                    .AsNoTracking()
-                        .FirstOrDefaultAsync(m => m.SubjectID == id);
+                .Include(s => s.Themes)
+                .AsNoTracking()
+                .FirstOrDefaultAsync(m => m.SubjectID == id);
+
             if (subject == null)
-            {
                 return NotFound();
-            }
+
+            subject.Themes = subject.Themes
+                .OrderBy(t => _shortNameParser.GetNumericParts(t.ShortName), new NumericPartsComparer())
+                .ToList();
 
             return View(subject);
         }

@@ -1,12 +1,13 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Server.IISIntegration;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Portal.Data;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.AspNetCore.Server.IISIntegration;
 using Portal.Services;
+using Portal.Services.Interfaces;
 
 namespace Portal
 {
@@ -35,6 +36,7 @@ namespace Portal
             services.AddScoped<StudentAverageMarkService>();
             services.AddScoped<InstituteAverageMarkService>();
             services.AddScoped<GroupRatingService>();
+            services.AddSingleton<IShortNameParser, ShortNameParser>();
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)

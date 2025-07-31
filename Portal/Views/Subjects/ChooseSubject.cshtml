@@ -22,7 +22,7 @@
                                 <div class="row">
                                     <div class="col-sm-12 table-wrap">
                                         <a asp-controller="Themes" asp-action="CreateTheme" asp-route-id="@Model.SubjectID" class="btn btn-primary mb-3">Добавить тему</a>
-                                        <table id="Table" class="table table-striped dataTable dtr-inline compact" role="grid">
+                                        <table id="table_themes" class="table table-striped dataTable dtr-inline compact" role="grid">
                                             <thead class="thead-light">
                                                 <tr role="row">
                                                     <th class="sorting">Номер, вид занятия, тема в соответствии С УТП</th>
@@ -31,7 +31,7 @@
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                @foreach (var item in Model.Themes.OrderBy(t => t.ShortName))
+                                                @foreach (var item in Model.Themes)
                                                 {
                                                     @if (item.Arch == false && item.Name != "Контрольное занятие")
                                                     {
@@ -71,6 +71,8 @@
     </section>
 </div>
 
-@section scripts{
-    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+@section scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
 }

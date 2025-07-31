@@ -1,16 +1,18 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Globalization;
-using System.Linq;
-using System.Threading.Tasks;
-using DocumentFormat.OpenXml.InkML;
+﻿using DocumentFormat.OpenXml.InkML;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using Portal.Data;
+using Portal.Helpers.Comparers;
 using Portal.Models;
 using Portal.Services;
+using Portal.Services.Interfaces;
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace Portal
 {
@@ -18,12 +20,13 @@ namespace Portal
     {
         private readonly AcademyContext _context;
         private readonly UserNameService _userNameService;
+        private readonly IShortNameParser _shortNameParser;
 
-
-        public LessonsController(AcademyContext context, UserNameService userNameService)
+        public LessonsController(AcademyContext context, UserNameService userNameService, IShortNameParser shortNameParser)
         {
             _context = context;
             _userNameService = userNameService;
+            _shortNameParser = shortNameParser;
         }
 
         [Authorize(Roles = "SuperAdmin, ANB-UMCH")]
@@ -916,6 +919,8 @@ namespace Portal
 
             var themes = _context.Themes
                 .Where(t => t.SubjectID == SubjectID)
+                .AsEnumerable()
+                .OrderBy(t => _shortNameParser.GetNumericParts(t.ShortName), new NumericPartsComparer())
                 .ToList();
 
             string[] allowedTypes = {
@@ -948,9 +953,11 @@ namespace Portal
 
             if (!ModelState.IsValid)
             {
-                var themes = await _context.Themes
+                var themes = _context.Themes
                     .Where(t => t.SubjectID == SubjectID)
-                    .ToListAsync();
+                    .AsEnumerable()
+                    .OrderBy(t => _shortNameParser.GetNumericParts(t.ShortName), new NumericPartsComparer())
+                    .ToList();
 
                 string[] allowedTypes = {
                     "Семинарское занятие", "Практическое занятие",
@@ -1065,8 +1072,10 @@ namespace Portal
             string teacher = _userNameService.GetDisplayName();
 
             var themes = _context.Themes
-                .Where(t => t.SubjectID == SubjectID)
-                .ToList();
+                    .Where(t => t.SubjectID == SubjectID)
+                    .AsEnumerable()
+                    .OrderBy(t => _shortNameParser.GetNumericParts(t.ShortName), new NumericPartsComparer())
+                    .ToList();
 
             string[] allowedTypes = {
                 "Семинарское занятие", "Практическое занятие",
@@ -1096,7 +1105,7 @@ namespace Portal
             string teacher = _userNameService.GetDisplayName();
 
             var checklessons = await _context.Lessons
-                .Where(l => 
+                .Where(l =>
                     l.GroupID == GroupID &&
                     l.SubjectID == SubjectID &&
                     l.FlagF != 0
@@ -1120,9 +1129,11 @@ namespace Portal
 
             if (!ModelState.IsValid)
             {
-                var themes = await _context.Themes
+                var themes = _context.Themes
                     .Where(t => t.SubjectID == SubjectID)
-                    .ToListAsync();
+                    .AsEnumerable()
+                    .OrderBy(t => _shortNameParser.GetNumericParts(t.ShortName), new NumericPartsComparer())
+                    .ToList();
 
                 string[] allowedTypes = {
                     "Семинарское занятие", "Практическое занятие",
