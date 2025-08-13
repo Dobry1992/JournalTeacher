@@ -1,16 +1,12 @@
-﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Portal.Data;
 using Portal.Models;
-using Portal.Models.Election;
-using Portal.Services;
+using Portal.Models.Model;
 using System;
-using System.Diagnostics;
-using System.IO;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -19,253 +15,172 @@ namespace Portal.Controllers
     public class HomeController : Controller
     {
         private readonly ILogger<HomeController> _logger;
-        private readonly NewsContext _context;
-        private readonly AcademyContext _academyContext;
+        private readonly AcademyContext _context;
         private readonly IWebHostEnvironment _appEnvironment;
-        private readonly UserNameService _userNameService;
 
-        public HomeController(ILogger<HomeController> logger, NewsContext context, AcademyContext academyContext, IWebHostEnvironment appEnvironment, UserNameService userNameService)
+        public HomeController(ILogger<HomeController> logger, AcademyContext academyContext, IWebHostEnvironment appEnvironment)
         {
             _logger = logger;
-            _context = context;
-            _academyContext = academyContext;
+            _context = academyContext;
             _appEnvironment = appEnvironment;
-            _userNameService = userNameService;
         }
 
-        public IActionResult Index()
+        public async Task<IActionResult> Index()
         {
-            string teacher = _userNameService.GetDisplayName();
-            ViewBag.FullName = teacher;
+            var institutes = _context.Institutes
+                .Include(s => s.Specialities)
+                    .ThenInclude(g => g.Groups)
+                .AsNoTracking()
+                .OrderBy(i => i.Name);
 
-            var birthdays = _context.Birthdays
-                .Where(b => b.Date.Year == DateTime.Now.Year && b.Date.Month == DateTime.Now.Month && b.Date.Day == DateTime.Now.Day)
-                .ToList();
+            var groupsArhive = _context.Groups
+                .Include(s => s.Students)
+                    .ThenInclude(s => s.Marks)
+                .Include(s => s.Students)
+                    .ThenInclude(s => s.StatementMarks)
+                .Include(l => l.Lessons)
+                .Include(l => l.StatementLessons)
+                .Include(j => j.Journals)
+                .Where(g => g.DateExit.AddMonths(1) <= DateTime.Now);
 
-            ViewBag.BNumber = birthdays.Count();
-            if (birthdays.Any())
+            List<ArhiveLesson> lessons = new();
+            List<ArhiveStatementLesson> statementLessons = new();
+
+            if (groupsArhive != null)
             {
-                ViewBag.FirstBirthday = birthdays.First();
-                birthdays.Remove(birthdays.First());
-            }
-            ViewBag.Birthdays = birthdays;
-
-            var menus = _context.Menus;
-            bool flagMenu = false;
-            if (menus.Any())
-            {
-                ViewBag.Menu = menus.First();
-                flagMenu = true;
-            }
-            ViewBag.FlagMenu = flagMenu;
-
-            var news = _context.Articles
-                .Include(n => n.Images)
-                .OrderByDescending(n => n.DateOfNews);
-            return View(news);
-        }
-
-        [Authorize(Roles = "SuperAdmin, ANB-UMCH")]
-        public IActionResult Create()
-        {
-            string teacher = _userNameService.GetDisplayName();
-            ViewBag.FullName = teacher;
-            return View();
-        }
-
-        [Authorize(Roles = "SuperAdmin, ANB-UMCH")]
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("ScheduleID,Name")] Schedule schedule, IFormFileCollection files)
-        {
-            if (ModelState.IsValid)
-            {
-                var schedules = _academyContext.Schedules;
-                foreach (var s in schedules)
+                foreach (Group group in groupsArhive)
                 {
-                    _academyContext.Remove(s);
-                }
-                await _academyContext.SaveChangesAsync();
+                    GroupArhive ga = new();
+                    ga.Name = group.Name;
+                    ga.DateEnter = group.DateEnter;
+                    ga.DateExit = group.DateExit;
+                    ga.InstituteID = group.InstituteID;
+                    ga.SpecialityID = group.SpecialityID;
+                    _context.GroupArhives.Add(ga);
+                    _context.SaveChanges();
 
-                foreach (var file in files)
-                {
-                    byte[] fileData = null;
-                    using (var binaryReader = new BinaryReader(file.OpenReadStream()))
+                    foreach (Student student in group.Students)
                     {
-                        fileData = binaryReader.ReadBytes((int)file.Length);
+                        StudentArhive sa = new();
+                        sa.Name = student.Name;
+                        sa.Surname = student.Surname;
+                        sa.LastName = student.LastName;
+                        sa.PlaceOfBirth = student.PlaceOfBirth;
+                        sa.DateOfBirth = student.DateOfBirth;
+                        sa.Status = false;
+                        sa.InstituteID = student.InstituteID;
+                        sa.GroupArhiveID = ga.GroupArhiveID;
+                        _context.StudentArhives.Add(sa);
+                        _context.SaveChanges();
+
+                        foreach (Mark mark in student.Marks)
+                        {
+                            LessonArhive la = new();
+                            Lesson lesson = _context.Lessons.Find(mark.LessonID);
+
+                            if (lessons.FirstOrDefault(l => l.LessonID == lesson.LessonID) == null)
+                            {
+                                la.Date = lesson.Date;
+                                la.Comment = lesson.Comment;
+                                la.Signature = lesson.Signature;
+                                la.FlagF = lesson.FlagF;
+                                la.SubjectID = lesson.SubjectID;
+                                la.ThemeID = lesson.ThemeID;
+                                la.GroupArhiveID = ga.GroupArhiveID;
+                                la.TypeOfExerciseID = lesson.TypeOfExerciseID;
+                                _context.LessonArhives.Add(la);
+                                _context.SaveChanges();
+
+                                ArhiveLesson al = new();
+                                al.LessonArhive = la;
+                                al.LessonID = lesson.LessonID;
+                                lessons.Add(al);
+                            }
+                            else
+                            {
+                                ArhiveLesson al = lessons.Find(l => l.LessonID == lesson.LessonID);
+                                la = al.LessonArhive;
+                            }
+
+                            MarkArhive ma = new();
+                            ma.Value = mark.Value;
+                            ma.Date = mark.Date;
+                            ma.Comment = mark.Comment;
+                            ma.SignatureOfTeacher = mark.SignatureOfTeacher;
+                            ma.HistoryOfMark = mark.HistoryOfMark;
+                            ma.FlagF = mark.FlagF;
+                            ma.InstituteID = mark.InstituteID;
+                            ma.SubjectID = mark.SubjectID;
+                            ma.GroupID = ga.GroupArhiveID;
+                            ma.TypeOfExerciseID = mark.TypeOfExerciseID;
+                            ma.DepartmentID = mark.DepartmentID;
+                            ma.SpecialityID = mark.SpecialityID;
+                            ma.ThemeID = mark.ThemeID;
+                            ma.StudentArhiveID = sa.StudentArhiveID;
+                            ma.LessonID = la.LessonArhiveID;
+                            _context.MarkArhives.Add(ma);
+                        }
+
+                        foreach (StatementMark mark in student.StatementMarks)
+                        {
+                            StatementLessonArhive la = new();
+                            StatementLesson lesson = _context.StatementLessons.Find(mark.StatementLessonID);
+
+                            if (statementLessons.FirstOrDefault(l => l.StatementLessonID == lesson.StatementLessonID) == null)
+                            {
+                                la.Date = lesson.Date;
+                                la.Comment = lesson.Comment;
+                                la.Signature = lesson.Signature;
+                                la.GroupArhiveID = ga.GroupArhiveID;
+                                la.TypeOfExerciseID = lesson.TypeOfExerciseID;
+                                _context.StatementLessonArhives.Add(la);
+                                _context.SaveChanges();
+
+                                ArhiveStatementLesson al = new();
+                                al.StatementLesson = la;
+                                al.StatementLessonID = lesson.StatementLessonID;
+                                statementLessons.Add(al);
+                            }
+                            else
+                            {
+                                ArhiveStatementLesson al = statementLessons.Find(l => l.StatementLessonID == lesson.StatementLessonID);
+                                la = al.StatementLesson;
+                            }
+
+                            StatementMarkArhive ma = new();
+                            ma.Value = mark.Value;
+                            ma.Date = mark.Date;
+                            ma.Comment = mark.Comment;
+                            ma.SignatureOfTeacher = mark.SignatureOfTeacher;
+                            ma.HistoryOfMark = mark.HistoryOfMark;
+                            ma.InstituteID = mark.InstituteID;
+                            ma.GroupID = ga.GroupArhiveID;
+                            ma.TypeOfExerciseID = mark.TypeOfExerciseID;
+                            ma.SpecialityID = mark.SpecialityID;
+                            ma.StudentArhiveID = sa.StudentArhiveID;
+                            ma.StatementLessonID = la.StatementLessonArhiveID;
+                            _context.StatementMarkArhives.Add(ma);
+                        }
                     }
-                    schedule.File = fileData;
-                    _academyContext.Schedules.Add(schedule);
-                }
-                await _academyContext.SaveChangesAsync();
-            }
-            return RedirectToAction("Index", "Home");
-        }
 
-        [HttpGet]
-        [Route("Расписание")]
-        public async Task<FileContentResult> GetSchedule()
-        {
-            var schedule = await _academyContext.Schedules.FirstOrDefaultAsync();
-            return File(schedule.File, "application/pdf");
-        }
-
-        public IActionResult IndexElection()
-        {
-            string teacher = _userNameService.GetDisplayName();
-            ViewBag.FullName = teacher;
-
-            var news = _context.ElectionArticles
-                .Include(n => n.Images)
-                .OrderByDescending(n => n.Date);
-            return View(news);
-        }
-
-        [Authorize(Roles = "SuperAdmin, Journalist")]
-        public IActionResult CreateElectionArticle()
-        {
-            string teacher = _userNameService.GetDisplayName();
-            ViewBag.FullName = teacher;
-
-            return View();
-        }
-
-        [Authorize(Roles = "SuperAdmin, Journalist")]
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> CreateElectionArticle([Bind("ElectionArticleID,Title,Text,Date")] ElectionArticle electionArticle, IFormFileCollection files)
-        {
-            if (ModelState.IsValid)
-            {
-                _context.Add(electionArticle);
-                Article article = new()
-                {
-                    Title = electionArticle.Title,
-                    Text = electionArticle.Text,
-                    DateOfNews = electionArticle.Date
-                };
-                _context.Add(article);
-                await _context.SaveChangesAsync();
-                foreach (var file in files)
-                {
-                    string path = "/images/news/" + file.FileName;
-                    using (var fileStream = new FileStream(_appEnvironment.WebRootPath + path, FileMode.Create))
+                    foreach (Journal journal in group.Journals)
                     {
-                        await file.CopyToAsync(fileStream);
+                        JournalArhive ja = new();
+                        ja.Comment = journal.Comment;
+                        ja.GroupArhiveID = ga.GroupArhiveID;
+                        ja.SubjectID = journal.SubjectID;
+                        ja.Date = journal.Date;
+                        _context.JournalArhives.Add(ja);
+                        _context.SaveChanges();
                     }
-                    ElectionImage img = new()
-                    {
-                        ElectionArticleID = electionArticle.ElectionArticleID,
-                        Title = electionArticle.Title,
-                        Path = path
-                    };
-                    Image imgage = new()
-                    {
-                        ArticleID = article.ArticleID,
-                        Title = article.Title,
-                        Path = path
-                    };
-                    _context.Add(imgage);
-                    _context.Add(img);
-                }
-                await _context.SaveChangesAsync();
-            }
-            return RedirectToAction("Index", "Home");
-        }
 
-        [Authorize(Roles = "SuperAdmin, Journalist")]
-        public async Task<IActionResult> EditElection(int? id)
-        {
-            if (id == null)
-            {
-                return NotFound();
-            }
-
-            var article = await _context.ElectionArticles.FindAsync(id);
-            if (article == null)
-            {
-                return NotFound();
-            }
-
-            string teacher = _userNameService.GetDisplayName();
-            ViewBag.FullName = teacher;
-
-            return View(article);
-        }
-
-        [Authorize(Roles = "SuperAdmin, Journalist")]
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> EditElection(int id, [Bind("ElectionArticleID,Title,Text,Date")] ElectionArticle article)
-        {
-            if (id != article.ElectionArticleID)
-            {
-                return NotFound();
-            }
-
-            if (ModelState.IsValid)
-            {
-                try
-                {
-                    _context.Update(article);
-                    await _context.SaveChangesAsync();
-                }
-                catch (DbUpdateConcurrencyException)
-                {
-                    if (!ArticleExists(article.ElectionArticleID))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
+                    _context.Groups.Remove(group);
                 }
             }
-            return RedirectToAction("Index", "Home");
-        }
 
-        [Authorize(Roles = "SuperAdmin, Journalist")]
-        public async Task<IActionResult> DeleteElection(int? id)
-        {
-            if (id == null)
-            {
-                return NotFound();
-            }
-
-            var article = await _context.ElectionArticles
-                .FirstOrDefaultAsync(m => m.ElectionArticleID == id);
-            if (article == null)
-            {
-                return NotFound();
-            }
-
-            string teacher = _userNameService.GetDisplayName();
-            ViewBag.FullName = teacher;
-
-            return View(article);
-        }
-
-        [Authorize(Roles = "SuperAdmin, Journalist")]
-        [HttpPost, ActionName("DeleteElection")]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> DeleteElectionConfirmed(int id)
-        {
-            var article = await _context.ElectionArticles.FindAsync(id);
-            _context.ElectionArticles.Remove(article);
             await _context.SaveChangesAsync();
-            return RedirectToAction("Index", "Home");
-        }
 
-        [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
-        public IActionResult Error()
-        {
-            return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
-        }
-
-        private bool ArticleExists(int id)
-        {
-            return _context.ElectionArticles.Any(e => e.ElectionArticleID == id);
+            return View(await institutes.ToListAsync());
         }
     }
 }

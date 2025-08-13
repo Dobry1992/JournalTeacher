@@ -33,7 +33,6 @@ namespace Portal.Data
         public DbSet<JournalArhive> JournalArhives { get; set; }
         public DbSet<Teacher> Teachers { get; set; }
         public DbSet<TeacherNoPC> TeacherNoPCs { get; set; }
-        public DbSet<Schedule> Schedules { get; set; }
         public DbSet<Elective> Electives { get; set; }
         public DbSet<ElectiveTheme> ElectiveThemes { get; set; }
         public DbSet<ElectiveType> ElectiveTypes { get; set; }
@@ -67,7 +66,6 @@ namespace Portal.Data
             modelBuilder.Entity<JournalArhive>().ToTable("JournalArhives");
             modelBuilder.Entity<Teacher>().ToTable("Teachers");
             modelBuilder.Entity<TeacherNoPC>().ToTable("TeacherNoPCs");
-            modelBuilder.Entity<Schedule>().ToTable("Schedules");
             modelBuilder.Entity<Elective>().ToTable("Electives");
             modelBuilder.Entity<ElectiveTheme>().ToTable("ElectiveThemes");
             modelBuilder.Entity<ElectiveType>().ToTable("ElectiveTypes");

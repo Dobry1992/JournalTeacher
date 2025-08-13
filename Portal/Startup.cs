@@ -24,8 +24,6 @@ namespace Portal
         {
             services.AddDbContext<AcademyContext>(options =>
                 options.UseSqlServer(Configuration.GetConnectionString("Academy")));
-            services.AddDbContext<NewsContext>(options =>
-                options.UseSqlServer(Configuration.GetConnectionString("News")));
             services.AddDatabaseDeveloperPageExceptionFilter();
             services.AddControllersWithViews();
             services.AddMvc();
