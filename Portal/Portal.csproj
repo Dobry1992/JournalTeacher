@@ -38,11 +38,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="wwwroot\images\news\" />
-    <Folder Include="wwwroot\images\menus\" />
-  </ItemGroup>
-
-  <ItemGroup>
     <Compile Update="ReportDataSet\dsStatement.Designer.cs">
       <DependentUpon>dsStatement.xsd</DependentUpon>
       <DesignTime>True</DesignTime>

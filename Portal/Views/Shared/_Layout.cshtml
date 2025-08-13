@@ -4,140 +4,27 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Портал АНБ</title>
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="~/plugins/fontawesome-free/css/all.min.css">
-    <!-- Tempusdominus Bbootstrap 4 -->
-    <link rel="stylesheet" href="~/plugins/tempusdominus-bootstrap-4/css/tempusdominus-bootstrap-4.min.css">
-    <!-- iCheck -->
-    <link rel="stylesheet" href="~/plugins/icheck-bootstrap/icheck-bootstrap.min.css">
-    <!-- JQVMap -->
-    <link rel="stylesheet" href="~/plugins/jqvmap/jqvmap.min.css">
     <!-- Theme style -->
     <link rel="stylesheet" href="~/dist/css/adminlte.min.css">
     <!-- overlayScrollbars -->
     <link rel="stylesheet" href="~/plugins/overlayScrollbars/css/OverlayScrollbars.min.css">
-    <!-- Daterange picker -->
-    <link rel="stylesheet" href="~/plugins/daterangepicker/daterangepicker.css">
-    <!-- summernote -->
-    <link rel="stylesheet" href="~/plugins/summernote/summernote-bs4.css">
     <link href="~/css/jquery.dataTables.min.css" rel="stylesheet" />
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
-    <link href="~/css/jquery.dataTables.min.css" rel="stylesheet" />
     <link rel="stylesheet" href="~/css/site.css" />
     <link rel="stylesheet" href="~/font-awesome/css/all.min.css" />
 </head>
 <body class="hold-transition sidebar-mini layout-fixed layout-footer-fixed layout-navbar-fixed">
     <div class="wrapper">
-        <aside class="main-sidebar sidebar-dark-primary elevation-4">
-            <a asp-controller="Home" asp-action="Index" class="brand-link elevation-4">
-                <img src="~/dist/img/logo.jpg" alt="Logo" class="brand-image img-circle elevation-3"
-                     style="opacity: .9">
-                <span class="brand-text font-weight-light">Портал АНБ</span>
-            </a>
-            <div class="sidebar">
-                <nav class="mt-2">
-                    <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
-                        <li class="nav-item">
-                            <a asp-controller="Home" asp-action="IndexElection" class="nav-link d-flex align-items-center">
-                                <i class="nav-icon fas fa-fire text-danger mr-2"></i>
-                                <p class="text-danger">2025-2029 ПЯТИЛЕТКА<br /><span class="text-success">КАЧЕСТВА</span></p>
-                            </a>
-                        </li>
-                        @if (User.IsInRole("CO-J"))
-                        {
-                            <li class="nav-item">
-                                <a href="https://journal" target="_blank" class="nav-link">
-                                    <i class="nav-icon fas fa-edit"></i>
-                                    <p>Журнал отметок</p>
-                                </a>
-                            </li>
-                        }
-                        else
-                        {
-                            <li class="nav-item">
-                                <a asp-controller="Institutes" asp-action="Start" class="nav-link">
-                                    <i class="nav-icon fas fa-edit"></i>
-                                    <p>Журнал отметок</p>
-                                </a>
-                            </li>
-                        }
-                        <li class="nav-item">
-                            <a href="https://phonebook" target="_blank" class="nav-link">
-                                <i class="nav-icon fas fa-phone"></i>
-                                <p>Телефонный справочник</p>
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a href="https://academy-moodle.anb.kgb.rb" target="_blank" class="nav-link">
-                                <i class="nav-icon fas fa-school"></i>
-                                <p>Moodle</p>
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a href="https://media.anb.kgb.rb" target="_blank" class="nav-link">
-                                <i class="nav-icon fas fa-video"></i>
-                                <p>MediaHub</p>
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a href="https://mainportal.kgb.rb" target="_blank" class="nav-link">
-                                <i class="nav-icon fas fa-atlas"></i>
-                                <p>Портал КГБ</p>
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a href="https://pb.center.kgb.rb:444" target="_blank" class="nav-link">
-                                <i class="nav-icon fas fa-address-book"></i>
-                                <p>Телефоны КГБ</p>
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a href="https://anb-library.anb.kgb.rb" target="_blank" class="nav-link">
-                                <i class="nav-icon fas fa-book-open"></i>
-                                <p>Библиотека АНБ</p>
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a href="https://order" target="_blank" class="nav-link">
-                                <i class="nav-icon fas fa-file-text"></i>
-                                <p>Приказная</p>
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a href="https://docflow/anbsed" target="_blank" class="nav-link">
-                                <i class="nav-icon fas fa-paperclip"></i>
-                                <p>СЭД</p>
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a href="http://181.1.64.105/osm/belarusmap.html" target="_blank" class="nav-link">
-                                <i class="nav-icon fas fa-globe"></i>
-                                <p>Карта Беларуси</p>
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a href="https://helpdesk" target="_blank" class="nav-link">
-                                <i class="nav-icon fas fa-computer"></i>
-                                <p>Техподдержка</p>
-                            </a>
-                        </li>
-                    </ul>
-                </nav>
-            </div>
-        </aside>
-
-        <div class="content-wrapper">
+        <div class="content-wrapper bg" style="margin-left: 0 !important;">
             <main role="main" class="">
                 <div class="container-fluid">
                     @RenderBody()
                 </div>
             </main>
         </div>
-
-        <footer class="main-footer">
+        <footer class="main-footer" style="margin-left: 0 !important;">
             <p class="text-center m-0">Академия национальной безопасности Республики Беларусь, УИТ &copy; @DateTime.Now.Year.ToString()</p>
         </footer>
-
         <!-- Control Sidebar -->
         <aside class="control-sidebar control-sidebar-dark">
             <!-- Control sidebar content goes here -->
