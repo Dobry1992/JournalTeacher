@@ -171,7 +171,7 @@ namespace Portal.Controllers
                 }
             }
 
-            double raiting = (double)_studentAverageMarkService.GetStudentAverageMark(student, marks);
+            double raiting = _studentAverageMarkService.GetStudentAverageMark(student, marks) ?? 0;
 
             //Учебный год
             string yearsStudy = "";
