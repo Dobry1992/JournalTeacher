@@ -579,6 +579,63 @@ namespace Portal
             return RedirectToAction(nameof(Index));
         }
 
+        public async Task<IActionResult> GroupStatement(int id)
+        {
+            var group = await _context.Groups.FindAsync(id);
+            if (group == null)
+                return NotFound("Группа не найдена.");
+
+            var typeKR = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Курсовая работа");
+            var typeKP = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Курсовой проект");
+
+            var students = (await _context.Students
+                .Where(s => s.GroupID == id)
+                .Select(s => new
+                {
+                    Student = new
+                    {
+                        s.StudentID,
+                        s.Name,
+                        s.Surname,
+                        s.LastName
+                    },
+                    Marks = s.Marks.Select(m => new
+                    {
+                        m.SubjectID,
+                        m.FlagF,
+                        m.TypeOfExerciseID,
+                        m.Value
+                    })
+                })
+                .AsNoTracking()
+                .ToListAsync())
+                .Select(s => new
+                {
+                    s.Student,
+                    SubjectAverages = s.Marks
+                        .Where(m =>
+                            m.FlagF == 0 &&
+                            m.TypeOfExerciseID != typeKP.TypeOfExerciseID &&
+                            m.TypeOfExerciseID != typeKR.TypeOfExerciseID &&
+                            double.TryParse(m.Value, out _)
+                        )
+                        .GroupBy(m => m.SubjectID)
+                        .Select(g => new
+                        {
+                            SubjectID = g.Key,
+                            AvgMark = g.Average(m => double.Parse(m.Value))
+                        })
+                        .ToList()
+                })
+                .ToList();
+
+            if (!students.Any())
+                return NotFound("Студентов в группе нет.");
+
+            return View();
+        }
+
+
         private bool GroupExists(int id)
         {
             return _context.Groups.Any(e => e.GroupID == id);
