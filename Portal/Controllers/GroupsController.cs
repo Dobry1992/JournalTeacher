@@ -687,6 +687,7 @@ namespace Portal
             {
                 var cell = worksheet.Cell(1, col++);
                 cell.Value = subject.SubjectName;
+                cell.Style.Alignment.WrapText = true;
                 cell.Style.Alignment.TextRotation = 90; // поворот текста
                 cell.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
                 cell.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
