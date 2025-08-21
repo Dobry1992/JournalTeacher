@@ -10,7 +10,7 @@ namespace Portal.ViewModel
         public string Surname { get; set; }
         public string LastName { get; set; }
 
-        public string FullName => $"{Surname} {Name} {LastName}".Trim();
+        public string FullName => $"{LastName} {Name} {Surname}".Trim();
 
         public List<SubjectAverageViewModel> SubjectAverages { get; set; } = new();
     }
