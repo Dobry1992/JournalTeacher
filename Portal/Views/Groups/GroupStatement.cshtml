@@ -36,7 +36,12 @@
                             @foreach (var subject in subjects)
                             {
                                 <th class="text-center align-middle p-0 tableRowSticky">
-                                    <span class="rotate-sm-90">@subject.SubjectName</span>
+                                    <span class="btn btn-outline-danger border-0 p-1 text-white btn-tooltip"
+                                          data-toggle="tooltip"
+                                          data-html="true"
+                                          title="@subject.SubjectFullName">
+                                        <span class="rotate-sm-90">@subject.SubjectName</span>
+                                    </span>
                                 </th>
                             }
                         </tr>
@@ -67,6 +72,9 @@
         await Html.RenderPartialAsync("_ValidationScriptsPartial");
     }
     <script>
+        $(function () {
+            $('.btn-tooltip').tooltip();
+        });
         document.addEventListener("DOMContentLoaded", function () {
             const div = document.getElementById('sd');
             const savedScroll = localStorage.getItem('scrollLeft') || 0;

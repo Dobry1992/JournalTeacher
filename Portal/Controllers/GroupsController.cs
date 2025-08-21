@@ -620,7 +620,7 @@ namespace Portal
 
             var allSubjects = await _context.Subjects
                 .Where(sub => subjectIds.Contains(sub.SubjectID))
-                .Select(sub => new { sub.SubjectID, sub.Name })
+                .Select(sub => new { sub.SubjectID, sub.ShortName, sub.Name })
                 .ToListAsync();
 
             // Формируем ViewModel
@@ -644,7 +644,8 @@ namespace Portal
                     return new SubjectAverageViewModel
                     {
                         SubjectId = subject.SubjectID,
-                        SubjectName = subject.Name,
+                        SubjectName = subject.ShortName,
+                        SubjectFullName = subject.Name,
                         AvgMark = marks.Any() ? marks.Average() : (double?)null
                     };
                 }).ToList()
