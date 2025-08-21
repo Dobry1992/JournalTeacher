@@ -1,1 +1,84 @@
-﻿
+﻿@using Portal.ViewModel
+@model List<StudentViewModel>
+
+@{
+    ViewData["Title"] = "Ведомость";
+    int i = 1;
+    var subjects = Model?.FirstOrDefault()?.SubjectAverages ?? new List<SubjectAverageViewModel>();
+}
+
+@await Html.PartialAsync("_NavMenuJournal")
+
+<div>
+    <section class="content-header">
+        <div class="container-fluid">
+            <div class="row">
+            </div>
+        </div>
+    </section>
+</div>
+
+<div class="container-fluid mt-3">
+    <div class="card">
+        <div class="card-body">
+            <h6 class="mb-3 text-center bg-gray-light headGroup p-2 rounded shadow">Ведомость текущих средних отметок группы @ViewBag.GroupName</h6>
+            <div class="mb-3">
+                <a asp-action="ExportGroupStatement" asp-route-id="@ViewBag.GroupId" class="btn btn-success">
+                    Экспорт в Excel
+                </a>
+            </div>
+            <div class="table-responsive" id="sd">
+                <table class="table table-bordered table-sm compact" id="marks">
+                    <thead class="thead-dark">
+                        <tr role="row">
+                            <th class="text-center align-middle p-1 fix tableRowSticky title-row">#</th>
+                            <th class="text-center align-middle p-1 fix tableRowSticky title-row">Ф.И.О.</th>
+                            @foreach (var subject in subjects)
+                            {
+                                <th class="text-center align-middle p-0 tableRowSticky">
+                                    <span class="rotate-sm-90">@subject.SubjectName</span>
+                                </th>
+                            }
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white compact">
+                        @foreach (var student in Model)
+                        {
+                            <tr>
+                                <td class="text-center align-middle bg-light p-1 fix">@i</td>
+                                <td class="text-center align-middle bg-light p-1 fix" style="white-space:nowrap">@student.FullName</td>
+                                @foreach (var subj in student.SubjectAverages)
+                                {
+                                    <td class="text-center align-middle p-1">@(subj.AvgMark.HasValue? subj.AvgMark.Value.ToString("0.000") : "-")</td>
+                                }
+                            </tr>
+                            i++;
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const div = document.getElementById('sd');
+            const savedScroll = localStorage.getItem('scrollLeft') || 0;
+            const savedScrollTop = localStorage.getItem('scrollTop') || 0;
+
+            div.scrollLeft = savedScroll;
+            div.scrollTop = savedScrollTop;
+
+            div.addEventListener('scroll', () => {
+                localStorage.setItem('scrollLeft', div.scrollLeft);
+                localStorage.setItem('scrollTop', div.scrollTop);
+            });
+        });
+    </script>
+}
