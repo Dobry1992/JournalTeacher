@@ -1,0 +1,63 @@
+﻿@using Portal.ViewModel
+
+@{
+    ViewData["Title"] = "Ведомость";
+    int i = 1;
+}
+
+@await Html.PartialAsync("_NavMenuJournal")
+
+<div>
+    <section class="content-header">
+        <div class="container-fluid">
+            <div class="row">
+            </div>
+        </div>
+    </section>
+</div>
+
+<div class="container-fluid mt-3">
+    <div class="card">
+        <div class="card-body">
+            <h6 class="mb-3 text-center bg-gray-light headGroup p-2 rounded shadow">Ведомость...</h6>
+            <div class="table-responsive" id="sd">
+                <table class="table table-bordered table-sm compact" id="marks">
+                    <thead class="thead-dark">
+                        <tr role="row">
+                            <th class="text-center align-middle p-1 fix tableRowSticky title-row">#</th>
+                            <th class="text-center align-middle p-1 fix tableRowSticky title-row">Ф.И.О.</th>
+
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white compact">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+    <script>
+        $(function () {
+            $('.btn-tooltip').tooltip();
+        });
+        document.addEventListener("DOMContentLoaded", function () {
+            const div = document.getElementById('sd');
+            const savedScroll = localStorage.getItem('scrollLeft') || 0;
+            const savedScrollTop = localStorage.getItem('scrollTop') || 0;
+
+            div.scrollLeft = savedScroll;
+            div.scrollTop = savedScrollTop;
+
+            div.addEventListener('scroll', () => {
+                localStorage.setItem('scrollLeft', div.scrollLeft);
+                localStorage.setItem('scrollTop', div.scrollTop);
+            });
+        });
+    </script>
+}
