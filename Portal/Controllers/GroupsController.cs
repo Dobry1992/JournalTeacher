@@ -700,7 +700,7 @@ namespace Portal
             {
                 col = 1;
                 worksheet.Cell(row, col++).Value = studentNumber++;
-                worksheet.Cell(row, col++).Value = $"{student.Surname} {student.Name} {student.LastName}";
+                worksheet.Cell(row, col++).Value = $"{student.LastName} {student.Name} {student.Surname}";
 
                 foreach (var subj in student.SubjectAverages)
                 {
