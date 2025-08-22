@@ -811,7 +811,7 @@ namespace Portal
             return students;
         }
 
-        public async Task<IActionResult> GroupSummaryStatement(int id)
+        public async Task<IActionResult> GroupSummaryStatement(int id, DateTime date_1, DateTime date_2)
         {
             var group = await _context.Groups.FindAsync(id);
             if (group == null) return NotFound("Группа не найдена.");
@@ -889,6 +889,20 @@ namespace Portal
             )
             .AsNoTracking()
             .ToListAsync();
+
+            if (date_1.ToShortDateString() != "01.01.0001")
+            {
+                allMarks = allMarks
+                    .Where(m => m.Date >= date_1)
+                    .ToList();
+            }
+
+            if (date_2.ToShortDateString() != "01.01.0001")
+            {
+                allMarks = allMarks
+                    .Where(m => m.Date <= date_2)
+                    .ToList();
+            }
 
             // Группируем по студенту и наполняем VM
             var marksByStudent = allMarks

@@ -48,6 +48,19 @@ else
         <div class="card">
             <div class="card-body">
                 <h6 class="mb-3 text-center bg-gray-light headGroup p-2 rounded shadow">Сводная ведомость группы @ViewBag.GroupName</h6>
+                <form asp-action="GroupSummaryStatement" method="get" class="d-flex align-items-end gap-3 mb-3 flex-wrap">
+                    <div class="mr-2">
+                        <label for="date_1" class="form-label">Начальная дата:</label>
+                        <input class="form-control" type="date" name="date_1" id="date_1" />
+                    </div>
+                    <div class="mr-2">
+                        <label for="date_2" class="form-label">Конечная дата:</label>
+                        <input class="form-control" type="date" name="date_2" id="date_2" />
+                    </div>
+                    <div class="mr-2">
+                        <button type="submit" class="btn btn-primary">Поиск</button>
+                    </div>
+                </form>
                 <div class="table-responsive" id="sd">
                     <table class="table table-bordered table-sm compact" id="marks">
                         <thead class="thead-dark">
@@ -61,7 +74,7 @@ else
                                               data-toggle="tooltip"
                                               data-html="true"
                                               title="@col.SubjectName<br/>
-                                                                      @col.TypeName">
+                                                                                      @col.TypeName">
                                             <span class="rotate-sm-90">
                                                 @col.Date.ToString("dd.MM.yyyy")<br />
                                                 @if (col.ShortSubjectName != null)
@@ -82,9 +95,13 @@ else
                                 <tr>
                                     <td class="text-center align-middle bg-light p-1 fix">@n</td>
                                     <td class="text-center align-middle bg-light p-1 fix" style="white-space:nowrap">@student.StudentFullName</td>
-                                    @foreach (var subj in student.Marks)
+                                    @foreach (var col in allColumns)
                                     {
-                                        <td class="text-center align-middle p-1">@subj.Value</td>
+                                        var mark = student.Marks.FirstOrDefault(m =>
+                                        m.SubjectID == col.SubjectID &&
+                                        m.TypeID == col.TypeID &&
+                                        m.Date.Date == col.Date);
+                                        <td class="text-center align-middle p-1">@(mark?.Value ?? "-")</td>
                                     }
                                 </tr>
                                 n++;
