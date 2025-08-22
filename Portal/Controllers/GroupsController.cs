@@ -862,7 +862,7 @@ namespace Portal
                     m.Value,
                     SubjectID = (int?)m.SubjectID,
                     SubjectName = sub != null ? sub.Name : null,
-                    ShortSubjectName = sub != null ? sub.Name : null,
+                    ShortSubjectName = sub != null ? sub.ShortName : null,
                     TypeID = m.TypeOfExerciseID,
                     TypeName = tp != null ? tp.Name : null,
                     ShortTypeName = tp != null ? tp.ShortName : null
