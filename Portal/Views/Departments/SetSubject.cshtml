@@ -17,6 +17,25 @@
     </div>
 </section>
 
+<section class="content">
+    <div class="container-fluid">
+        <form asp-action="SetSubject" method="get" class="d-flex align-items-end gap-3 mb-3 flex-wrap">
+            <input type="hidden" name="GroupID" value="@ViewBag.GroupID" />
+            <div class="mr-2">
+                <label for="date_1" class="form-label">Начальная дата:</label>
+                <input class="form-control" type="date" name="date_1" id="date_1" />
+            </div>
+            <div class="mr-2">
+                <label for="date_2" class="form-label">Конечная дата:</label>
+                <input class="form-control" type="date" name="date_2" id="date_2" />
+            </div>
+            <div class="mr-2">
+                <button type="submit" class="btn btn-primary">Поиск</button>
+            </div>
+        </form>
+    </div>
+</section>
+
 @foreach (var departmemt in Model.Departments)
 {
     if (i == colors.Length) i = 0;
@@ -28,7 +47,7 @@
                 <div class="d-flex flex-row flex-wrap">
                     @foreach (var subject in Model.Subjects)
                     {
-                        @if (subject.Arch == false && subject.DepartmentID == departmemt.DepartmentID && !(User.IsInRole("ANB-UMCH") || User.IsInRole("SuperAdmin")))
+                        if (subject.Arch == false && subject.DepartmentID == departmemt.DepartmentID && !(User.IsInRole("ANB-UMCH") || User.IsInRole("SuperAdmin")))
                         {
                             <a asp-controller="Journals" asp-action="Journal" asp-route-GroupID="@ViewBag.GroupID" asp-route-SubjectID="@subject.SubjectID" class="groups d-block p-4 mr-3 mb-3 text-decoration-none rounded shadow-lg bg-@colors[i]">
                                 <h6 class="text-center">@subject.Name</h6>

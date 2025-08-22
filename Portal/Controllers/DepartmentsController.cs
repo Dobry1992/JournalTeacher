@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
@@ -45,38 +46,66 @@ namespace Portal.Controllers
             return View(await departments.ToListAsync());
         }
 
-        public async Task<IActionResult> SetSubject(int GroupID)
+        public async Task<IActionResult> SetSubject(int GroupID, DateTime date_1, DateTime date_2)
         {
+            // Получаем группу
             var group = await _context.Groups.FindAsync(GroupID);
+            if (group == null) return NotFound();
+
             var speciality = await _context.Specialities.FindAsync(group.SpecialityID);
-            var links = _context.Sub_SpecLinks.Where(l => l.SpecialityID == group.SpecialityID.ToString());
 
-            List<Subject> subjects = new();
-            List<Department> departments = new();
+            // Получаем ссылки Sub_SpecLinks и преобразуем SubjectID в int на клиенте
+            var links = await _context.Sub_SpecLinks
+                .Where(l => l.SpecialityID == group.SpecialityID.ToString())
+                .ToListAsync();
 
-            if (links != null)
+            var subjectIds = links
+                .Select(l => int.Parse(l.SubjectID))
+                .ToList();
+
+            // Получаем все предметы по ссылкам
+            var subjects = await _context.Subjects
+                .Where(s => subjectIds.Contains(s.SubjectID))
+                .ToListAsync();
+
+            // Фильтруем занятия по группе, предметам и датам
+            var subjectLessonsQuery = _context.Lessons
+                .Where(m => m.GroupID == GroupID && subjectIds.Contains(m.SubjectID));
+
+            if (date_1 != default)
+                subjectLessonsQuery = subjectLessonsQuery.Where(m => m.Date >= date_1);
+            if (date_2 != default)
+                subjectLessonsQuery = subjectLessonsQuery.Where(m => m.Date <= date_2);
+
+            var subjectLessons = await subjectLessonsQuery.ToListAsync();
+
+            // Получаем только предметы, по которым есть оценки
+            var subjectIdsFromLessons = subjectLessons
+                .Select(l => l.SubjectID)
+                .Distinct()
+                .ToList();
+
+            subjects = subjects
+                .Where(s => subjectIdsFromLessons.Contains(s.SubjectID))
+                .ToList();
+
+            // Получаем все департаменты за один запрос
+            var departmentIds = subjects
+                .Select(s => s.DepartmentID)
+                .Distinct()
+                .ToList();
+
+            var departments = await _context.Departments
+                .Where(d => departmentIds.Contains(d.DepartmentID))
+                .OrderBy(d => d.Name)
+                .ToListAsync();
+
+            // Формируем модель
+            var setSubjectModel = new SetSubjectModel
             {
-                foreach (var link in links)
-                {
-                    Subject subject = await _context.Subjects.FindAsync(int.Parse(link.SubjectID));
-                    subjects.Add(subject);
-                }
-            }
-
-            if (subjects != null)
-            {
-                foreach(var subject in subjects)
-                {
-                    Department department = await _context.Departments.FindAsync(subject.DepartmentID);
-                    departments.Add(department);
-                }
-            }
-
-            var distDepartments = departments.Distinct();
-
-            SetSubjectModel setSubjectModel = new();
-            setSubjectModel.Departments = distDepartments.OrderBy(d => d.Name).ToList();
-            setSubjectModel.Subjects = subjects;
+                Departments = departments,
+                Subjects = subjects
+            };
 
             ViewBag.GroupID = GroupID;
             return View(setSubjectModel);
