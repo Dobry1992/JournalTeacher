@@ -895,7 +895,8 @@ namespace Portal
                 .GroupBy(x => x.StudentID)
                 .ToDictionary(
                     g => g.Key,
-                    g => g.OrderBy(x => x.Date)
+                    g => g.OrderBy(x => x.SubjectID)
+                                .ThenBy(x => x.Date)
                           .Select(x => new MarkGroupSummaryStatement
                           {
                               Value = x.Value,

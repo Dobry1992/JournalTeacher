@@ -19,9 +19,8 @@
             Date = m.Date.Date
         })
         .Distinct()
-        .OrderBy(c => c.SubjectName)
-        .ThenBy(c => c.TypeName)
-        .ThenBy(c => c.Date)
+        .OrderBy(c => c.SubjectID)
+            .ThenBy(c => c.Date)
         .ToList();
 
     var hasData = Model != null && Model.Any();
