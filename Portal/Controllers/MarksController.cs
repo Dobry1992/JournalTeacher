@@ -346,6 +346,8 @@ namespace Portal.Controllers
                 throw;
             }
 
+
+
             return RedirectToAction("Journal", "Journals", new { GroupID, SubjectID });
         }
 

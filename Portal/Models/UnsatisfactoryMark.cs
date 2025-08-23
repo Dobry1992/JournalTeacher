@@ -15,5 +15,6 @@ namespace Portal.Models
         public DateTime UnsatisfactoryDate { get; set; }
         public string? CorrectedValue { get; set; }
         public DateTime? CorrectedDate { get; set; }
+        public bool Status { get; set; }
     }
 }
