@@ -933,6 +933,11 @@ namespace Portal
             return View(students);
         }
 
+        public async Task<IActionResult> GetUnsatisfactoryMarks(int id)
+        {
+            return View();
+        }
+
         private bool GroupExists(int id)
         {
             return _context.Groups.Any(e => e.GroupID == id);
