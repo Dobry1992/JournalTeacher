@@ -346,7 +346,7 @@ namespace Portal.Controllers
                 throw;
             }
 
-
+            await HandleUnsatisfactoryMarkAsync(mark);
 
             return RedirectToAction("Journal", "Journals", new { GroupID, SubjectID });
         }
@@ -777,7 +777,7 @@ namespace Portal.Controllers
                 throw;
             }
 
-
+            await HandleUnsatisfactoryMarkAsync(mark);
 
             return RedirectToAction("AdjustedJournal", "Journals", new { GroupID, SubjectID });
         }
@@ -794,6 +794,51 @@ namespace Portal.Controllers
                 return false;
 
             return double.TryParse(value, NumberStyles.Any, new CultureInfo("ru-RU"), out number);
+        }
+
+        private async Task HandleUnsatisfactoryMarkAsync(Mark mark)
+        {
+            var usatisfactoryMark = await _context.UnsatisfactoryMarks
+                .FirstOrDefaultAsync(m =>
+                    m.MarkID == mark.MarkID &&
+                    m.Status == false
+                );
+
+            if (usatisfactoryMark != null)
+            {
+                if (mark.Value == "1" || mark.Value == "2" || mark.Value == "3")
+                {
+                    usatisfactoryMark.UnsatisfactoryValue = mark.Value;
+                    usatisfactoryMark.UnsatisfactoryDate = mark.Date;
+                    _context.UnsatisfactoryMarks.Update(usatisfactoryMark);
+                }
+                else
+                {
+                    usatisfactoryMark.CorrectedValue = mark.Value;
+                    usatisfactoryMark.CorrectedDate = mark.Date;
+                    usatisfactoryMark.Status = true;
+                    _context.UnsatisfactoryMarks.Update(usatisfactoryMark);
+                }
+            }
+            else
+            {
+                if (mark.Value == "1" || mark.Value == "2" || mark.Value == "3")
+                {
+                    UnsatisfactoryMark newUnsatisfactoryMark = new()
+                    {
+                        MarkID = mark.MarkID,
+                        GroupID = mark.GroupID,
+                        StudentID = mark.StudentID,
+                        SubjectID = mark.SubjectID,
+                        UnsatisfactoryValue = mark.Value,
+                        UnsatisfactoryDate = mark.Date,
+                        Status = false
+                    };
+                    _context.UnsatisfactoryMarks.Add(newUnsatisfactoryMark);
+                }
+            }
+
+            await _context.SaveChangesAsync();
         }
 
         private bool MarkExists(int id)
