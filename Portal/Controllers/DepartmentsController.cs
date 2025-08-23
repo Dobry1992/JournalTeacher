@@ -85,9 +85,12 @@ namespace Portal.Controllers
                 .Distinct()
                 .ToList();
 
-            subjects = subjects
+            if (date_1 != default || date_2 != default)
+            {
+                subjects = subjects
                 .Where(s => subjectIdsFromLessons.Contains(s.SubjectID))
                 .ToList();
+            }
 
             // Получаем все департаменты за один запрос
             var departmentIds = subjects
