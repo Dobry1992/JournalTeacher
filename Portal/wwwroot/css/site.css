@@ -1,4 +1,13 @@
-﻿.content {
+﻿.back {
+    background-image: url('/img/back.jpg'); /* путь к картинке */
+    background-size: 25%, cover; /* картинка растягивается на весь экран */
+    background-repeat: no-repeat; /* не повторяется */
+    background-position: center; /* выравнивание по центру */
+    background-attachment: fixed; /* фон фиксирован при скролле */
+    background-color: white;
+}
+
+.content {
     opacity: 0.98;
 }
 
