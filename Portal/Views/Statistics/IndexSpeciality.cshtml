@@ -1,0 +1,50 @@
+﻿@using Portal.ViewModel
+@model List<SpecialityYears>
+
+@{
+    ViewData["Title"] = "Учебные группы";
+    string[] colors = { "primary", "success", "danger", "warning", "info", "gradient-navy", "gradient-olive", "gradient-lime", "gradient-teal", "gradient-yellow", "indigo" };
+    int i = 0;
+}
+
+@await Html.PartialAsync("_NavMenuJournal")
+
+<section class="content-header">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-sm-6">
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="content">
+    <div class="container-fluid">
+        @foreach (var spec in Model)
+        {
+            @if (i == colors.Length) i = 0;
+            <section class="content">
+                <div class="container-fluid">
+                    <h4 class="mb-3 text-center bg-@colors[i] headGroup p-2 rounded">@spec.SpecialityName</h4>
+                    <div class="d-flex flex-row">
+                        @foreach (var year in spec.Years)
+                        {
+                            <a asp-controller="Specialities" asp-action="Analytics" asp-route-id="@spec.SpecialityID" asp-route-year="@year" class="groups d-block p-4 mr-3 mb-3 text-decoration-none rounded shadow-lg bg-@colors[i]">
+                                <p class="text-center">
+                                    <span class="text-xl">@year</span>
+                                </p>
+                            </a>
+                        }
+                    </div>
+                </div>
+            </section>
+            i++;
+        }
+    </div>
+</section>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

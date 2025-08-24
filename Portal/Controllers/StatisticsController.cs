@@ -182,5 +182,34 @@ namespace Portal.Controllers
                 SearchString_3 = searchString_3
             });
         }
+
+        [Authorize(Roles = "User, SuperAdmin")]
+        public async Task<IActionResult> IndexSpeciality()
+        {
+            var rawData = await _context.Groups
+                .Select(g => new
+                {
+                    g.Speciality.SpecialityID,
+                    g.Speciality.Name,
+                    Year = g.DateEnter.Year
+                })
+                .ToListAsync();
+
+            var specialityYears = rawData
+                .GroupBy(x => new { x.SpecialityID, x.Name })
+                .Select(g => new SpecialityYears
+                {
+                    SpecialityID = g.Key.SpecialityID,
+                    SpecialityName = g.Key.Name,
+                    Years = g.Select(x => x.Year)
+                             .Distinct()
+                             .OrderBy(y => y)
+                             .ToList()
+                })
+                .ToList();
+
+            return View(specialityYears);
+        }
+
     }
 }

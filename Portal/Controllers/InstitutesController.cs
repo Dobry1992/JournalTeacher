@@ -7,7 +7,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Portal.Data;
 using Portal.Models;
-using Portal.Models.Model;
 using Portal.Services;
 using Portal.ViewModel;
 using Portal.ViewModel.Raiting;
