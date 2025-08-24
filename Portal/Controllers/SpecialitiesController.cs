@@ -766,7 +766,78 @@ namespace Portal.Controllers
         [Authorize]
         public async Task<IActionResult> CourseStatement(int id, int year)
         {
-            return View();
+            var speciality = await _context.Specialities.FindAsync(id);
+
+            var groups = await _context.Groups
+                .Where(g => g.SpecialityID == id && g.DateEnter.Year == year)
+                .ToListAsync();
+
+            if (!groups.Any())
+                return NotFound("Групп для специальности и года нет.");
+
+            var groupIds = groups.Select(g => g.GroupID).ToList();
+
+            var typeKR = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Курсовая работа");
+            var typeKP = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Курсовой проект");
+
+            var studentsData = await _context.Students
+                .Where(s => groupIds.Contains(s.GroupID))
+                .OrderBy(s => s.LastName)
+                .Select(s => new
+                {
+                    Student = new { s.StudentID, s.Name, s.Surname, s.LastName },
+                    Marks = s.Marks
+                        .Where(m =>
+                            m.FlagF == 0 &&
+                            m.TypeOfExerciseID != typeKP.TypeOfExerciseID &&
+                            m.TypeOfExerciseID != typeKR.TypeOfExerciseID
+                        )
+                        .Select(m => new { m.SubjectID, m.Value })
+                })
+                .AsNoTracking()
+                .ToListAsync();
+
+            if (!studentsData.Any())
+                return NotFound("Студентов в группе нет.");
+
+            var subjectIds = studentsData
+                .SelectMany(s => s.Marks)
+                .Select(m => m.SubjectID)
+                .Distinct()
+                .ToList();
+
+            var allSubjects = await _context.Subjects
+                .Where(sub => subjectIds.Contains(sub.SubjectID))
+                .Select(sub => new { sub.SubjectID, sub.ShortName, sub.Name })
+                .ToListAsync();
+
+            var students = studentsData.Select(s => new StudentViewModel
+            {
+                StudentId = s.Student.StudentID,
+                Name = s.Student.Name,
+                Surname = s.Student.Surname,
+                LastName = s.Student.LastName,
+
+                SubjectAverages = allSubjects.Select(subject =>
+                {
+                    var marks = s.Marks
+                        .Where(m => m.SubjectID == subject.SubjectID)
+                        .Select(m => double.TryParse(m.Value, out var v) ? (double?)v : null)
+                        .Where(v => v.HasValue)
+                        .Select(v => v.Value)
+                        .ToList();
+
+                    return new SubjectAverageViewModel
+                    {
+                        SubjectId = subject.SubjectID,
+                        SubjectName = subject.ShortName,
+                        SubjectFullName = subject.Name,
+                        AvgMark = marks.Any() ? marks.Average() : (double?)null
+                    };
+                }).ToList()
+            }).ToList();
+
+            return View(students);
         }
 
         [Authorize]
