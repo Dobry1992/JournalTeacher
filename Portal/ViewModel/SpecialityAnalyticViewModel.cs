@@ -5,6 +5,7 @@ namespace Portal.ViewModel
 {
     public class SpecialityAnalyticViewModel
     {
+        public int SpecialityID { get; set; }
         public string SpecialityName { get; set; }
         public string Term { get; set; }
         public double Raiting { get; set; }

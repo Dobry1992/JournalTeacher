@@ -232,7 +232,6 @@ namespace Portal.Controllers
         [Authorize]
         public async Task<IActionResult> Analytics(int id, int year)
         {
-
             if (id == null)
             {
                 return NotFound();
@@ -742,6 +741,7 @@ namespace Portal.Controllers
 
             SpecialityAnalyticViewModel specialityAnalyticViewModel = new() 
             { 
+                SpecialityID = id,
                 SpecialityName = speciality.Name,
                 Term = term,
                 Raiting = Math.Round(courseRating, 3),
@@ -761,6 +761,18 @@ namespace Portal.Controllers
             };
 
             return View(specialityAnalyticViewModel);
+        }
+
+        [Authorize]
+        public async Task<IActionResult> CourseStatement(int id, int year)
+        {
+            return View();
+        }
+
+        [Authorize]
+        public async Task<IActionResult> CourseSummaryStatement(int id, int year)
+        {
+            return View();
         }
 
         private bool SpecialityExists(int id)
