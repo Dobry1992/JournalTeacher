@@ -920,7 +920,7 @@ namespace Portal
                               ShortSubjectName = x.ShortSubjectName,
                               TypeID = x.TypeID,
                               TypeName = x.TypeName,
-                              ShortTypeName= x.ShortTypeName
+                              ShortTypeName = x.ShortTypeName
                           })
                           .ToList()
                 );
@@ -935,7 +935,34 @@ namespace Portal
 
         public async Task<IActionResult> GetUnsatisfactoryMarks(int id)
         {
-            return View();
+            var group = await _context.Groups.FindAsync(id);
+
+            if (group == null)
+            {
+                return NotFound();
+            }
+
+            var unsatisfactoryMarks = await (
+                from m in _context.UnsatisfactoryMarks
+                join st in _context.Students on m.StudentID equals st.StudentID
+                join sb in _context.Subjects on m.SubjectID equals sb.SubjectID
+                where m.GroupID == id
+                select new UnsatisfactoryViewModel
+                {
+                    StudentID = m.StudentID,
+                    SubjectID = m.SubjectID,
+                    StudentFullName = (st.LastName + " " + st.Name + " " + st.Surname).Trim(),
+                    SubjectFullName = sb.Name.Trim(),
+                    UnsatisfactoryMark = m.UnsatisfactoryValue,
+                    UsatisfactoryDate = m.UnsatisfactoryDate,
+                    CorrectedValue = m.CorrectedValue,
+                    CorrectedDate = m.CorrectedDate
+                }
+            ).ToListAsync();
+
+            ViewBag.GroupName = group.Name;
+
+            return View(unsatisfactoryMarks);
         }
 
         private bool GroupExists(int id)
