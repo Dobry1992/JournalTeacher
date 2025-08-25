@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using ClosedXML.Excel;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
@@ -9,6 +10,7 @@ using Portal.ViewModel;
 using Portal.ViewModel.Raiting;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -846,12 +848,173 @@ namespace Portal.Controllers
             return View(students);
         }
 
+        public async Task<IActionResult> ExportCourseStatement(int id, int year)
+        {
+            var students = await GetCourseStatementViewModel(id, year);
+            if (students == null || !students.Any())
+                return NotFound("Студентов в группе нет.");
+
+            // Генерируем Excel
+            var content = GenerateExcelFile(students, $"Ведомость_{id}");
+
+            // Возвращаем файл
+            return File(content,
+                        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                        $"Ведомость_{id}.xlsx");
+        }
+
+        // Приватный метод генерации Excel
+        private byte[] GenerateExcelFile(List<CourseStudentViewModel> students, string fileName)
+        {
+            using var workbook = new XLWorkbook();
+            var worksheet = workbook.Worksheets.Add("Ведомость");
+
+            int col = 1;
+            worksheet.Cell(1, col++).Value = "#";
+            worksheet.Cell(1, col++).Value = "Ф.И.О.";
+            worksheet.Cell(1, col++).Value = "Группа";
+
+            var subjects = students.First().SubjectAverages;
+            foreach (var subject in subjects)
+            {
+                var cell = worksheet.Cell(1, col++);
+                cell.Value = subject.SubjectName;
+                cell.Style.Alignment.WrapText = true;
+                cell.Style.Alignment.TextRotation = 90; // поворот текста
+                cell.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+                cell.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
+            }
+
+            int row = 2;
+            int studentNumber = 1;
+            foreach (var student in students)
+            {
+                col = 1;
+                worksheet.Cell(row, col++).Value = studentNumber++;
+                worksheet.Cell(row, col++).Value = $"{student.LastName} {student.Name} {student.Surname}";
+                worksheet.Cell(row, col++).Value = student.GroupName;
+
+
+                foreach (var subj in student.SubjectAverages)
+                {
+                    var cell = worksheet.Cell(row, col++);
+                    if (subj.AvgMark.HasValue)
+                    {
+                        cell.Value = subj.AvgMark.Value;
+                        cell.Style.NumberFormat.Format = "0.000"; // до тысячных
+                    }
+                    else
+                    {
+                        cell.Value = "-";
+                    }
+
+                    cell.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center; // по центру
+                    cell.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
+                }
+
+                row++;
+            }
+
+            // Форматирование заголовка
+            worksheet.Row(1).Style.Font.Bold = true;
+            worksheet.Row(1).Style.Fill.BackgroundColor = XLColor.Gray;
+            worksheet.Row(1).Height = 80; // под повёрнутый текст
+
+            // Фиксируем первую строку при скролле
+            worksheet.SheetView.FreezeRows(1);
+
+            worksheet.Columns().AdjustToContents();
+
+            // --- Добавляем границы таблицы ---
+            var usedRange = worksheet.RangeUsed();
+            usedRange.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+            usedRange.Style.Border.InsideBorder = XLBorderStyleValues.Thin;
+
+            using var stream = new MemoryStream();
+            workbook.SaveAs(stream);
+            return stream.ToArray();
+        }
+
+        // Вспомогательный метод для получения ViewModel (можно вынести отдельно)
+        private async Task<List<CourseStudentViewModel>> GetCourseStatementViewModel(int id, int year)
+        {
+            var groupIds = await _context.Groups
+                .Where(g => g.SpecialityID == id && g.DateEnter.Year == year)
+                .Select(g => g.GroupID)
+                .ToListAsync();
+
+            var typeKR = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Курсовая работа");
+            var typeKP = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Курсовой проект");
+
+            var studentsData = await _context.Students
+                .Where(s => groupIds.Contains(s.GroupID))
+                .OrderBy(s => s.LastName)
+                .Select(s => new
+                {
+                    Student = new { s.StudentID, s.Name, s.Surname, s.LastName, s.Group },
+                    Marks = s.Marks
+                        .Where(m =>
+                            m.FlagF == 0 &&
+                            m.TypeOfExerciseID != typeKP.TypeOfExerciseID &&
+                            m.TypeOfExerciseID != typeKR.TypeOfExerciseID
+                        )
+                        .Select(m => new { m.SubjectID, m.Value })
+                        .ToList()
+                })
+                .AsNoTracking()
+                .ToListAsync();
+
+            if (!studentsData.Any())
+                return null;
+
+            var subjectIds = studentsData.SelectMany(s => s.Marks)
+                                         .Select(m => m.SubjectID)
+                                         .Distinct()
+                                         .ToList();
+
+            var allSubjects = await _context.Subjects
+                .Where(sub => subjectIds.Contains(sub.SubjectID))
+                .Select(sub => new { sub.SubjectID, sub.Name })
+                .ToListAsync();
+
+            var students = studentsData.Select(s => new CourseStudentViewModel
+            {
+                StudentId = s.Student.StudentID,
+                Name = s.Student.Name,
+                Surname = s.Student.Surname,
+                LastName = s.Student.LastName,
+                GroupID = s.Student.Group.GroupID,
+                GroupName = s.Student.Group.Name,
+
+                SubjectAverages = allSubjects.Select(subject =>
+                {
+                    var marks = s.Marks
+                        .Where(m => m.SubjectID == subject.SubjectID)
+                        .Select(m => double.TryParse(m.Value, out var v) ? (double?)v : null)
+                        .Where(v => v.HasValue)
+                        .Select(v => v.Value)
+                        .ToList();
+
+                    return new SubjectAverageViewModel
+                    {
+                        SubjectId = subject.SubjectID,
+                        SubjectName = subject.Name,
+                        AvgMark = marks.Any() ? marks.Average() : (double?)null
+                    };
+                }).ToList()
+            }).ToList();
+
+            return students;
+        }
+
         [Authorize]
         public async Task<IActionResult> CourseSummaryStatement(int id, int year)
         {
 
             return View();
         }
+
+
 
         private bool SpecialityExists(int id)
         {
