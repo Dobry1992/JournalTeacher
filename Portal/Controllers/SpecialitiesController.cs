@@ -840,6 +840,8 @@ namespace Portal.Controllers
             }).ToList();
 
             ViewBag.SpecialityName = speciality.Name;
+            ViewBag.SpecialityID = id;
+            ViewBag.Year = year;
 
             return View(students);
         }

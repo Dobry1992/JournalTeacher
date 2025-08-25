@@ -23,7 +23,7 @@
         <div class="card-body">
             <h6 class="mb-3 text-center bg-gray-light headGroup p-2 rounded shadow">Ведомость текущих средних отметок курса<br />@ViewBag.SpecialityName</h6>
             <div class="mb-3">
-                <a asp-action="" asp-route-id="" class="btn btn-success">
+                <a asp-action="ExportToExcel" asp-route-id="@ViewBag.SpecialityID" asp-route-year="@ViewBag.Year" class="btn btn-success">
                     Экспорт в Excel
                 </a>
             </div>
