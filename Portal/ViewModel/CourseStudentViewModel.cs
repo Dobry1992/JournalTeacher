@@ -2,9 +2,11 @@
 
 namespace Portal.ViewModel
 {
-    public class StudentViewModel
+    public class CourseStudentViewModel
     {
         public int StudentId { get; set; }
+        public int GroupID { get; set; }
+        public string GroupName { get; set; }
         public string Name { get; set; }
         public string Surname { get; set; }
         public string LastName { get; set; }

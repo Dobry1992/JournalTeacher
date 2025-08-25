@@ -785,7 +785,7 @@ namespace Portal.Controllers
                 .OrderBy(s => s.LastName)
                 .Select(s => new
                 {
-                    Student = new { s.StudentID, s.Name, s.Surname, s.LastName },
+                    Student = new { s.StudentID, s.Name, s.Surname, s.LastName, s.Group},
                     Marks = s.Marks
                         .Where(m =>
                             m.FlagF == 0 &&
@@ -811,12 +811,14 @@ namespace Portal.Controllers
                 .Select(sub => new { sub.SubjectID, sub.ShortName, sub.Name })
                 .ToListAsync();
 
-            var students = studentsData.Select(s => new StudentViewModel
+            var students = studentsData.Select(s => new CourseStudentViewModel
             {
                 StudentId = s.Student.StudentID,
                 Name = s.Student.Name,
                 Surname = s.Student.Surname,
                 LastName = s.Student.LastName,
+                GroupID = s.Student.Group.GroupID,
+                GroupName = s.Student.Group.Name,
 
                 SubjectAverages = allSubjects.Select(subject =>
                 {
@@ -837,12 +839,15 @@ namespace Portal.Controllers
                 }).ToList()
             }).ToList();
 
+            ViewBag.SpecialityName = speciality.Name;
+
             return View(students);
         }
 
         [Authorize]
         public async Task<IActionResult> CourseSummaryStatement(int id, int year)
         {
+
             return View();
         }
 

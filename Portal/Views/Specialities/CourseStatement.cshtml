@@ -1,5 +1,5 @@
 ﻿@using Portal.ViewModel
-@model List<StudentViewModel>
+@model List<CourseStudentViewModel>
 
 @{
     ViewData["Title"] = "Ведомость";
@@ -21,7 +21,7 @@
 <div class="container-fluid mt-3">
     <div class="card">
         <div class="card-body">
-            <h6 class="mb-3 text-center bg-gray-light headGroup p-2 rounded shadow">Ведомость текущих средних отметок курса<br/></h6>
+            <h6 class="mb-3 text-center bg-gray-light headGroup p-2 rounded shadow">Ведомость текущих средних отметок курса<br />@ViewBag.SpecialityName</h6>
             <div class="mb-3">
                 <a asp-action="" asp-route-id="" class="btn btn-success">
                     Экспорт в Excel
@@ -33,6 +33,7 @@
                         <tr role="row">
                             <th class="text-center align-middle p-1 fix tableRowSticky title-row">#</th>
                             <th class="text-center align-middle p-1 fix tableRowSticky title-row">Ф.И.О.</th>
+                            <th class="text-center align-middle p-1 tableRowSticky title-row">Группа</th>
                             @foreach (var subject in subjects)
                             {
                                 <th class="text-center align-middle p-0 tableRowSticky">
@@ -52,6 +53,7 @@
                             <tr>
                                 <td class="text-center align-middle bg-light p-1 fix">@i</td>
                                 <td class="text-center align-middle bg-light p-1 fix" style="white-space:nowrap">@student.FullName</td>
+                                <td class="text-center align-middle bg-light p-1">@student.GroupName</td>
                                 @foreach (var subj in student.SubjectAverages)
                                 {
                                     <td class="text-center align-middle p-1">@(subj.AvgMark.HasValue? subj.AvgMark.Value.ToString("0.000") : "-")</td>
