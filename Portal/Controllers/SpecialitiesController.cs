@@ -1008,13 +1008,131 @@ namespace Portal.Controllers
         }
 
         [Authorize]
-        public async Task<IActionResult> CourseSummaryStatement(int id, int year)
+        public async Task<IActionResult> CourseSummaryStatement(int id, DateTime date_1, DateTime date_2)
         {
+            var speciality = await _context.Specialities.FindAsync(id);
 
-            return View();
+            var groupIds = await _context.Groups
+                .Where(g => g.SpecialityID == id)
+                .Select(g => g.GroupID)
+                .ToListAsync();
+
+            // Типы, которые нужны из Marks (пример: Итоговая, Курсовая работа, Курсовой проект)
+            var typeIO = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Итоговая отметка");
+            var typeKR = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Курсовая работа");
+            var typeKP = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Курсовой проект");
+
+            var validTypeIds = new HashSet<int>(
+                new[] { typeIO?.TypeOfExerciseID, typeKR?.TypeOfExerciseID, typeKP?.TypeOfExerciseID }
+                .Where(x => x.HasValue).Select(x => x.Value)
+            );
+
+            // Студенты
+            var students = await _context.Students
+                .Where(s => groupIds.Contains(s.GroupID) && s.Status == true)
+                .OrderBy(s => s.LastName)
+                .Select(s => new GroupSummaryStatementViewModel
+                {
+                    StudentID = s.StudentID,
+                    GroupID = s.GroupID,
+                    StudentName = s.Name,
+                    StudentLastName = s.LastName,
+                    StudentSurname = s.Surname,
+                    Marks = new List<MarkGroupSummaryStatement>()
+                })
+                .AsNoTracking()
+                .ToListAsync();
+
+            if (students.Count == 0) return View(students);
+
+            var studentIds = students.Select(st => st.StudentID).ToList();
+
+            // ЕДИНАЯ выборка оценок из двух таблиц без навигаций
+            var allMarks = await (
+                // 1) Оценки из Marks — только нужные типы
+                from m in _context.Marks
+                where studentIds.Contains(m.StudentID) && validTypeIds.Contains(m.TypeOfExerciseID)
+                join sub in _context.Subjects on m.SubjectID equals sub.SubjectID into subg
+                from sub in subg.DefaultIfEmpty()
+                join tp in _context.Types on m.TypeOfExerciseID equals tp.TypeOfExerciseID into tpg
+                from tp in tpg.DefaultIfEmpty()
+                select new
+                {
+                    m.StudentID,
+                    m.Date,
+                    m.Value,
+                    SubjectID = (int?)m.SubjectID,
+                    SubjectName = sub != null ? sub.Name : null,
+                    ShortSubjectName = sub != null ? sub.ShortName : null,
+                    TypeID = m.TypeOfExerciseID,
+                    TypeName = tp != null ? tp.Name : null,
+                    ShortTypeName = tp != null ? tp.ShortName : null
+                }
+            )
+            // 2) Плюс оценки из StatementMarks (если надо — тоже можно отфильтровать по типам)
+            .Concat(
+                from sm in _context.StatementMarks
+                where studentIds.Contains(sm.StudentID)
+                join tp in _context.Types on sm.TypeOfExerciseID equals tp.TypeOfExerciseID into tpg2
+                from tp in tpg2.DefaultIfEmpty()
+                select new
+                {
+                    sm.StudentID,
+                    sm.Date,
+                    sm.Value,
+                    SubjectID = (int?)null,
+                    SubjectName = (string)null,
+                    ShortSubjectName = (string)null,
+                    TypeID = sm.TypeOfExerciseID,
+                    TypeName = tp != null ? tp.Name : null,
+                    ShortTypeName = tp != null ? tp.ShortName : null
+                }
+            )
+            .AsNoTracking()
+            .ToListAsync();
+
+            if (date_1.ToShortDateString() != "01.01.0001")
+            {
+                allMarks = allMarks
+                    .Where(m => m.Date >= date_1)
+                    .ToList();
+            }
+
+            if (date_2.ToShortDateString() != "01.01.0001")
+            {
+                allMarks = allMarks
+                    .Where(m => m.Date <= date_2)
+                    .ToList();
+            }
+
+            // Группируем по студенту и наполняем VM
+            var marksByStudent = allMarks
+                .GroupBy(x => x.StudentID)
+                .ToDictionary(
+                    g => g.Key,
+                    g => g.OrderBy(x => x.SubjectID)
+                          .Select(x => new MarkGroupSummaryStatement
+                          {
+                              Value = x.Value,
+                              Date = x.Date,
+                              SubjectID = x.SubjectID,
+                              SubjectName = x.SubjectName,
+                              ShortSubjectName = x.ShortSubjectName,
+                              TypeID = x.TypeID,
+                              TypeName = x.TypeName,
+                              ShortTypeName = x.ShortTypeName
+                          })
+                          .ToList()
+                );
+
+            foreach (var s in students)
+                if (marksByStudent.TryGetValue(s.StudentID, out var list))
+                    s.Marks = list;
+
+            ViewBag.Speciality = speciality;
+
+            return View(students);
         }
-
-
 
         private bool SpecialityExists(int id)
         {

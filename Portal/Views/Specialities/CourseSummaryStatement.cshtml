@@ -1,1 +1,140 @@
-﻿
+﻿@using Portal.ViewModel
+@model List<GroupSummaryStatementViewModel>
+
+@{
+    ViewData["Title"] = "Сводная ведомость";
+    var groupName = ViewBag.GroupName as string ?? "Без названия";
+
+    // Единый список колонок: (SubjectID, SubjectName, TypeID, TypeName, Date.Date)
+    var allColumns = (Model ?? new List<GroupSummaryStatementViewModel>())
+        .SelectMany(s => s.Marks ?? Enumerable.Empty<MarkGroupSummaryStatement>())
+        .Select(m => new
+        {
+            SubjectID = m.SubjectID ?? -1, // чтобы Distinct работал даже при null
+            SubjectName = m.SubjectName ?? "",
+            ShortSubjectName = m.ShortSubjectName,
+            TypeID = m.TypeID,
+            TypeName = m.TypeName ?? "",
+            ShortTypeName = m.ShortTypeName
+        })
+        .Distinct()
+        .OrderBy(c => c.SubjectID)
+        .ToList();
+
+    var hasData = Model != null && Model.Any();
+    int n = 1;
+}
+
+@await Html.PartialAsync("_NavMenuJournal")
+
+<div>
+    <section class="content-header">
+        <div class="container-fluid">
+            <div class="row">
+            </div>
+        </div>
+    </section>
+</div>
+
+@if (!hasData)
+{
+    <div class="alert alert-info mb-0">Нет данных для отображения.</div>
+}
+else
+{
+    <div class="container-fluid mt-3">
+        <div class="card">
+            <div class="card-body">
+                <h6 class="mb-3 text-center bg-gray-light headGroup p-2 rounded shadow">
+                    Сводная ведомость<br />
+                    @ViewBag.Speciality.Name
+                </h6>
+                <form asp-action="CourseSummaryStatement" method="get" class="d-flex align-items-end gap-3 mb-3 flex-wrap">
+                    <div class="mr-2">
+                        <label for="date_1" class="form-label">Начальная дата:</label>
+                        <input class="form-control" type="date" name="date_1" id="date_1" />
+                    </div>
+                    <div class="mr-2">
+                        <label for="date_2" class="form-label">Конечная дата:</label>
+                        <input class="form-control" type="date" name="date_2" id="date_2" />
+                    </div>
+                    <div class="mr-2">
+                        <button type="submit" class="btn btn-primary">Поиск</button>
+                    </div>
+                </form>
+                <div class="table-responsive" id="sd">
+                    <table class="table table-bordered table-sm compact" id="marks">
+                        <thead class="thead-dark">
+                            <tr role="row">
+                                <th class="text-center align-middle p-1 fix tableRowSticky title-row">#</th>
+                                <th class="text-center align-middle p-1 fix tableRowSticky title-row">Ф.И.О.</th>
+                                @foreach (var col in allColumns)
+                                {
+                                    <th class="text-center align-middle p-0 tableRowSticky">
+                                        <span class="btn btn-outline-danger border-0 p-1 text-white btn-tooltip"
+                                              data-toggle="tooltip"
+                                              data-html="true"
+                                              title="@col.SubjectName<br/>@col.TypeName">
+                                            <span class="rotate-sm-90">
+                                                @if (col.ShortSubjectName != null)
+                                                {
+                                                    @col.ShortSubjectName
+                                                    <br />
+                                                }
+                                                @col.ShortTypeName
+                                            </span>
+                                        </span>
+                                    </th>
+                                }
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white compact">
+                            @foreach (var student in Model)
+                            {
+                                <tr>
+                                    <td class="text-center align-middle bg-light p-1 fix">@n</td>
+                                    <td class="text-center align-middle bg-light p-1 fix" style="white-space:nowrap">@student.StudentFullName</td>
+                                    @foreach (var col in allColumns)
+                                    {
+                                        var mark = student.Marks.FirstOrDefault(m =>
+                                            m.TypeID == col.TypeID
+                                        );
+                                        <td class="text-center align-middle p-1">
+                                            @(mark?.Value ?? "-")
+                                        </td>
+                                    }
+                                </tr>
+                                n++;
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </div>
+}
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+    <script>
+        $(function () {
+            $('.btn-tooltip').tooltip();
+        });
+        document.addEventListener("DOMContentLoaded", function () {
+            const div = document.getElementById('sd');
+            const savedScroll = localStorage.getItem('scrollLeft') || 0;
+            const savedScrollTop = localStorage.getItem('scrollTop') || 0;
+
+            div.scrollLeft = savedScroll;
+            div.scrollTop = savedScrollTop;
+
+            div.addEventListener('scroll', () => {
+                localStorage.setItem('scrollLeft', div.scrollLeft);
+                localStorage.setItem('scrollTop', div.scrollTop);
+            });
+        });
+    </script>
+}
