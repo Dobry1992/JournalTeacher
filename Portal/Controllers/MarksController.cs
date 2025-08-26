@@ -218,7 +218,7 @@ namespace Portal.Controllers
                             {
                                 double average = simpleDoubleMarks.Average();
                                 double finalValue = average * 0.6 + num * 0.4;
-                                markIOExam.Value = Math.Round(finalValue).ToString(CultureInfo.InvariantCulture);
+                                markIOExam.Value = Math.Round(finalValue, 0, MidpointRounding.AwayFromZero).ToString(CultureInfo.InvariantCulture);
                                 markIOExam.ChangeCounter = 3;
                             }
                         }
@@ -291,7 +291,7 @@ namespace Portal.Controllers
                                 {
                                     double average = doubleMarks.Average();
                                     double finalValue = average * 0.6 + num * 0.4;
-                                    markIO.Value = Math.Round(finalValue).ToString(CultureInfo.InvariantCulture);
+                                    markIO.Value = Math.Round(finalValue, 0, MidpointRounding.AwayFromZero).ToString(CultureInfo.InvariantCulture);
                                     updatedIO = true;
                                 }
                             }
@@ -329,7 +329,7 @@ namespace Portal.Controllers
                                 {
                                     double average = doubleMarks.Average();
                                     double finalValue = average * 0.6 + number * 0.4;
-                                    markIO.Value = Math.Round(finalValue).ToString(CultureInfo.InvariantCulture);
+                                    markIO.Value = Math.Round(finalValue, 0, MidpointRounding.AwayFromZero).ToString(CultureInfo.InvariantCulture);
                                 }
                             }
                             _context.Marks.Update(markIO);
@@ -528,7 +528,7 @@ namespace Portal.Controllers
                             {
                                 double average = simpleDoubleMarks.Average();
                                 double finalValue = average * 0.6 + num * 0.4;
-                                markIOExam.Value = Math.Round(finalValue).ToString(CultureInfo.InvariantCulture);
+                                markIOExam.Value = Math.Round(finalValue, 0, MidpointRounding.AwayFromZero).ToString(CultureInfo.InvariantCulture);
                                 markIOExam.ChangeCounter = 3;
                             }
                         }
@@ -568,7 +568,7 @@ namespace Portal.Controllers
                                         {
                                             if (exam != 1 || exam != 2 || exam != 3)
                                             {
-                                                markIOExam.Value = Math.Round(average * 0.6 + exam * 0.4).ToString(CultureInfo.InvariantCulture);
+                                                markIOExam.Value = Math.Round(average * 0.6 + exam * 0.4, 0, MidpointRounding.AwayFromZero).ToString(CultureInfo.InvariantCulture);
                                             }
                                         }
                                     }
@@ -595,7 +595,7 @@ namespace Portal.Controllers
                                         {
                                             if (exam != 1 || exam != 2 || exam != 3)
                                             {
-                                                markIOExam.Value = Math.Round(average * 0.6 + exam * 0.4).ToString(CultureInfo.InvariantCulture);
+                                                markIOExam.Value = Math.Round(average * 0.6 + exam * 0.4, 0, MidpointRounding.AwayFromZero).ToString(CultureInfo.InvariantCulture);
                                             }
                                         }
                                     }
@@ -717,7 +717,7 @@ namespace Portal.Controllers
                                 {
                                     double average = doubleMarks.Average();
                                     double finalValue = average * 0.6 + num * 0.4;
-                                    markIO.Value = Math.Round(finalValue).ToString(CultureInfo.InvariantCulture);
+                                    markIO.Value = Math.Round(finalValue, 0, MidpointRounding.AwayFromZero).ToString(CultureInfo.InvariantCulture);
                                     updatedIO = true;
                                 }
                             }
@@ -756,7 +756,7 @@ namespace Portal.Controllers
                                 {
                                     double average = doubleMarks.Average();
                                     double finalValue = average * 0.6 + number * 0.4;
-                                    markIO.Value = Math.Round(finalValue).ToString(CultureInfo.InvariantCulture);
+                                    markIO.Value = Math.Round(finalValue, 0, MidpointRounding.AwayFromZero).ToString(CultureInfo.InvariantCulture);
                                 }
                             }
                             else if (mark.TypeOfExerciseID == typeItog.TypeOfExerciseID)

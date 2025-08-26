@@ -1757,7 +1757,7 @@ namespace Portal
                                                     if (exam != 1 || exam != 2 || exam != 3)
                                                     {
                                                         var value = avarage * 0.6 + exam * 0.4;
-                                                        ioExamMark.Value = Math.Round(value).ToString(CultureInfo.InvariantCulture);
+                                                        ioExamMark.Value = Math.Round(value, 0, MidpointRounding.AwayFromZero).ToString(CultureInfo.InvariantCulture);
 
                                                         _context.Marks.Update(ioExamMark);
                                                         await _context.SaveChangesAsync();
@@ -1922,7 +1922,7 @@ namespace Portal
                 else if (markIA != null && double.TryParse(markIA.Value, out double examScore) && markIO != null)
                 {
                     double finalValue = average * 0.6 + examScore * 0.4;
-                    markIO.Value = Math.Round(finalValue).ToString(CultureInfo.InvariantCulture);
+                    markIO.Value = Math.Round(finalValue, 0, MidpointRounding.AwayFromZero).ToString(CultureInfo.InvariantCulture);
                     _context.Marks.Update(markIO);
                 }
             }

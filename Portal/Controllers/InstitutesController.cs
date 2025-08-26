@@ -134,7 +134,7 @@ namespace Portal
                                 .ToList();
 
                             rating = numericMarks.Any()
-                                ? Math.Round(numericMarks.Average(), 3).ToString()
+                                ? Math.Round(numericMarks.Average(), 3, MidpointRounding.AwayFromZero).ToString()
                                 : "-";
 
                             color = "#FFFFFF";
@@ -358,7 +358,7 @@ namespace Portal
 
                 if (groupStudentRatings.Any())
                 {
-                    groupRating = Math.Round(groupStudentRatings.Average(), 3);
+                    groupRating = Math.Round(groupStudentRatings.Average(), 3, MidpointRounding.AwayFromZero);
                 }
 
                 InstGroupRaiting instGroupRaiting = new()
@@ -377,7 +377,7 @@ namespace Portal
                 .ToList();
             if (filterGroupsRatig.Any())
             {
-                instRating = Math.Round(filterGroupsRatig.Average(g => g.Raiting), 3);
+                instRating = Math.Round(filterGroupsRatig.Average(g => g.Raiting), 3, MidpointRounding.AwayFromZero);
             }
 
             //Оценочные показатели института
@@ -390,7 +390,7 @@ namespace Portal
                     decimal n1 = marksAverage.Where(x => x == i).Count();
                     decimal n2 = marksAverage.Count;
                     decimal mp = n1 / n2 * 100;
-                    marksPercent.Add(i, Math.Round(mp, 3));
+                    marksPercent.Add(i, Math.Round(mp, 3, MidpointRounding.AwayFromZero));
                 }
                 marksNumber.Add(i, marksAverage.Where(x => x == i).Count());
             }
@@ -408,7 +408,7 @@ namespace Portal
             }
             if (sepMarks.Count != 0)
             {
-                raitingTime.Add("Сентябрь", Math.Round(await _instituteAverage.GetInstituteAverageMarkAsync(sepMarks), 3).ToString().Replace(",", "."));
+                raitingTime.Add("Сентябрь", Math.Round(await _instituteAverage.GetInstituteAverageMarkAsync(sepMarks), 3, MidpointRounding.AwayFromZero).ToString().Replace(",", "."));
             }
             else
             {
@@ -426,7 +426,7 @@ namespace Portal
             }
             if (octMarks.Count != 0)
             {
-                raitingTime.Add("Октябрь", Math.Round(await _instituteAverage.GetInstituteAverageMarkAsync(octMarks), 3).ToString().Replace(",", "."));
+                raitingTime.Add("Октябрь", Math.Round(await _instituteAverage.GetInstituteAverageMarkAsync(octMarks), 3, MidpointRounding.AwayFromZero).ToString().Replace(",", "."));
             }
             else
             {
@@ -444,7 +444,7 @@ namespace Portal
             }
             if (novMarks.Count != 0)
             {
-                raitingTime.Add("Ноябрь", Math.Round(await _instituteAverage.GetInstituteAverageMarkAsync(novMarks), 3).ToString().Replace(",", "."));
+                raitingTime.Add("Ноябрь", Math.Round(await _instituteAverage.GetInstituteAverageMarkAsync(novMarks), 3, MidpointRounding.AwayFromZero).ToString().Replace(",", "."));
             }
             else
             {
@@ -463,7 +463,7 @@ namespace Portal
             }
             if (decMarks.Count != 0)
             {
-                raitingTime.Add("Декабрь", Math.Round(await _instituteAverage.GetInstituteAverageMarkAsync(decMarks), 3).ToString().Replace(",", "."));
+                raitingTime.Add("Декабрь", Math.Round(await _instituteAverage.GetInstituteAverageMarkAsync(decMarks), 3, MidpointRounding.AwayFromZero).ToString().Replace(",", "."));
             }
             else
             {
@@ -481,7 +481,7 @@ namespace Portal
             }
             if (janMarks.Count != 0)
             {
-                raitingTime.Add("Январь", Math.Round(await _instituteAverage.GetInstituteAverageMarkAsync(janMarks), 3).ToString().Replace(",", "."));
+                raitingTime.Add("Январь", Math.Round(await _instituteAverage.GetInstituteAverageMarkAsync(janMarks), 3, MidpointRounding.AwayFromZero).ToString().Replace(",", "."));
             }
             else
             {
@@ -499,7 +499,7 @@ namespace Portal
             }
             if (febMarks.Count != 0)
             {
-                raitingTime.Add("Февраль", Math.Round(await _instituteAverage.GetInstituteAverageMarkAsync(febMarks), 3).ToString().Replace(",", "."));
+                raitingTime.Add("Февраль", Math.Round(await _instituteAverage.GetInstituteAverageMarkAsync(febMarks), 3, MidpointRounding.AwayFromZero).ToString().Replace(",", "."));
             }
             else
             {
@@ -517,7 +517,7 @@ namespace Portal
             }
             if (marMarks.Count != 0)
             {
-                raitingTime.Add("Март", Math.Round(await _instituteAverage.GetInstituteAverageMarkAsync(marMarks), 3).ToString().Replace(",", "."));
+                raitingTime.Add("Март", Math.Round(await _instituteAverage.GetInstituteAverageMarkAsync(marMarks), 3, MidpointRounding.AwayFromZero).ToString().Replace(",", "."));
             }
             else
             {
@@ -535,7 +535,7 @@ namespace Portal
             }
             if (aprMarks.Count != 0)
             {
-                raitingTime.Add("Апрель", Math.Round(await _instituteAverage.GetInstituteAverageMarkAsync(aprMarks), 3).ToString().Replace(",", "."));
+                raitingTime.Add("Апрель", Math.Round(await _instituteAverage.GetInstituteAverageMarkAsync(aprMarks), 3, MidpointRounding.AwayFromZero).ToString().Replace(",", "."));
             }
             else
             {
@@ -553,7 +553,7 @@ namespace Portal
             }
             if (mMarks.Count != 0)
             {
-                raitingTime.Add("Май", Math.Round(await _instituteAverage.GetInstituteAverageMarkAsync(mMarks), 3).ToString().Replace(",", "."));
+                raitingTime.Add("Май", Math.Round(await _instituteAverage.GetInstituteAverageMarkAsync(mMarks), 3, MidpointRounding.AwayFromZero).ToString().Replace(",", "."));
             }
             else
             {
@@ -571,7 +571,7 @@ namespace Portal
             }
             if (junMarks.Count != 0)
             {
-                raitingTime.Add("Июнь", Math.Round(await _instituteAverage.GetInstituteAverageMarkAsync(junMarks), 3).ToString().Replace(",", "."));
+                raitingTime.Add("Июнь", Math.Round(await _instituteAverage.GetInstituteAverageMarkAsync(junMarks), 3, MidpointRounding.AwayFromZero).ToString().Replace(",", "."));
             }
             else
             {
@@ -589,7 +589,7 @@ namespace Portal
             }
             if (julMarks.Count != 0)
             {
-                raitingTime.Add("Июль", Math.Round(await _instituteAverage.GetInstituteAverageMarkAsync(julMarks), 3).ToString().Replace(",", "."));
+                raitingTime.Add("Июль", Math.Round(await _instituteAverage.GetInstituteAverageMarkAsync(julMarks), 3, MidpointRounding.AwayFromZero).ToString().Replace(",", "."));
             }
             else
             {
@@ -607,7 +607,7 @@ namespace Portal
             }
             if (augMarks.Count != 0)
             {
-                raitingTime.Add("Август", Math.Round(await _instituteAverage.GetInstituteAverageMarkAsync(augMarks), 3).ToString().Replace(",", "."));
+                raitingTime.Add("Август", Math.Round(await _instituteAverage.GetInstituteAverageMarkAsync(augMarks), 3, MidpointRounding.AwayFromZero).ToString().Replace(",", "."));
             }
             else
             {
@@ -686,7 +686,7 @@ namespace Portal
             }
 
             ViewBag.Term = term;
-            ViewBag.Raiting = Math.Round(instRating, 3);
+            ViewBag.Raiting = Math.Round(instRating, 3, MidpointRounding.AwayFromZero);
             ViewBag.Students = studentNumber;
             ViewBag.Groups = groups.Count();
             ViewBag.Specialities = specialities.Count();

@@ -196,7 +196,7 @@ namespace Portal.Controllers
                     decimal n1 = marksAverage.Where(x => x == i).Count();
                     decimal n2 = marksAverage.Count;
                     decimal mp = n1 / n2 * 100;
-                    marksPercent.Add(i, Math.Round(mp, 3));
+                    marksPercent.Add(i, Math.Round(mp, 3, MidpointRounding.AwayFromZero));
                 }
                 marksNumber.Add(i, marksAverage.Where(x => x == i).Count());
             }
@@ -234,13 +234,13 @@ namespace Portal.Controllers
             nump = ((double)num / mNumber) * 100;
             Dictionary<string, double> attendancePercent = new Dictionary<string, double>()
             {
-                {"Болезнь", Math.Round(bp, 3)},
-                {"Наряд", Math.Round(nrp, 3)},
-                {"Отпуск", Math.Round(op, 3) },
-                {"Коммандировка", Math.Round(kmp, 3)},
-                {"Отсутствие по мотивированный рапорт", Math.Round(rp, 3)},
-                {"Отсутствие без уважительной причины", Math.Round(nbp, 3)},
-                {"Присутствие", Math.Round(nump, 3)}
+                {"Болезнь", Math.Round(bp, 3, MidpointRounding.AwayFromZero)},
+                {"Наряд", Math.Round(nrp, 3, MidpointRounding.AwayFromZero)},
+                {"Отпуск", Math.Round(op, 3, MidpointRounding.AwayFromZero) },
+                {"Коммандировка", Math.Round(kmp, 3, MidpointRounding.AwayFromZero)},
+                {"Отсутствие по мотивированный рапорт", Math.Round(rp, 3, MidpointRounding.AwayFromZero)},
+                {"Отсутствие без уважительной причины", Math.Round(nbp, 3, MidpointRounding.AwayFromZero)},
+                {"Присутствие", Math.Round(nump, 3, MidpointRounding.AwayFromZero)}
             };
 
             //Текущий общий средний балл и средний бал за предмет по месяцам
@@ -286,7 +286,7 @@ namespace Portal.Controllers
 
                 if (doubleMarks.Any())
                 {
-                    raitingTimeSubject.Add(month, Math.Round(doubleMarks.Average(), 3).ToString().Replace(",", "."));
+                    raitingTimeSubject.Add(month, Math.Round(doubleMarks.Average(), 3, MidpointRounding.AwayFromZero).ToString().Replace(",", "."));
                 }
                 else
                 {
@@ -321,7 +321,7 @@ namespace Portal.Controllers
 
                 if (val.Count != 0)
                 {
-                    double valRaiting = Math.Round(val.Average(), 3);
+                    double valRaiting = Math.Round(val.Average(), 3, MidpointRounding.AwayFromZero);
                     radar.Add(new { Subject = journal.Subject.ShortName.ToString(), Value = valRaiting.ToString().Replace(",", ".") });
                 }
             }
@@ -396,7 +396,7 @@ namespace Portal.Controllers
 
                 MarkSubjectFinal msf = new();
                 msf.Subject = journal.Subject;
-                msf.Value = Math.Round(simplemrks.Sum() / simplemrks.Count, 2);
+                msf.Value = Math.Round(simplemrks.Sum() / simplemrks.Count, 3, MidpointRounding.AwayFromZero);
                 msf.ControlMarks = controlmrks;
                 msf.FinalMarks = fmrks;
                 msf.ValueK = kmarks;

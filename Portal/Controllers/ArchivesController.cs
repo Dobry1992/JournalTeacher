@@ -186,7 +186,7 @@ namespace Portal.Controllers
                 }
                 GroupArchiveRaiting gar = new();
                 gar.Student = student;
-                gar.Raiting = Math.Round(numMarks.Sum() / numMarks.Count, 3);
+                gar.Raiting = Math.Round(numMarks.Sum() / numMarks.Count, 3, MidpointRounding.AwayFromZero);
                 gar.Count = numMarks.Count;
                 groupArchiveRaitings.Add(gar);
             }
@@ -213,13 +213,13 @@ namespace Portal.Controllers
                 GroupArchiveStat gas = new();
                 gas.Value = i;
                 gas.Count = count;
-                gas.Percent = Math.Round(percent, 3);
+                gas.Percent = Math.Round(percent, 3, MidpointRounding.AwayFromZero);
                 groupArchiveStats.Add(gas);
             }
             var groupArchiveStatsOrderd = groupArchiveStats.OrderBy(m => m.Value);
 
             ViewBag.Institute = institute;
-            ViewBag.Raiting = Math.Round(raiting, 3);
+            ViewBag.Raiting = Math.Round(raiting, 3, MidpointRounding.AwayFromZero);
             ViewBag.Students = students.Count();
             ViewBag.BestStudent = groupArchiveRaitingsOrdered.ToList()[0];
             ViewBag.WorseStudent = groupArchiveRaitingsOrdered.ToList()[groupArchiveRaitingsOrdered.Count() - 1];
@@ -284,7 +284,7 @@ namespace Portal.Controllers
                 GroupArchiveStat gas = new();
                 gas.Value = i;
                 gas.Count = count;
-                gas.Percent = Math.Round(percent, 3);
+                gas.Percent = Math.Round(percent, 3, MidpointRounding.AwayFromZero);
                 groupArchiveStats.Add(gas);
             }
             var groupArchiveStatsOrderd = groupArchiveStats.OrderBy(m => m.Value);
@@ -341,7 +341,7 @@ namespace Portal.Controllers
 
                 ArchiveMarkStat msf = new();
                 msf.Subject = journal.Subject;
-                msf.Value = Math.Round(simplemrks.Sum() / simplemrks.Count, 3);
+                msf.Value = Math.Round(simplemrks.Sum() / simplemrks.Count, 3, MidpointRounding.AwayFromZero);
                 msf.ControlMarks = controlmrks;
                 msf.FinalMarks = fmrks;
                 msf.ValueK = kmarks;
@@ -361,7 +361,7 @@ namespace Portal.Controllers
 
             ViewBag.Speciality = speciality;
             ViewBag.Group = group;
-            ViewBag.Raiting = Math.Round(marksStat.Sum() / marksStat.Count, 3);
+            ViewBag.Raiting = Math.Round(marksStat.Sum() / marksStat.Count, 3, MidpointRounding.AwayFromZero);
             ViewBag.Institute = institute;
             ViewBag.StudentRaiting = groupArchiveStatsOrderd.ToList();
             ViewBag.SubjectFinals = markSubjectFinals;

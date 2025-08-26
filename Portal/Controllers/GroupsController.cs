@@ -355,7 +355,7 @@ namespace Portal
                 var monthMarks = subjectMarks
                     .Where(m => m.Date.Month.ToString() == monthNumber.ToString())
                     .ToList();
-                raitingTimeSubject.Add(month, Math.Round(await _groupRating.CalculateGroupRatingAsync(monthMarks), 3).ToString().Replace(",", "."));
+                raitingTimeSubject.Add(month, Math.Round(await _groupRating.CalculateGroupRatingAsync(monthMarks), 3, MidpointRounding.AwayFromZero).ToString().Replace(",", "."));
             }
 
             //Количество слушателей/курсантов
@@ -382,7 +382,7 @@ namespace Portal
                     GroupRaiting groupRatingStud = new()
                     {
                         Student = student,
-                        Raiting = Math.Round((double)ratingStudent, 3),
+                        Raiting = Math.Round((double)ratingStudent, 3, MidpointRounding.AwayFromZero),
                         NumberOfMark = marksValue.Count
                     };
                     groupRating.Add(groupRatingStud);
@@ -400,7 +400,7 @@ namespace Portal
                 }
             }
 
-            double rating = Math.Round(groupRating.Average(g => g.Raiting), 3);
+            double rating = Math.Round(groupRating.Average(g => g.Raiting), 3, MidpointRounding.AwayFromZero);
 
             //Оценочные показатели группы
             Dictionary<int, int> marksNumber = new();
@@ -412,7 +412,7 @@ namespace Portal
                     decimal n1 = marksAverage.Where(x => x == i).Count();
                     decimal n2 = marksAverage.Count;
                     decimal mp = n1 / n2 * 100;
-                    marksPercent.Add(i, Math.Round(mp, 3));
+                    marksPercent.Add(i, Math.Round(mp, 3, MidpointRounding.AwayFromZero));
                 }
                 marksNumber.Add(i, marksAverage.Where(x => x == i).Count());
             }
@@ -438,7 +438,7 @@ namespace Portal
                 var monthMarks = marks
                     .Where(m => m.Date.Month.ToString() == monthNumber.ToString())
                     .ToList();
-                raitingTime.Add(month, Math.Round(await _groupRating.CalculateGroupRatingAsync(monthMarks), 3).ToString().Replace(",", "."));
+                raitingTime.Add(month, Math.Round(await _groupRating.CalculateGroupRatingAsync(monthMarks), 3, MidpointRounding.AwayFromZero).ToString().Replace(",", "."));
             }
 
             if (group == null)

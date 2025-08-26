@@ -62,7 +62,7 @@ namespace Portal
                     }
                 }
                 resultStudent.Student = student;
-                resultStudent.Value = Math.Round(marks.Sum() / marks.Count, 3);
+                resultStudent.Value = Math.Round(marks.Sum() / marks.Count, 3, MidpointRounding.AwayFromZero);
                 resultsStudent.Add(resultStudent);
             }
 
@@ -551,7 +551,7 @@ namespace Portal
                             DepartmentID = department.DepartmentID,
                             InstituteID = group.InstituteID,
                             SpecialityID = group.SpecialityID,
-                            Value = Math.Round(doubleMark.Average(), 3).ToString()
+                            Value = Math.Round(doubleMark.Average(), 3, MidpointRounding.AwayFromZero).ToString()
                         };
 
                         JournalMarks journalMark = new()

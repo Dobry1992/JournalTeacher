@@ -30,7 +30,7 @@ namespace Portal.Services
             if (subjectAverages.Count == 0)
                 return null;
 
-            return Math.Round(subjectAverages.Average(), 3);
+            return Math.Round(subjectAverages.Average(), 3, MidpointRounding.AwayFromZero);
         }
 
         private double? TryParseMarkValue(string value)
