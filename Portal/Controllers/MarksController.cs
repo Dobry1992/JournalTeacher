@@ -733,6 +733,8 @@ namespace Portal.Controllers
                         bool noControlMarks = !doubleControlMarks.Any();
                         bool lowAverage = doubleMarks.Any() && doubleMarks.Average() < 4;
 
+                        string markValue = mark.Value;
+
                         if (lowAverage || hasLowControlMark || noControlMarks || controlMarks.Count != doubleControlMarks.Count)
                         {
                             markIA.Value = "Недопуск";
@@ -759,12 +761,16 @@ namespace Portal.Controllers
                                     markIO.Value = Math.Round(finalValue, 0, MidpointRounding.AwayFromZero).ToString(CultureInfo.InvariantCulture);
                                 }
                             }
-                            else if (mark.TypeOfExerciseID == typeItog.TypeOfExerciseID)
-                            {
-                                markIO.Value = mark.Value;
-                            }
+
                             _context.Marks.Update(markIO);
                         }
+
+                        if (mark.TypeOfExerciseID == typeItog.TypeOfExerciseID)
+                        {
+                            markIO.Value = markValue;
+                        }
+
+                        _context.Marks.Update(markIO);
 
                         await _context.SaveChangesAsync();
                     }
