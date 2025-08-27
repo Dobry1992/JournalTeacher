@@ -1008,12 +1008,12 @@ namespace Portal.Controllers
         }
 
         [Authorize]
-        public async Task<IActionResult> CourseSummaryStatement(int id, DateTime date_1, DateTime date_2)
+        public async Task<IActionResult> CourseSummaryStatement(int id, DateTime date_1, DateTime date_2, int year)
         {
             var speciality = await _context.Specialities.FindAsync(id);
 
             var groupIds = await _context.Groups
-                .Where(g => g.SpecialityID == id)
+                .Where(g => g.SpecialityID == id && g.DateEnter.Year == year)
                 .Select(g => g.GroupID)
                 .ToListAsync();
 
@@ -1130,6 +1130,7 @@ namespace Portal.Controllers
                     s.Marks = list;
 
             ViewBag.Speciality = speciality;
+            ViewBag.Year = year;
 
             return View(students);
         }
