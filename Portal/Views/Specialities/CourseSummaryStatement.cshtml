@@ -51,6 +51,7 @@ else
                     @ViewBag.Year
                 </h6>
                 <form asp-action="CourseSummaryStatement" method="get" class="d-flex align-items-end gap-3 mb-3 flex-wrap">
+                    <input type="hidden" value="@ViewBag.Year" name="year">
                     <div class="mr-2">
                         <label for="date_1" class="form-label">Начальная дата:</label>
                         <input class="form-control" type="date" name="date_1" id="date_1" />
@@ -98,11 +99,12 @@ else
                                     @foreach (var col in allColumns)
                                     {
                                         var mark = student.Marks.FirstOrDefault(m =>
-                                        (m.SubjectID ?? -1) == col.SubjectID &&
-                                        m.TypeID == col.TypeID
+                                            (m.SubjectID ?? -1) == col.SubjectID &&
+                                            m.TypeID == col.TypeID
                                         );
-
-                                        <td class="text-center align-middle p-1">
+                                        <td class="text-center align-middle p-1 btn-tooltip data-toggle="tooltip"
+                                            data-html="true"
+                                            title="@mark?.Date.ToShortDateString()">
                                             @(mark?.Value ?? "-")
                                         </td>
                                     }
