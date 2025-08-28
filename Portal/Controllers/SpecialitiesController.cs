@@ -234,7 +234,7 @@ namespace Portal.Controllers
         [Authorize]
         public async Task<IActionResult> Analytics(int id, int year)
         {
-            if (id == null)
+            if (id == 0)
             {
                 return NotFound();
             }
@@ -741,8 +741,8 @@ namespace Portal.Controllers
                 ViewBag.WorseGroup = worseGroup;
             }
 
-            SpecialityAnalyticViewModel specialityAnalyticViewModel = new() 
-            { 
+            SpecialityAnalyticViewModel specialityAnalyticViewModel = new()
+            {
                 SpecialityID = id,
                 SpecialityName = speciality.Name,
                 Term = term,
@@ -787,7 +787,7 @@ namespace Portal.Controllers
                 .OrderBy(s => s.LastName)
                 .Select(s => new
                 {
-                    Student = new { s.StudentID, s.Name, s.Surname, s.LastName, s.Group},
+                    Student = new { s.StudentID, s.Name, s.Surname, s.LastName, s.Group },
                     Marks = s.Marks
                         .Where(m =>
                             m.FlagF == 0 &&
@@ -1131,8 +1131,227 @@ namespace Portal.Controllers
 
             ViewBag.Speciality = speciality;
             ViewBag.Year = year;
+            ViewBag.Date_1 = date_1;
+            ViewBag.Date_2 = date_2;
 
             return View(students);
+        }
+
+        [Authorize]
+        public async Task<IActionResult> ExportCourseSummaryStatement(int id, int year, string date_1, string date_2)
+        {
+            var speciality = await _context.Specialities.FindAsync(id);
+
+            // Группы по специальности и году
+            var groupIds = await _context.Groups
+                .Where(g => g.SpecialityID == id && g.DateEnter.Year == year)
+                .Select(g => g.GroupID)
+                .ToListAsync();
+
+            var students = await _context.Students
+                .Where(s => groupIds.Contains(s.GroupID) && s.Status == true)
+                .OrderBy(s => s.LastName)
+                .Select(s => new
+                {
+                    s.StudentID,
+                    s.LastName,
+                    s.Name,
+                    s.Surname
+                })
+                .AsNoTracking()
+                .ToListAsync();
+
+            if (students.Count == 0)
+                return Content("Нет данных для экспорта");
+
+            // Типы
+            var typeIO = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Итоговая отметка");
+            var typeKR = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Курсовая работа");
+            var typeKP = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Курсовой проект");
+
+            var validTypeIds = new HashSet<int>(
+                new[] { typeIO?.TypeOfExerciseID, typeKR?.TypeOfExerciseID, typeKP?.TypeOfExerciseID }
+                .Where(x => x.HasValue).Select(x => x.Value)
+            );
+
+            var studentIds = students.Select(s => s.StudentID).ToList();
+
+            // --- Оценки ---
+            var marksFromMarks = from m in _context.Marks
+                                 where studentIds.Contains(m.StudentID) && validTypeIds.Contains(m.TypeOfExerciseID)
+                                 join sub in _context.Subjects on m.SubjectID equals sub.SubjectID into subg
+                                 from sub in subg.DefaultIfEmpty()
+                                 join tp in _context.Types on m.TypeOfExerciseID equals tp.TypeOfExerciseID into tpg
+                                 from tp in tpg.DefaultIfEmpty()
+                                 select new
+                                 {
+                                     m.StudentID,
+                                     m.Date,
+                                     m.Value,
+                                     SubjectName = sub != null ? sub.Name : "Без предмета",
+                                     TypeName = tp != null ? tp.Name : "Неизвестный тип"
+                                 };
+
+            var marksFromStatement = from sm in _context.StatementMarks
+                                     where studentIds.Contains(sm.StudentID)
+                                     join tp in _context.Types on sm.TypeOfExerciseID equals tp.TypeOfExerciseID into tpg2
+                                     from tp in tpg2.DefaultIfEmpty()
+                                     select new
+                                     {
+                                         sm.StudentID,
+                                         sm.Date,
+                                         sm.Value,
+                                         SubjectName = "Без предмета",
+                                         TypeName = tp != null ? tp.Name : "Неизвестный тип"
+                                     };
+
+            var allMarks = (await marksFromMarks.Concat(marksFromStatement).AsNoTracking().ToListAsync())
+                .OrderBy(m => m.StudentID)
+                .ThenBy(m => m.SubjectName)
+                .ThenBy(m => m.TypeName)
+                .ToList();
+
+            DateTime? d1 = TryParse(date_1);
+            DateTime? d2 = TryParse(date_2);
+
+            if (date_1 != "01.01.0001 00:00:00")
+            {
+                allMarks = allMarks
+                    .Where(m => m.Date >= d1)
+                    .ToList();
+            }
+
+            if (date_2 != "01.01.0001 00:00:00")
+            {
+                allMarks = allMarks
+                    .Where(m => m.Date <= d2)
+                    .ToList();
+            }
+
+            // --- Все комбинации предмет + тип ---
+            var subjectTypePairs = allMarks
+                .Select(m => new { m.SubjectName, m.TypeName })
+                .Distinct()
+                .ToList();
+
+            if (!subjectTypePairs.Any())
+                subjectTypePairs.Add(new { SubjectName = "Без предмета", TypeName = "Нет типов" });
+
+            // Последняя оценка студента по каждой паре
+            var marksLookup = allMarks
+                .GroupBy(m => new { m.StudentID, m.SubjectName, m.TypeName })
+                .ToDictionary(
+                    g => (g.Key.StudentID, g.Key.SubjectName, g.Key.TypeName),
+                    g => g.OrderByDescending(x => x.Date).First().Value
+                );
+
+            using var workbook = new XLWorkbook();
+            var ws = workbook.Worksheets.Add("Сводная ведомость");
+
+            ws.Cell(1, 1).Value = $"Сводная ведомость: {speciality?.Name ?? "—"} ({year})";
+            ws.Range(1, 1, 1, 4 + subjectTypePairs.Count).Merge()
+                .Style.Font.SetBold().Font.SetFontSize(14);
+
+            int subjectRow = 3;
+            int typeRow = 4;
+
+            // Левые колонки
+            var leftHeaders = new[] { "№", "Фамилия", "Имя", "Отчество" };
+            for (int i = 0; i < leftHeaders.Length; i++)
+            {
+                int col = i + 1;
+                ws.Range(subjectRow, col, typeRow, col).Merge();
+                ws.Cell(subjectRow, col).Value = leftHeaders[i];
+                ws.Cell(subjectRow, col).Style.Alignment.SetHorizontal(XLAlignmentHorizontalValues.Center);
+                ws.Cell(subjectRow, col).Style.Alignment.SetVertical(XLAlignmentVerticalValues.Center);
+                ws.Cell(subjectRow, col).Style.Font.SetBold();
+            }
+
+            // Шапка: предметы и типы
+            int colIndex = 5;
+            var subjectsGroups = subjectTypePairs.GroupBy(p => p.SubjectName).ToList();
+
+            foreach (var subjGroup in subjectsGroups)
+            {
+                var typesInSubject = subjGroup.Select(p => p.TypeName).ToList();
+                int span = typesInSubject.Count;
+                int fromCol = colIndex;
+                int toCol = colIndex + span - 1;
+
+                // объединяем заголовок для предмета
+                ws.Range(subjectRow, fromCol, subjectRow, toCol).Merge();
+                ws.Cell(subjectRow, fromCol).Value = subjGroup.Key;
+                ws.Cell(subjectRow, fromCol).Style.Alignment.SetHorizontal(XLAlignmentHorizontalValues.Center);
+                ws.Cell(subjectRow, fromCol).Style.Alignment.SetVertical(XLAlignmentVerticalValues.Center);
+                ws.Cell(subjectRow, fromCol).Style.Font.SetBold();
+
+                // типы
+                for (int t = 0; t < typesInSubject.Count; t++)
+                {
+                    var typeName = typesInSubject[t];
+                    var cell = ws.Cell(typeRow, colIndex + t);
+                    cell.Value = typeName;
+                    cell.Style.Alignment.TextRotation = 90;
+                    cell.Style.Alignment.SetHorizontal(XLAlignmentHorizontalValues.Center);
+                    cell.Style.Alignment.SetVertical(XLAlignmentVerticalValues.Center);
+                    cell.Style.Font.SetBold();
+                    ws.Column(colIndex + t).Width = 4.5;
+                }
+
+                colIndex += span;
+            }
+
+            ws.Row(typeRow).Height = 120;
+            ws.Row(subjectRow).Height = 25;
+
+            // Данные
+            int dataStartRow = typeRow + 1;
+            int row = dataStartRow;
+            int idx = 1;
+
+            foreach (var st in students)
+            {
+                ws.Cell(row, 1).Value = idx;
+                ws.Cell(row, 2).Value = st.LastName;
+                ws.Cell(row, 3).Value = st.Name;
+                ws.Cell(row, 4).Value = st.Surname;
+
+                int c = 5;
+                foreach (var pair in subjectTypePairs)
+                {
+                    if (marksLookup.TryGetValue((st.StudentID, pair.SubjectName, pair.TypeName), out var val))
+                        ws.Cell(row, c).Value = val;
+                    else
+                        ws.Cell(row, c).Value = "";
+
+                    ws.Cell(row, c).Style.Alignment.SetHorizontal(XLAlignmentHorizontalValues.Center);
+                    ws.Cell(row, c).Style.Alignment.SetVertical(XLAlignmentVerticalValues.Center);
+                    c++;
+                }
+
+                row++;
+                idx++;
+            }
+
+            ws.Columns(1, 4).AdjustToContents();
+            ws.SheetView.FreezeRows(dataStartRow - 1);
+
+            using var stream = new MemoryStream();
+            workbook.SaveAs(stream);
+            stream.Seek(0, SeekOrigin.Begin);
+
+            string fileName = $"Сводная_ведомость_{speciality?.Name ?? "spec"}_{year}.xlsx";
+
+            return File(stream.ToArray(),
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                fileName);
+        }
+
+        private DateTime? TryParse(string input)
+        {
+            if (DateTime.TryParse(input, out var dt))
+                return dt;
+            return null;
         }
 
         private bool SpecialityExists(int id)

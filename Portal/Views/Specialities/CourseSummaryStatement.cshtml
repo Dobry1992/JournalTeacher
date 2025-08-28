@@ -47,7 +47,7 @@ else
             <div class="card-body">
                 <h6 class="mb-3 text-center bg-gray-light headGroup p-2 rounded shadow">
                     Сводная ведомость<br />
-                    @ViewBag.Speciality.Name<br/>
+                    @ViewBag.Speciality.Name<br />
                     @ViewBag.Year
                 </h6>
                 <form asp-action="CourseSummaryStatement" method="get" class="d-flex align-items-end gap-3 mb-3 flex-wrap">
@@ -62,6 +62,9 @@ else
                     </div>
                     <div class="mr-2">
                         <button type="submit" class="btn btn-primary">Поиск</button>
+                        <a asp-action="ExportCourseSummaryStatement" asp-route-id="@ViewBag.Speciality.SpecialityID" asp-route-year="@ViewBag.Year" asp-route-date_1="@ViewBag.Date_1" asp-route-date_2="@ViewBag.Date_2" class="btn btn-success">
+                            Экспорт в Excel
+                        </a>
                     </div>
                 </form>
                 <div class="table-responsive" id="sd">
@@ -99,8 +102,8 @@ else
                                     @foreach (var col in allColumns)
                                     {
                                         var mark = student.Marks.FirstOrDefault(m =>
-                                            (m.SubjectID ?? -1) == col.SubjectID &&
-                                            m.TypeID == col.TypeID
+                                        (m.SubjectID ?? -1) == col.SubjectID &&
+                                        m.TypeID == col.TypeID
                                         );
                                         <td class="text-center align-middle p-1 btn-tooltip data-toggle="tooltip"
                                             data-html="true"
@@ -116,7 +119,6 @@ else
                 </div>
             </div>
         </div>
-
     </div>
 }
 
