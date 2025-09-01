@@ -1214,14 +1214,14 @@ namespace Portal.Controllers
             DateTime? d1 = TryParse(date_1);
             DateTime? d2 = TryParse(date_2);
 
-            if (date_1 != "01.01.0001 00:00:00")
+            if (d1.HasValue && d1.Value != DateTime.MinValue)
             {
                 allMarks = allMarks
                     .Where(m => m.Date >= d1)
                     .ToList();
             }
 
-            if (date_2 != "01.01.0001 00:00:00")
+            if (d2.HasValue && d2.Value != DateTime.MinValue)
             {
                 allMarks = allMarks
                     .Where(m => m.Date <= d2)

@@ -101,14 +101,21 @@ else
                                     <td class="text-center align-middle bg-light p-1 fix" style="white-space:nowrap">@student.StudentFullName</td>
                                     @foreach (var col in allColumns)
                                     {
-                                        var mark = student.Marks.FirstOrDefault(m =>
+                                        var marks = student.Marks.Where(m =>
+
                                         (m.SubjectID ?? -1) == col.SubjectID &&
                                         m.TypeID == col.TypeID
                                         );
-                                        <td class="text-center align-middle p-1 btn-tooltip data-toggle="tooltip"
-                                            data-html="true"
-                                            title="@mark?.Date.ToShortDateString()">
-                                            @(mark?.Value ?? "-")
+                                        <td class="text-center align-middle p-1 btn-tooltip">
+                                            @foreach (var mark in marks)
+                                            {
+                                                <span class="text-center align-middle btn-tooltip" data-toggle="tooltip"
+                                                      data-html="true"
+                                                      title="@mark?.Date.ToShortDateString()">
+                                                    @(mark?.Value ?? "-")
+                                                </span>
+                                                <br />
+                                            }
                                         </td>
                                     }
                                 </tr>
