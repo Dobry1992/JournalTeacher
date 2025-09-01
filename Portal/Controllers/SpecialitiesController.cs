@@ -1209,6 +1209,7 @@ namespace Portal.Controllers
                 .OrderBy(m => m.StudentID)
                 .ThenBy(m => m.SubjectName)
                 .ThenBy(m => m.TypeName)
+                .ThenBy(m => m.Date)
                 .ToList();
 
             DateTime? d1 = TryParse(date_1);
@@ -1228,22 +1229,16 @@ namespace Portal.Controllers
                     .ToList();
             }
 
-            // --- Все комбинации предмет + тип ---
+            // --- Все комбинации предмет + тип + номер попытки ---
             var subjectTypePairs = allMarks
-                .Select(m => new { m.SubjectName, m.TypeName })
+                .GroupBy(m => new { m.SubjectName, m.TypeName, m.StudentID })
+                .SelectMany(g => g.OrderBy(m => m.Date)
+                                  .Select((m, idx) => new { g.Key.SubjectName, g.Key.TypeName, Attempt = idx + 1 }))
                 .Distinct()
                 .ToList();
 
             if (!subjectTypePairs.Any())
-                subjectTypePairs.Add(new { SubjectName = "Без предмета", TypeName = "Нет типов" });
-
-            // Последняя оценка студента по каждой паре
-            var marksLookup = allMarks
-                .GroupBy(m => new { m.StudentID, m.SubjectName, m.TypeName })
-                .ToDictionary(
-                    g => (g.Key.StudentID, g.Key.SubjectName, g.Key.TypeName),
-                    g => g.OrderByDescending(x => x.Date).First().Value
-                );
+                subjectTypePairs.Add(new { SubjectName = "Без предмета", TypeName = "Нет типов", Attempt = 1 });
 
             using var workbook = new XLWorkbook();
             var ws = workbook.Worksheets.Add("Сводная ведомость");
@@ -1267,15 +1262,14 @@ namespace Portal.Controllers
                 ws.Cell(subjectRow, col).Style.Font.SetBold();
             }
 
-            // Шапка: предметы и типы
+            // Шапка: предметы и типы (с учётом попыток)
             int colIndex = 5;
             var subjectsGroups = subjectTypePairs.GroupBy(p => p.SubjectName).ToList();
 
             foreach (var subjGroup in subjectsGroups)
             {
-                var typesInSubject = subjGroup.Select(p => p.TypeName).ToList();
-                int span = typesInSubject.Count;
                 int fromCol = colIndex;
+                int span = subjGroup.Count();
                 int toCol = colIndex + span - 1;
 
                 // объединяем заголовок для предмета
@@ -1285,26 +1279,23 @@ namespace Portal.Controllers
                 ws.Cell(subjectRow, fromCol).Style.Alignment.SetVertical(XLAlignmentVerticalValues.Center);
                 ws.Cell(subjectRow, fromCol).Style.Font.SetBold();
 
-                // типы
-                for (int t = 0; t < typesInSubject.Count; t++)
+                foreach (var pair in subjGroup)
                 {
-                    var typeName = typesInSubject[t];
-                    var cell = ws.Cell(typeRow, colIndex + t);
-                    cell.Value = typeName;
+                    var cell = ws.Cell(typeRow, colIndex);
+                    cell.Value = $"{pair.TypeName}-{pair.Attempt}";
                     cell.Style.Alignment.TextRotation = 90;
                     cell.Style.Alignment.SetHorizontal(XLAlignmentHorizontalValues.Center);
                     cell.Style.Alignment.SetVertical(XLAlignmentVerticalValues.Center);
                     cell.Style.Font.SetBold();
-                    ws.Column(colIndex + t).Width = 4.5;
+                    ws.Column(colIndex).Width = 6;
+                    colIndex++;
                 }
-
-                colIndex += span;
             }
 
             ws.Row(typeRow).Height = 120;
             ws.Row(subjectRow).Height = 25;
 
-            // Данные
+            // Данные студентов
             int dataStartRow = typeRow + 1;
             int row = dataStartRow;
             int idx = 1;
@@ -1319,11 +1310,16 @@ namespace Portal.Controllers
                 int c = 5;
                 foreach (var pair in subjectTypePairs)
                 {
-                    if (marksLookup.TryGetValue((st.StudentID, pair.SubjectName, pair.TypeName), out var val))
-                        ws.Cell(row, c).Value = val;
-                    else
-                        ws.Cell(row, c).Value = "";
+                    var val = allMarks
+                        .Where(m => m.StudentID == st.StudentID
+                                 && m.SubjectName == pair.SubjectName
+                                 && m.TypeName == pair.TypeName)
+                        .OrderBy(m => m.Date)
+                        .Skip(pair.Attempt - 1)
+                        .Select(m => m.Value)
+                        .FirstOrDefault();
 
+                    ws.Cell(row, c).Value = val ?? "";
                     ws.Cell(row, c).Style.Alignment.SetHorizontal(XLAlignmentHorizontalValues.Center);
                     ws.Cell(row, c).Style.Alignment.SetVertical(XLAlignmentVerticalValues.Center);
                     c++;

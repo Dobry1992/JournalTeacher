@@ -373,6 +373,10 @@ body {
     overflow-y: auto !important;
 }
 
+span {
+    cursor: pointer;
+}
+
 @media (min-width: 2300px) {
     .birthday {
         left: 60%;
