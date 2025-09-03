@@ -272,7 +272,7 @@ namespace Portal
                 {
                     string dateText = lesson.Date.ToString("dd.MM.yyyy");
                     string themeText = lesson.Theme.ShortName ?? lesson.Theme.Name;
-                    string typeText = lesson.TypeOfExercise.Name;
+                    string typeText = lesson.TypeOfExercise.ShortName;
 
                     headerRow.Append(MakeRotatedHeaderCell(new List<string> { dateText, themeText, typeText }));
                 }
