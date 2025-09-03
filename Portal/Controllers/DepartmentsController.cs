@@ -66,6 +66,7 @@ namespace Portal.Controllers
             // Получаем все предметы по ссылкам
             var subjects = await _context.Subjects
                 .Where(s => subjectIds.Contains(s.SubjectID))
+                .OrderBy(s => s.Name)
                 .ToListAsync();
 
             // Фильтруем занятия по группе, предметам и датам
@@ -107,7 +108,7 @@ namespace Portal.Controllers
             var setSubjectModel = new SetSubjectModel
             {
                 Departments = departments,
-                Subjects = subjects
+                Subjects = subjects.OrderBy(d => d.Name).ToList()
             };
 
             ViewBag.GroupID = GroupID;
