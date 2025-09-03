@@ -1346,16 +1346,19 @@ namespace Portal.Controllers
         [Authorize]
         public async Task<IActionResult> StatementTable(int id, int year)
         {
-            // Получаем группу (или список групп, если нужно несколько)
+            // Получаем группы по специальности и году
             var groups = await _context.Groups
                 .Where(g => g.SpecialityID == id && g.DateEnter.Year == year)
                 .ToListAsync();
 
             var groupIds = groups.Select(g => g.GroupID).ToList();
+
+            // Получаем дисциплины для этих групп через журнал
             var subjectIds = await _context.Journals
                 .Where(j => groupIds.Contains(j.GroupID))
                 .Select(j => j.SubjectID)
                 .ToListAsync();
+
             var disciplines = await _context.Subjects
                 .Where(s => subjectIds.Contains(s.SubjectID))
                 .OrderBy(s => s.Name)
@@ -1370,7 +1373,7 @@ namespace Portal.Controllers
 
             foreach (var group in groups)
             {
-                // Получаем дисциплины этой группы (можно через журнал или предметы напрямую)
+                // Получаем дисциплины этой группы
                 var subjects = await _context.Subjects
                     .Where(s => _context.Journals.Any(j => j.GroupID == group.GroupID && j.SubjectID == s.SubjectID))
                     .OrderBy(s => s.Name)
@@ -1380,7 +1383,6 @@ namespace Portal.Controllers
 
                 foreach (var subject in subjects)
                 {
-                    // Все студенты группы
                     var students = await _context.Students
                         .Where(st => st.GroupID == group.GroupID)
                         .ToListAsync();
@@ -1389,19 +1391,17 @@ namespace Portal.Controllers
 
                     foreach (var student in students)
                     {
-                        // Все оценки студента по предмету
                         var marks = await _context.Marks
-                            .Where(m => 
-                                m.StudentID == student.StudentID && 
+                            .Where(m =>
+                                m.StudentID == student.StudentID &&
                                 m.SubjectID == subject.SubjectID &&
                                 m.FlagF == 0 &&
                                 m.TypeOfExerciseID != typeKP.TypeOfExerciseID &&
                                 m.TypeOfExerciseID != typeKR.TypeOfExerciseID
                             )
-                            .Select(m => m.Value) // Value = string
+                            .Select(m => m.Value)
                             .ToListAsync();
 
-                        // Преобразуем оценки в числа (если они числовые, например "5", "4")
                         var numericMarks = marks
                             .Select(m => double.TryParse(m, out var d) ? d : (double?)null)
                             .Where(d => d.HasValue)
@@ -1417,13 +1417,14 @@ namespace Portal.Controllers
                     double groupDisciplineAverage = 0;
                     if (studentAverages.Any())
                     {
-                        groupDisciplineAverage = studentAverages.Average();
+                        // Математическое округление до тысячных
+                        groupDisciplineAverage = Math.Round(studentAverages.Average(), 3, MidpointRounding.AwayFromZero);
                     }
 
                     courseDisciplines.Add(new CourseDiscipline
                     {
                         Discipline = subject,
-                        Mark = Math.Round(groupDisciplineAverage, 3, MidpointRounding.AwayFromZero)
+                        Mark = groupDisciplineAverage
                     });
                 }
 
