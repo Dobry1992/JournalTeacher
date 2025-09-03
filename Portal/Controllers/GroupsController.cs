@@ -166,6 +166,12 @@ namespace Portal
                 .OrderBy(d => d.Name)
                 .ToListAsync();
 
+            // сортируем предметы в каждой кафедре
+            foreach (var dept in departments)
+            {
+                dept.Subjects = dept.Subjects.OrderBy(s => s.Name).ToList();
+            }
+
             return View(departments);
         }
 
