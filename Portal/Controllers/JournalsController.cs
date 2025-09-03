@@ -1,7 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using DocumentFormat.OpenXml;
+using DocumentFormat.OpenXml.Packaging;
+using DocumentFormat.OpenXml.Wordprocessing;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
@@ -10,6 +9,11 @@ using Portal.Data;
 using Portal.Models;
 using Portal.Models.Model;
 using Portal.ViewModel;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace Portal
 {
@@ -199,6 +203,222 @@ namespace Portal
         public async Task<IActionResult> AdjustedJournal(int GroupID, int SubjectID)
         {
             return await PrepareJournalView(GroupID, SubjectID, "AdjustedJournal");
+        }
+
+        public async Task<IActionResult> ExportToWord(int GroupID, int SubjectID)
+        {
+            var group = await _context.Groups.FindAsync(GroupID);
+            var subject = await _context.Subjects.FindAsync(SubjectID);
+
+            if (group == null || subject == null)
+                return NotFound();
+
+            // Студенты
+            var students = await _context.Students
+                .Where(s => s.GroupID == GroupID && s.Status == true)
+                .OrderBy(s => s.LastName)
+                .ToListAsync();
+
+            // Занятия
+            var lessons = await _context.Lessons
+                .Where(l => l.GroupID == GroupID && l.Theme.SubjectID == SubjectID)
+                .Include(l => l.Theme)
+                .Include(l => l.TypeOfExercise)
+                .OrderBy(l => l.Date)
+                .ToListAsync();
+
+            // Оценки
+            var marks = await _context.Marks
+                .Where(m => m.GroupID == GroupID && m.SubjectID == SubjectID)
+                .ToListAsync();
+
+            using var mem = new MemoryStream();
+            using (WordprocessingDocument wordDoc =
+                WordprocessingDocument.Create(mem, WordprocessingDocumentType.Document, true))
+            {
+                MainDocumentPart mainPart = wordDoc.AddMainDocumentPart();
+                mainPart.Document = new Document();
+                Body body = new Body();
+
+                // Заголовок
+                Paragraph title = new Paragraph(new Run(new Text($"Журнал по дисциплине: {subject.Name} ({group.Name})")))
+                {
+                    ParagraphProperties = new ParagraphProperties(new Justification { Val = JustificationValues.Center })
+                };
+                ApplyFont(title, "Times New Roman", 24);
+                body.Append(title);
+                body.Append(new Paragraph(new Run(new Text(" "))));
+
+                // Таблица
+                Table table = new Table(
+                    new TableProperties(
+                        new TableBorders(
+                            new TopBorder { Val = BorderValues.Single, Size = 6 },
+                            new BottomBorder { Val = BorderValues.Single, Size = 6 },
+                            new LeftBorder { Val = BorderValues.Single, Size = 6 },
+                            new RightBorder { Val = BorderValues.Single, Size = 6 },
+                            new InsideHorizontalBorder { Val = BorderValues.Single, Size = 6 },
+                            new InsideVerticalBorder { Val = BorderValues.Single, Size = 6 }
+                        )
+                    )
+                );
+
+                // Заголовки
+                TableRow headerRow = new TableRow();
+                headerRow.Append(MakeHeaderCell("№"));
+                headerRow.Append(MakeHeaderCell("ФИО"));
+
+                foreach (var lesson in lessons)
+                {
+                    string dateText = lesson.Date.ToString("dd.MM.yyyy");
+                    string themeText = lesson.Theme.ShortName ?? lesson.Theme.Name;
+                    string typeText = lesson.TypeOfExercise.Name;
+
+                    headerRow.Append(MakeRotatedHeaderCell(new List<string> { dateText, themeText, typeText }));
+                }
+
+                // Средняя по студенту
+                headerRow.Append(MakeHeaderCell("Средняя оценка"));
+
+                // Средняя по группе
+                headerRow.Append(MakeHeaderCell("Средняя по группе"));
+
+                headerRow.TableRowProperties = new TableRowProperties(new TableHeader());
+                table.Append(headerRow);
+
+                // Строки студентов
+                foreach (var (student, index) in students.Select((s, i) => (s, i + 1)))
+                {
+                    TableRow row = new TableRow();
+                    row.Append(MakeCell(index.ToString()));
+                    row.Append(MakeCell($"{student.LastName} {student.Name} {student.Surname}"));
+
+                    List<double> numericMarks = new();
+                    foreach (var lesson in lessons)
+                    {
+                        var mark = marks.FirstOrDefault(m =>
+                            m.StudentID == student.StudentID &&
+                            m.LessonID == lesson.LessonID);
+
+                        string value = mark?.Value ?? "";
+                        if (double.TryParse(value, out double d))
+                            numericMarks.Add(d);
+
+                        row.Append(MakeCell(value));
+                    }
+
+                    // Средняя по студенту
+                    double avgStudent = numericMarks.Any() ? numericMarks.Average() : 0;
+                    row.Append(MakeCell(avgStudent > 0 ? avgStudent.ToString("0.000") : ""));
+
+                    // Средняя по группе (оставляем пустой)
+                    row.Append(MakeCell(""));
+
+                    table.Append(row);
+                }
+
+                // Средняя по группе (по столбцу)
+                double avgGroup = 0;
+                var allGroupMarks = marks
+                    .Where(m => lessons.Any(l => l.LessonID == m.LessonID) && double.TryParse(m.Value, out _))
+                    .Select(m => double.Parse(m.Value))
+                    .ToList();
+                if (allGroupMarks.Any())
+                    avgGroup = allGroupMarks.Average();
+
+                TableRow groupRow = new TableRow();
+                // пустые ячейки для №, ФИО и всех занятий
+                groupRow.Append(MakeCell(""));
+                groupRow.Append(MakeCell(""));
+                for (int i = 0; i < lessons.Count; i++)
+                    groupRow.Append(MakeCell(""));
+                // пустая ячейка для средней по студенту
+                groupRow.Append(MakeCell(""));
+                // последняя ячейка = средняя по группе
+                groupRow.Append(MakeCell(avgGroup > 0 ? avgGroup.ToString("0.000") : "", bold: true));
+
+                table.Append(groupRow);
+
+                body.Append(table);
+                mainPart.Document.Append(body);
+                mainPart.Document.Save();
+            }
+
+            return File(mem.ToArray(),
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                $"Journal_{group.Name}_{subject.Name}.docx");
+        }
+
+        //
+        // ====== ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ ======
+        //
+
+        private static TableCell MakeHeaderCell(string text)
+        {
+            return MakeCell(text, bold: true);
+        }
+
+        private static TableCell MakeRotatedHeaderCell(List<string> lines)
+        {
+            Run run = new Run();
+            foreach (var (line, i) in lines.Select((l, idx) => (l, idx)))
+            {
+                run.Append(new Text(line) { Space = SpaceProcessingModeValues.Preserve });
+                if (i < lines.Count - 1)
+                    run.Append(new Break());
+            }
+
+            ApplyFont(run, "Times New Roman", 24);
+
+            Paragraph p = new Paragraph(run)
+            {
+                ParagraphProperties = new ParagraphProperties(
+                    new Justification { Val = JustificationValues.Center }
+                )
+            };
+
+            TableCellProperties props = new TableCellProperties(
+                new TableCellVerticalAlignment { Val = TableVerticalAlignmentValues.Center },
+                new TextDirection { Val = TextDirectionValues.BottomToTopLeftToRight }, // 90° поворот
+                new TableCellWidth { Type = TableWidthUnitValues.Dxa, Width = "600" }   // ≈ 1 см
+            );
+
+            return new TableCell(p) { TableCellProperties = props };
+        }
+
+        private static TableCell MakeCell(string text, bool bold = false)
+        {
+            Run run = new Run(new Text(text ?? ""));
+            if (bold)
+                run.RunProperties = new RunProperties(new Bold());
+
+            ApplyFont(run, "Times New Roman", 24);
+
+            Paragraph p = new Paragraph(run)
+            {
+                ParagraphProperties = new ParagraphProperties(
+                    new Justification { Val = JustificationValues.Center }
+                )
+            };
+
+            TableCellProperties props = new TableCellProperties(
+                new TableCellVerticalAlignment { Val = TableVerticalAlignmentValues.Center }
+            );
+
+            return new TableCell(p) { TableCellProperties = props };
+        }
+
+        private static void ApplyFont(OpenXmlElement element, string fontName, int sizeHalfPoints)
+        {
+            var runProps = new RunProperties(
+                new RunFonts { Ascii = fontName, HighAnsi = fontName, ComplexScript = fontName },
+                new FontSize { Val = sizeHalfPoints.ToString() }
+            );
+
+            foreach (var run in element.Descendants<Run>())
+            {
+                run.PrependChild(runProps.CloneNode(true));
+            }
         }
 
         private List<JournalMarks> BuildJournalMarks(List<Mark> marks, Dictionary<string, int> types)
