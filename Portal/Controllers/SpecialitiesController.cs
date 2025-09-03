@@ -1343,6 +1343,104 @@ namespace Portal.Controllers
                 fileName);
         }
 
+        [Authorize]
+        public async Task<IActionResult> StatementTable(int id, int year)
+        {
+            // Получаем группу (или список групп, если нужно несколько)
+            var groups = await _context.Groups
+                .Where(g => g.SpecialityID == id && g.DateEnter.Year == year)
+                .ToListAsync();
+
+            var groupIds = groups.Select(g => g.GroupID).ToList();
+            var subjectIds = await _context.Journals
+                .Where(j => groupIds.Contains(j.GroupID))
+                .Select(j => j.SubjectID)
+                .ToListAsync();
+            var disciplines = await _context.Subjects
+                .Where(s => subjectIds.Contains(s.SubjectID))
+                .OrderBy(s => s.Name)
+                .ToListAsync();
+
+            var typeKP = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Курсовой проект");
+            var typeKR = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Курсовая работа");
+
+            var speciality = await _context.Specialities.FindAsync(id);
+
+            var courseGroups = new List<CourseGroup>();
+
+            foreach (var group in groups)
+            {
+                // Получаем дисциплины этой группы (можно через журнал или предметы напрямую)
+                var subjects = await _context.Subjects
+                    .Where(s => _context.Journals.Any(j => j.GroupID == group.GroupID && j.SubjectID == s.SubjectID))
+                    .OrderBy(s => s.Name)
+                    .ToListAsync();
+
+                var courseDisciplines = new List<CourseDiscipline>();
+
+                foreach (var subject in subjects)
+                {
+                    // Все студенты группы
+                    var students = await _context.Students
+                        .Where(st => st.GroupID == group.GroupID)
+                        .ToListAsync();
+
+                    var studentAverages = new List<double>();
+
+                    foreach (var student in students)
+                    {
+                        // Все оценки студента по предмету
+                        var marks = await _context.Marks
+                            .Where(m => 
+                                m.StudentID == student.StudentID && 
+                                m.SubjectID == subject.SubjectID &&
+                                m.FlagF == 0 &&
+                                m.TypeOfExerciseID != typeKP.TypeOfExerciseID &&
+                                m.TypeOfExerciseID != typeKR.TypeOfExerciseID
+                            )
+                            .Select(m => m.Value) // Value = string
+                            .ToListAsync();
+
+                        // Преобразуем оценки в числа (если они числовые, например "5", "4")
+                        var numericMarks = marks
+                            .Select(m => double.TryParse(m, out var d) ? d : (double?)null)
+                            .Where(d => d.HasValue)
+                            .Select(d => d.Value)
+                            .ToList();
+
+                        if (numericMarks.Any())
+                        {
+                            studentAverages.Add(numericMarks.Average());
+                        }
+                    }
+
+                    double groupDisciplineAverage = 0;
+                    if (studentAverages.Any())
+                    {
+                        groupDisciplineAverage = studentAverages.Average();
+                    }
+
+                    courseDisciplines.Add(new CourseDiscipline
+                    {
+                        Discipline = subject,
+                        Mark = Math.Round(groupDisciplineAverage, 3, MidpointRounding.AwayFromZero)
+                    });
+                }
+
+                courseGroups.Add(new CourseGroup
+                {
+                    Group = group,
+                    CourseDisciplines = courseDisciplines
+                });
+            }
+
+            ViewBag.Disciplines = disciplines;
+            ViewBag.Speciality = speciality;
+            ViewBag.Year = year;
+
+            return View(courseGroups);
+        }
+
         private DateTime? TryParse(string input)
         {
             if (DateTime.TryParse(input, out var dt))
