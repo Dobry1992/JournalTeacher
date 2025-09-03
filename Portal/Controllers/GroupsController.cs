@@ -33,21 +33,39 @@ namespace Portal
 
         public async Task<IActionResult> ChooseGroup(int SubjectID)
         {
-            List<Journal> journals = await _context.Journals
+            // Загружаем все группы для предмета одним запросом
+            var groupIds = await _context.Journals
                 .Where(j => j.SubjectID == SubjectID)
+                .Select(j => j.GroupID)
+                .Distinct()
                 .ToListAsync();
-            List<Group> groups = new();
-            foreach (Journal journal in journals)
-            {
-                Group group = await _context.Groups.FindAsync(journal.GroupID);
-                groups.Add(group);
-            }
-            List<Theme> themes = new();
-            themes = _context.Themes.Where(t => t.SubjectID == SubjectID && t.Name != "Контрольное занятие").ToList();
+
+            var groups = await _context.Groups
+                .AsNoTracking()
+                .Where(g => groupIds.Contains(g.GroupID))
+                .OrderBy(g => g.Name) // сразу сортировка по алфавиту
+                .ToListAsync();
+
+            // Загружаем темы
+            var themes = await _context.Themes
+                .AsNoTracking()
+                .Where(t => t.SubjectID == SubjectID && t.Name != "Контрольное занятие")
+                .ToListAsync();
             ViewBag.Themes = themes;
 
-            ViewData["TypeOfExerciseID"] = new SelectList(_context.Types.Where(t => t.Name == "Семинарское занятие" || t.Name == "Практическое занятие"
-               || t.Name == "Лабораторное занятие" || t.Name == "Лекция"), "TypeOfExerciseID", "Name");
+            // Типы занятий
+            ViewData["TypeOfExerciseID"] = new SelectList(
+                await _context.Types
+                    .AsNoTracking()
+                    .Where(t => t.Name == "Семинарское занятие"
+                             || t.Name == "Практическое занятие"
+                             || t.Name == "Лабораторное занятие"
+                             || t.Name == "Лекция")
+                    .ToListAsync(),
+                "TypeOfExerciseID",
+                "Name"
+            );
+
             ViewBag.SubjectID = SubjectID;
             ViewBag.Groups = groups;
 
@@ -92,7 +110,7 @@ namespace Portal
 
                 var subject = await _context.Subjects.FindAsync(SubjectID);
                 var group = await _context.Groups.FindAsync(groupsId[0]);
-                var students = _context.Students.Where(s => s.GroupID == groupsId[0]);
+                var students = await _context.Students.Where(s => s.GroupID == groupsId[0]).ToListAsync();
 
                 foreach (var student in students)
                 {
@@ -123,7 +141,7 @@ namespace Portal
                     lessoni.TypeOfExerciseID = lesson.TypeOfExerciseID;
                     lessoni.GroupID = groupsId[i];
                     _context.Lessons.Add(lessoni);
-                    _context.SaveChanges();
+                    await _context.SaveChangesAsync();
 
                     var groupi = await _context.Groups.FindAsync(groupsId[i]);
                     var studentsi = _context.Students.Where(s => s.GroupID == groupsId[i]);
