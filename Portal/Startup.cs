@@ -6,6 +6,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Portal.Data;
+using Portal.Middlewares;
 using Portal.Services;
 using Portal.Services.Interfaces;
 
@@ -23,7 +24,14 @@ namespace Portal
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddDbContext<AcademyContext>(options =>
-                options.UseSqlServer(Configuration.GetConnectionString("Academy")));
+                options.UseSqlServer(
+                    Configuration.GetConnectionString("Academy"),
+                    sqlOptions => sqlOptions.EnableRetryOnFailure(
+                        maxRetryCount: 5,
+                        maxRetryDelay: System.TimeSpan.FromSeconds(10),
+                        errorNumbersToAdd: null
+                        )
+                    ));
             services.AddDatabaseDeveloperPageExceptionFilter();
             services.AddControllersWithViews();
             services.AddMvc();
@@ -39,6 +47,8 @@ namespace Portal
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
+            app.UseMiddleware<SqlConnectionResetMiddleware>();
+
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
