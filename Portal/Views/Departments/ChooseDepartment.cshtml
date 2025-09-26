@@ -33,10 +33,13 @@
                                     }
                                 }
                             </div>
-                            <div class="text-center">
-                                <a asp-controller="Subjects" asp-action="CreateSubject" asp-route-id="@department.DepartmentID" class="btn btn-primary mt-3 mr-1">Добавить предмет</a>
-                                <a asp-controller="Electives" asp-action="Create" asp-route-id="@department.DepartmentID" class="btn btn-danger mt-3">Добавить факультатив</a>
-                            </div>
+                            @if (User.IsInRole("SuperAdmin") || User.IsInRole("ANB-UMCH"))
+                            {
+                                <div class="text-center">
+                                    <a asp-controller="Subjects" asp-action="CreateSubject" asp-route-id="@department.DepartmentID" class="btn btn-primary mt-3 mr-1">Добавить предмет</a>
+                                    <a asp-controller="Electives" asp-action="Create" asp-route-id="@department.DepartmentID" class="btn btn-danger mt-3">Добавить факультатив</a>
+                                </div>
+                            }
                         </div>
                     </div>
                 }
