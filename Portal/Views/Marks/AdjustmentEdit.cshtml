@@ -6,96 +6,196 @@
 
 @await Html.PartialAsync("_NavMenuJournal")
 
-<div style="padding:10%;">
-    <section class="content-header">
-        <div class="container-fluid">
-            <div class="row">
-                <div class="col-sm-6">
-                    <h3>Выставить отметку</h3>
+@if (User.IsInRole("SuperAdmin"))
+{
+    <div style="padding:10%;">
+        <section class="content-header">
+            <div class="container-fluid">
+                <div class="row">
+                    <div class="col-sm-6">
+                        <h3>Выставить отметку</h3>
+                    </div>
                 </div>
             </div>
-        </div>
-    </section>
-    <section class="content">
-        <div class="container-fluid">
-            <div class="row">
-                <div class="col-6">
-                    <div class="card">
-                        <div class="card-body">
-                            <div id="example1_wrapper" class="dataTables_wrapper dt-bootstrap4">
-                                <div class="row">
-                                    <div class="col-sm-12">
-                                        <form asp-action="AdjustmentEdit">
-                                            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-                                            <input hidden asp-for="MarkID" />
-                                            <input hidden asp-for="SignatureOfTeacher" />
-                                            <input hidden asp-for="Date" />
-                                            <input hidden asp-for="SubjectID" />
-                                            <input hidden asp-for="GroupID" />
-                                            <input hidden asp-for="LessonID" />
-                                            <input hidden asp-for="TypeOfExerciseID" />
-                                            <input hidden asp-for="DepartmentID" />
-                                            <input hidden asp-for="SpecialityID" />
-                                            <input hidden asp-for="ThemeID" />
-                                            <input hidden asp-for="StudentID" />
-                                            <input hidden asp-for="FlagF" />
-                                            <input hidden asp-for="InstituteID" />
-                                            <input hidden asp-for="HistoryOfMark" />
-                                            <input hidden asp-for="ChangeCounter" />
-                                            <div class="form-group">
-                                                <label asp-for="Value" class="control-label">Отметка</label>
-                                                <select asp-for="Value" class="form-control">
-                                                    <option value=" ">Нет отметки</option>
-                                                    <option value="1">1</option>
-                                                    <option value="2">2</option>
-                                                    <option value="3">3</option>
-                                                    <option value="4">4</option>
-                                                    <option value="5">5</option>
-                                                    <option value="6">6</option>
-                                                    <option value="7">7</option>
-                                                    <option value="8">8</option>
-                                                    <option value="9">9</option>
-                                                    <option value="10">10</option>
-                                                    <option value="Б">Б</option>
-                                                    <option value="НР">НР</option>
-                                                    <option value="О">О</option>
-                                                    <option value="КМ">КМ</option>
-                                                    <option value="Р">Р</option>
-                                                    <option value="НБ">НБ</option>
-                                                    <option value="Н/Я">Н/Я</option>
-                                                    <option value="НД/К">НД/К</option>
-                                                    <option value="ОСВ">ОСВ</option>
-                                                    <option value="З">З</option>
-                                                    <option value="НЗ">НЗ</option>
-                                                </select>
-                                                <span asp-validation-for="Value" class="text-danger"></span>
-                                            </div>
-                                            <div class="form-group">
-                                                <label asp-for="Comment" class="control-label">Замечание преподавателя</label>
-                                                <textarea asp-for="Comment" class="form-control" value=""></textarea>
-                                                <span asp-validation-for="Comment" class="text-danger"></span>
-                                            </div>
-                                            <div class="form-group">
-                                                <input type="submit" value="Выставить отметку" class="btn btn-primary" />
-                                                <a class="btn btn-outline-primary" asp-controller="Journals" asp-action="AdjustedJournal" asp-route-GroupID="@ViewBag.GroupID" asp-route-SubjectID="@ViewBag.SubjectID">Назад</a>
-                                            </div>
-                                        </form>
+        </section>
+        <section class="content">
+            <div class="container-fluid">
+                <div class="row">
+                    <div class="col-6">
+                        <div class="card">
+                            <div class="card-body">
+                                <div id="example1_wrapper" class="dataTables_wrapper dt-bootstrap4">
+                                    <div class="row">
+                                        <div class="col-sm-12">
+                                            <form asp-action="AdjustmentEdit">
+                                                <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                                                <input hidden asp-for="MarkID" />
+                                                <input hidden asp-for="Date" />
+                                                <input hidden asp-for="SubjectID" />
+                                                <input hidden asp-for="GroupID" />
+                                                <input hidden asp-for="LessonID" />
+                                                <input hidden asp-for="TypeOfExerciseID" />
+                                                <input hidden asp-for="DepartmentID" />
+                                                <input hidden asp-for="SpecialityID" />
+                                                <input hidden asp-for="ThemeID" />
+                                                <input hidden asp-for="StudentID" />
+                                                <input hidden asp-for="FlagF" />
+                                                <input hidden asp-for="InstituteID" />
+                                                <input hidden asp-for="HistoryOfMark" />
+                                                <input hidden asp-for="ChangeCounter" />
+                                                <div class="form-group">
+                                                    <label asp-for="Value" class="control-label">Отметка</label>
+                                                    <select asp-for="Value" class="form-control">
+                                                        <option value=" ">Нет отметки</option>
+                                                        <option value="1">1</option>
+                                                        <option value="2">2</option>
+                                                        <option value="3">3</option>
+                                                        <option value="4">4</option>
+                                                        <option value="5">5</option>
+                                                        <option value="6">6</option>
+                                                        <option value="7">7</option>
+                                                        <option value="8">8</option>
+                                                        <option value="9">9</option>
+                                                        <option value="10">10</option>
+                                                        <option value="Б">Б</option>
+                                                        <option value="НР">НР</option>
+                                                        <option value="О">О</option>
+                                                        <option value="КМ">КМ</option>
+                                                        <option value="Р">Р</option>
+                                                        <option value="НБ">НБ</option>
+                                                        <option value="Н/Я">Н/Я</option>
+                                                        <option value="НД/К">НД/К</option>
+                                                        <option value="ОСВ">ОСВ</option>
+                                                        <option value="З">З</option>
+                                                        <option value="НЗ">НЗ</option>
+                                                    </select>
+                                                    <span asp-validation-for="Value" class="text-danger"></span>
+                                                </div>
+                                                <div class="form-group">
+                                                    <label asp-for="SignatureOfTeacher" class="control-label">Подпись:</label>
+                                                    <input asp-for="SignatureOfTeacher" class="form-control" />
+                                                    <span asp-validation-for="SignatureOfTeacher" class="text-danger"></span>
+                                                </div>
+                                                <div class="form-group">
+                                                    <label asp-for="Comment" class="control-label">Замечание преподавателя</label>
+                                                    <textarea asp-for="Comment" class="form-control" value=""></textarea>
+                                                    <span asp-validation-for="Comment" class="text-danger"></span>
+                                                </div>
+                                                <div class="form-group">
+                                                    <input type="submit" value="Выставить отметку" class="btn btn-primary" />
+                                                    <a class="btn btn-outline-primary" asp-controller="Journals" asp-action="AdjustedJournal" asp-route-GroupID="@ViewBag.GroupID" asp-route-SubjectID="@ViewBag.SubjectID">Назад</a>
+                                                </div>
+                                            </form>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                </div>
-                <div class="col-6 alert alert-success" role="alert">
-                    <h4 class="alert-heading">Условные обозначения:</h4>
-                    <p>
-                        Б - болезнь,<br> НР - наряд,<br> О - отпуск,<br> КМ - командировка,<br> Р - отсутствие по мотивированному рапорту,<br> НБ - отсутствие без уважительной причины.<br> З - зачтено,<br> НЗ - не зачтено,<br> Н/Я - не явился,<br> НД/К - не допущен кафедрой,<br> ОСВ - освобождение.
-                    </p>
+                    <div class="col-6 alert alert-success" role="alert">
+                        <h4 class="alert-heading">Условные обозначения:</h4>
+                        <p>
+                            Б - болезнь,<br> НР - наряд,<br> О - отпуск,<br> КМ - командировка,<br> Р - отсутствие по мотивированному рапорту,<br> НБ - отсутствие без уважительной причины.<br> З - зачтено,<br> НЗ - не зачтено,<br> Н/Я - не явился,<br> НД/К - не допущен кафедрой,<br> ОСВ - освобождение.
+                        </p>
+                    </div>
                 </div>
             </div>
-        </div>
-    </section>
-</div>
+        </section>
+    </div>
+}
+else
+{
+    <div style="padding:10%;">
+        <section class="content-header">
+            <div class="container-fluid">
+                <div class="row">
+                    <div class="col-sm-6">
+                        <h3>Выставить отметку</h3>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <section class="content">
+            <div class="container-fluid">
+                <div class="row">
+                    <div class="col-6">
+                        <div class="card">
+                            <div class="card-body">
+                                <div id="example1_wrapper" class="dataTables_wrapper dt-bootstrap4">
+                                    <div class="row">
+                                        <div class="col-sm-12">
+                                            <form asp-action="AdjustmentEdit">
+                                                <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                                                <input hidden asp-for="MarkID" />
+                                                <input hidden asp-for="SignatureOfTeacher" />
+                                                <input hidden asp-for="Date" />
+                                                <input hidden asp-for="SubjectID" />
+                                                <input hidden asp-for="GroupID" />
+                                                <input hidden asp-for="LessonID" />
+                                                <input hidden asp-for="TypeOfExerciseID" />
+                                                <input hidden asp-for="DepartmentID" />
+                                                <input hidden asp-for="SpecialityID" />
+                                                <input hidden asp-for="ThemeID" />
+                                                <input hidden asp-for="StudentID" />
+                                                <input hidden asp-for="FlagF" />
+                                                <input hidden asp-for="InstituteID" />
+                                                <input hidden asp-for="HistoryOfMark" />
+                                                <input hidden asp-for="ChangeCounter" />
+                                                <div class="form-group">
+                                                    <label asp-for="Value" class="control-label">Отметка</label>
+                                                    <select asp-for="Value" class="form-control">
+                                                        <option value=" ">Нет отметки</option>
+                                                        <option value="1">1</option>
+                                                        <option value="2">2</option>
+                                                        <option value="3">3</option>
+                                                        <option value="4">4</option>
+                                                        <option value="5">5</option>
+                                                        <option value="6">6</option>
+                                                        <option value="7">7</option>
+                                                        <option value="8">8</option>
+                                                        <option value="9">9</option>
+                                                        <option value="10">10</option>
+                                                        <option value="Б">Б</option>
+                                                        <option value="НР">НР</option>
+                                                        <option value="О">О</option>
+                                                        <option value="КМ">КМ</option>
+                                                        <option value="Р">Р</option>
+                                                        <option value="НБ">НБ</option>
+                                                        <option value="Н/Я">Н/Я</option>
+                                                        <option value="НД/К">НД/К</option>
+                                                        <option value="ОСВ">ОСВ</option>
+                                                        <option value="З">З</option>
+                                                        <option value="НЗ">НЗ</option>
+                                                    </select>
+                                                    <span asp-validation-for="Value" class="text-danger"></span>
+                                                </div>
+                                                <div class="form-group">
+                                                    <label asp-for="Comment" class="control-label">Замечание преподавателя</label>
+                                                    <textarea asp-for="Comment" class="form-control" value=""></textarea>
+                                                    <span asp-validation-for="Comment" class="text-danger"></span>
+                                                </div>
+                                                <div class="form-group">
+                                                    <input type="submit" value="Выставить отметку" class="btn btn-primary" />
+                                                    <a class="btn btn-outline-primary" asp-controller="Journals" asp-action="AdjustedJournal" asp-route-GroupID="@ViewBag.GroupID" asp-route-SubjectID="@ViewBag.SubjectID">Назад</a>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-6 alert alert-success" role="alert">
+                        <h4 class="alert-heading">Условные обозначения:</h4>
+                        <p>
+                            Б - болезнь,<br> НР - наряд,<br> О - отпуск,<br> КМ - командировка,<br> Р - отсутствие по мотивированному рапорту,<br> НБ - отсутствие без уважительной причины.<br> З - зачтено,<br> НЗ - не зачтено,<br> Н/Я - не явился,<br> НД/К - не допущен кафедрой,<br> ОСВ - освобождение.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+}
 
 @section Scripts {
     @{

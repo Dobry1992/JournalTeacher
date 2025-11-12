@@ -381,7 +381,15 @@ namespace Portal.Controllers
             if (!ModelState.IsValid)
                 return View(mark);
 
-            string teacher = _userNameService.GetDisplayName();
+            string teacher = "";
+            if (User.IsInRole("SuperAdmin"))
+            {
+                teacher = mark.SignatureOfTeacher;
+            }
+            else
+            {
+                teacher = _userNameService.GetDisplayName();
+            }
 
             if (!string.IsNullOrWhiteSpace(mark.HistoryOfMark))
             {
@@ -406,7 +414,7 @@ namespace Portal.Controllers
 
             mark.SignatureOfTeacher = teacher;
             mark.HistoryOfMark = (mark.HistoryOfMark ?? string.Empty) +
-                                 $"{mark.Value} - {DateTime.Now:dd.MM.yyyy} - {mark.SignatureOfTeacher}</br>";
+                                $"{mark.Value} - {DateTime.Now:dd.MM.yyyy} - {mark.SignatureOfTeacher}</br>";
             mark.ChangeCounter++;
 
             _context.Marks.Update(mark);
