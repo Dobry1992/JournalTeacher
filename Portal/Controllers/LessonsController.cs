@@ -934,7 +934,7 @@ namespace Portal
                 _context.Types.Where(t => allowedTypes.Contains(t.Name)),
                 "TypeOfExerciseID", "Name"
             );
-
+            
             ViewBag.UserName = teacher;
             ViewBag.Teachers = _context.Teachers.OrderBy(t => t.FamilyName);
             ViewBag.TeachersNoPC = _context.TeacherNoPCs.OrderBy(t => t.LastName).AsNoTracking();
@@ -981,8 +981,15 @@ namespace Portal
 
             lesson.SubjectID = SubjectID;
             lesson.GroupID = GroupID;
-            lesson.Signature = teacher;
-
+            if (User.IsInRole("SuperAdmin"))
+            {
+                lesson.Signature = lesson.Signature;
+            }
+            else
+            {
+                lesson.Signature = teacher;
+            }
+               
             var typeZ = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Зачёт");
             var typeExam = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Экзамен");
 
