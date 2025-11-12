@@ -2,6 +2,11 @@
 
 @{
     ViewData["Title"] = "Создать потоковую лекцию";
+
+    var errors = ViewData.ModelState.Values
+        .SelectMany(v => v.Errors)
+        .Select(e => e.ErrorMessage)
+        .ToList();
 }
 
 @await Html.PartialAsync("_NavMenuJournal")
@@ -22,6 +27,16 @@
                 <div class="col-6 m-auto">
                     <div class="card">
                         <div class="card-body">
+                            @if (errors.Any())
+                            {
+                                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                                    <strong>Ошибка!</strong><br />
+                                    @foreach (var error in errors)
+                                    {
+                                        @error <br />
+                                    }
+                                </div>
+                            }
                             <form asp-action="ChooseGroup">
                                 <input asp-for="SubjectID" hidden />
                                 <div class="form-group">

@@ -167,12 +167,42 @@ namespace Portal
 
                 return View("Success");
             }
-            List<Theme> themes = new();
-            themes = _context.Themes.Where(t => t.SubjectID == SubjectID && t.Name != "Контрольное занятие").ToList();
+            // Загружаем все группы для предмета одним запросом
+            var groupIds = await _context.Journals
+                .Where(j => j.SubjectID == SubjectID)
+                .Select(j => j.GroupID)
+                .Distinct()
+                .ToListAsync();
+
+            var groups = await _context.Groups
+                .AsNoTracking()
+                .Where(g => groupIds.Contains(g.GroupID))
+                .OrderBy(g => g.Name) // сразу сортировка по алфавиту
+                .ToListAsync();
+
+            // Загружаем темы
+            var themes = await _context.Themes
+                .AsNoTracking()
+                .Where(t => t.SubjectID == SubjectID && t.Name != "Контрольное занятие")
+                .ToListAsync();
             ViewBag.Themes = themes;
 
-            ViewData["TypeOfExerciseID"] = new SelectList(_context.Types.Where(t => t.Name == "Семинарское занятие" || t.Name == "Практическое занятие"
-                || t.Name == "Лабораторное занятие" || t.Name == "Лекция"), "TypeOfExerciseID", "Name");
+            // Типы занятий
+            ViewData["TypeOfExerciseID"] = new SelectList(
+                await _context.Types
+                    .AsNoTracking()
+                    .Where(t => t.Name == "Семинарское занятие"
+                             || t.Name == "Практическое занятие"
+                             || t.Name == "Лабораторное занятие"
+                             || t.Name == "Лекция")
+                    .ToListAsync(),
+                "TypeOfExerciseID",
+                "Name"
+            );
+
+            ViewBag.SubjectID = SubjectID;
+            ViewBag.Groups = groups;
+
             return View(lesson);
         }
 
