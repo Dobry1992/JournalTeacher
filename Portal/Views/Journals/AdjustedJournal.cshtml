@@ -68,9 +68,9 @@ else
                        asp-route-GroupID="@Model.Group.GroupID" asp-route-SubjectID="@Model.Subject.SubjectID">
                         Итоги обучения
                     </a>
-                    <a class="btn btn-outline-success mr-2" asp-controller="Journals" asp-action="ExportToWord"
+                    <a class="btn btn-outline-success mr-2" asp-controller="Journals" asp-action="ExportToExcel"
                        asp-route-subjectID="@Model.Subject.SubjectID" asp-route-groupID="@Model.Group.GroupID">
-                        Экспорт Word
+                        Экспорт Excel
                     </a>
                     <a class="btn btn-outline-success mr-2" asp-controller="Print" asp-action="PrintJournal"
                        asp-route-subjectID="@Model.Subject.SubjectID" asp-route-groupID="@Model.Group.GroupID">

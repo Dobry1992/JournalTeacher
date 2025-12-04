@@ -1,10 +1,13 @@
 ﻿using DocumentFormat.OpenXml;
-using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Wordprocessing;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using OfficeOpenXml;
+using OfficeOpenXml.Style;
 using Portal.Data;
 using Portal.Models;
 using Portal.Models.Model;
@@ -20,10 +23,17 @@ namespace Portal
     public class JournalsController : Controller
     {
         private readonly AcademyContext _context;
+        private readonly IWebHostEnvironment _env;
+        private readonly ILogger<JournalsController> _logger; // Добавляем логгер
 
-        public JournalsController(AcademyContext context)
+        public JournalsController(
+            AcademyContext context,
+            IWebHostEnvironment env,
+            ILogger<JournalsController> logger) // Добавляем в конструктор
         {
             _context = context;
+            _env = env;
+            _logger = logger; // Инициализируем
         }
 
         [Authorize(Roles = "SuperAdmin, ANB-UMCH")]
@@ -205,7 +215,7 @@ namespace Portal
             return await PrepareJournalView(GroupID, SubjectID, "AdjustedJournal");
         }
 
-        public async Task<IActionResult> ExportToWord(int GroupID, int SubjectID)
+        public async Task<IActionResult> ExportToExcel(int GroupID, int SubjectID)
         {
             var group = await _context.Groups.FindAsync(GroupID);
             var subject = await _context.Subjects.FindAsync(SubjectID);
@@ -213,13 +223,11 @@ namespace Portal
             if (group == null || subject == null)
                 return NotFound();
 
-            // Студенты
             var students = await _context.Students
                 .Where(s => s.GroupID == GroupID && s.Status == true)
                 .OrderBy(s => s.LastName)
                 .ToListAsync();
 
-            // Занятия
             var lessons = await _context.Lessons
                 .Where(l => l.GroupID == GroupID && l.Theme.SubjectID == SubjectID)
                 .Include(l => l.Theme)
@@ -227,197 +235,246 @@ namespace Portal
                 .OrderBy(l => l.Date)
                 .ToListAsync();
 
-            // Оценки
             var marks = await _context.Marks
                 .Where(m => m.GroupID == GroupID && m.SubjectID == SubjectID)
                 .ToListAsync();
 
-            using var mem = new MemoryStream();
-            using (WordprocessingDocument wordDoc =
-                WordprocessingDocument.Create(mem, WordprocessingDocumentType.Document, true))
+            string templatePath = Path.Combine(_env.WebRootPath, "template", "journal_template.xlsx");
+
+            if (!System.IO.File.Exists(templatePath))
+                return NotFound("Шаблон журнала не найден");
+
+            using (var package = new ExcelPackage(new FileInfo(templatePath)))
             {
-                MainDocumentPart mainPart = wordDoc.AddMainDocumentPart();
-                mainPart.Document = new Document();
-                Body body = new Body();
+                // Конфигурация на основе шаблона
+                int maxStudentsPerPage = 25; // строки 6-30 в шаблоне
+                int maxLessonsOddPage = 5;   // нечетная страница
+                int maxLessonsEvenPage = 4;  // четная страница
+                int startStudentRow = 6;     // строка с №1
+                int startLessonColumn = 3;   // колонка C
 
-                // Заголовок
-                Paragraph title = new Paragraph(new Run(new Text($"Журнал по дисциплине: {subject.Name} ({group.Name})")))
+                // Рассчитываем количество страниц для студентов
+                int studentPages = (int)Math.Ceiling((double)students.Count / maxStudentsPerPage);
+
+                // Рассчитываем количество страниц для занятий с чередованием
+                List<int> lessonsPerPage = new List<int>();
+                int remainingLessons = lessons.Count;
+                bool isOddPage = true;
+
+                while (remainingLessons > 0)
                 {
-                    ParagraphProperties = new ParagraphProperties(new Justification { Val = JustificationValues.Center })
-                };
-                ApplyFont(title, "Times New Roman", 24);
-                body.Append(title);
-                body.Append(new Paragraph(new Run(new Text(" "))));
-
-                // Таблица
-                Table table = new Table(
-                    new TableProperties(
-                        new TableBorders(
-                            new TopBorder { Val = BorderValues.Single, Size = 6 },
-                            new BottomBorder { Val = BorderValues.Single, Size = 6 },
-                            new LeftBorder { Val = BorderValues.Single, Size = 6 },
-                            new RightBorder { Val = BorderValues.Single, Size = 6 },
-                            new InsideHorizontalBorder { Val = BorderValues.Single, Size = 6 },
-                            new InsideVerticalBorder { Val = BorderValues.Single, Size = 6 }
-                        )
-                    )
-                );
-
-                // Заголовки
-                TableRow headerRow = new TableRow();
-                headerRow.Append(MakeHeaderCell("№"));
-                headerRow.Append(MakeHeaderCell("ФИО"));
-
-                foreach (var lesson in lessons)
-                {
-                    string dateText = lesson.Date.ToString("dd.MM.yyyy");
-                    string themeText = lesson.Theme.ShortName ?? lesson.Theme.Name;
-                    string typeText = lesson.TypeOfExercise.ShortName;
-
-                    headerRow.Append(MakeRotatedHeaderCell(new List<string> { dateText, themeText, typeText }));
+                    int lessonsOnPage = isOddPage ? maxLessonsOddPage : maxLessonsEvenPage;
+                    lessonsOnPage = Math.Min(lessonsOnPage, remainingLessons);
+                    lessonsPerPage.Add(lessonsOnPage);
+                    remainingLessons -= lessonsOnPage;
+                    isOddPage = !isOddPage;
                 }
 
-                // Средняя по студенту
-                headerRow.Append(MakeHeaderCell("Средняя оценка"));
+                int lessonPages = lessonsPerPage.Count;
+                int totalPages = Math.Max(studentPages, lessonPages);
 
-                // Средняя по группе
-                headerRow.Append(MakeHeaderCell("Средняя по группе"));
+                // Переименовываем первый лист
+                var firstSheet = package.Workbook.Worksheets[0];
+                firstSheet.Name = "Страница 1";
 
-                headerRow.TableRowProperties = new TableRowProperties(new TableHeader());
-                table.Append(headerRow);
-
-                // Строки студентов
-                foreach (var (student, index) in students.Select((s, i) => (s, i + 1)))
+                // Создаем дополнительные страницы если нужно
+                for (int i = 2; i <= totalPages; i++)
                 {
-                    TableRow row = new TableRow();
-                    row.Append(MakeCell(index.ToString()));
-                    row.Append(MakeCell($"{student.LastName} {student.Name} {student.Surname}"));
-
-                    List<double> numericMarks = new();
-                    foreach (var lesson in lessons)
+                    // Проверяем, существует ли уже лист с таким именем
+                    string sheetName = $"Страница {i}";
+                    if (!package.Workbook.Worksheets.Any(ws => ws.Name == sheetName))
                     {
-                        var mark = marks.FirstOrDefault(m =>
-                            m.StudentID == student.StudentID &&
-                            m.LessonID == lesson.LessonID);
+                        // Копируем структуру с первого листа
+                        var newSheet = package.Workbook.Worksheets.Add(sheetName, firstSheet);
+                    }
+                }
 
-                        string value = mark?.Value ?? "";
-                        if (double.TryParse(value, out double d))
-                            numericMarks.Add(d);
+                // Заполняем страницы
+                int studentOffset = 0;
+                int lessonOffset = 0;
 
-                        row.Append(MakeCell(value));
+                for (int page = 0; page < totalPages; page++)
+                {
+                    var sheet = package.Workbook.Worksheets[page];
+
+                    // Заголовок дисциплины
+                    string title = page == 0 ?
+                        $"{subject.Name} ({group.Name})" :
+                        $"{subject.Name} ({group.Name}) - продолжение {page + 1}";
+                    sheet.Cells["B2"].Value = title;
+
+                    // Определяем сколько занятий на этой странице
+                    int lessonsThisPage = 0;
+                    if (page < lessonsPerPage.Count)
+                    {
+                        lessonsThisPage = lessonsPerPage[page];
                     }
 
-                    // Средняя по студенту
-                    double avgStudent = numericMarks.Any() ? numericMarks.Average() : 0;
-                    row.Append(MakeCell(avgStudent > 0 ? avgStudent.ToString("0.000") : ""));
+                    // Заполняем заголовки занятий
+                    for (int i = 0; i < lessonsThisPage; i++)
+                    {
+                        int lessonIndex = lessonOffset + i;
+                        if (lessonIndex >= lessons.Count) break;
 
-                    // Средняя по группе (оставляем пустой)
-                    row.Append(MakeCell(""));
+                        var lesson = lessons[lessonIndex];
+                        int column = startLessonColumn + (i * 2); // C, E, G, I, K
 
-                    table.Append(row);
+                        // Подпись преподавателя (строка 4)
+                        var teacherCell = sheet.Cells[4, column];
+                        teacherCell.Value = "Преподаватель\nподпись";
+                        teacherCell.Style.WrapText = true;
+                        teacherCell.Style.VerticalAlignment = ExcelVerticalAlignment.Top;
+                        teacherCell.Style.HorizontalAlignment = ExcelHorizontalAlignment.Center;
+
+                        // Дата и тема (строка 5)
+                        var dateCell = sheet.Cells[5, column];
+                        dateCell.Value = FormatLessonInfo(lesson);
+                        dateCell.Style.WrapText = true;
+                        dateCell.Style.VerticalAlignment = ExcelVerticalAlignment.Top;
+                        dateCell.Style.HorizontalAlignment = ExcelHorizontalAlignment.Center;
+                    }
+
+                    // Определяем сколько студентов на этой странице
+                    int studentsThisPage = Math.Min(maxStudentsPerPage, students.Count - studentOffset);
+
+                    // Заполняем студентов
+                    for (int i = 0; i < studentsThisPage; i++)
+                    {
+                        var student = students[studentOffset + i];
+                        int row = startStudentRow + i;
+
+                        // № п/п
+                        sheet.Cells[row, 1].Value = studentOffset + i + 1;
+                        sheet.Cells[row, 1].Style.HorizontalAlignment = ExcelHorizontalAlignment.Center;
+
+                        // ФИО
+                        sheet.Cells[row, 2].Value = FormatStudentName(student);
+
+                        // Оценки
+                        for (int j = 0; j < lessonsThisPage; j++)
+                        {
+                            int lessonIndex = lessonOffset + j;
+                            if (lessonIndex >= lessons.Count) break;
+
+                            var lesson = lessons[lessonIndex];
+                            int column = startLessonColumn + (j * 2);
+
+                            var mark = marks.FirstOrDefault(m =>
+                                m.StudentID == student.StudentID &&
+                                m.LessonID == lesson.LessonID);
+
+                            var cell = sheet.Cells[row, column];
+                            cell.Value = mark?.Value ?? "";
+                            cell.Style.HorizontalAlignment = ExcelHorizontalAlignment.Center;
+
+                            if (!string.IsNullOrEmpty(mark?.Value))
+                            {
+                                cell.Style.Font.Bold = true;
+                            }
+                        }
+                    }
+
+                    // Обновляем смещения
+                    studentOffset += studentsThisPage;
+                    lessonOffset += lessonsThisPage;
+
+                    // Если дошли до конца студентов, но не до конца занятий
+                    if (studentOffset >= students.Count && lessonOffset < lessons.Count)
+                    {
+                        studentOffset = 0;
+                    }
+
+                    // Если дошли до конца занятий, но не до конца студентов
+                    if (lessonOffset >= lessons.Count && studentOffset < students.Count)
+                    {
+                        lessonOffset = 0;
+                    }
                 }
 
-                // Средняя по группе (по столбцу)
-                double avgGroup = 0;
-                var allGroupMarks = marks
-                    .Where(m => lessons.Any(l => l.LessonID == m.LessonID) && double.TryParse(m.Value, out _))
-                    .Select(m => double.Parse(m.Value))
-                    .ToList();
-                if (allGroupMarks.Any())
-                    avgGroup = allGroupMarks.Average();
+                // Форматирование
+                foreach (var sheet in package.Workbook.Worksheets)
+                {
+                    FormatWorksheet(sheet);
+                }
 
-                TableRow groupRow = new TableRow();
-                // пустые ячейки для №, ФИО и всех занятий
-                groupRow.Append(MakeCell(""));
-                groupRow.Append(MakeCell(""));
-                for (int i = 0; i < lessons.Count; i++)
-                    groupRow.Append(MakeCell(""));
-                // пустая ячейка для средней по студенту
-                groupRow.Append(MakeCell(""));
-                // последняя ячейка = средняя по группе
-                groupRow.Append(MakeCell(avgGroup > 0 ? avgGroup.ToString("0.000") : "", bold: true));
+                using (var memoryStream = new MemoryStream())
+                {
+                    package.SaveAs(memoryStream);
+                    memoryStream.Position = 0;
 
-                table.Append(groupRow);
-
-                body.Append(table);
-                mainPart.Document.Append(body);
-                mainPart.Document.Save();
+                    var fileName = $"Журнал_{group.Name}_{subject.Name}_{DateTime.Now:yyyyMMddHHmmss}.xlsx";
+                    return File(memoryStream.ToArray(),
+                        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                        fileName);
+                }
             }
-
-            return File(mem.ToArray(),
-                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                $"Journal_{group.Name}_{subject.Name}.docx");
         }
 
-        //
-        // ====== ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ ======
-        //
-
-        private static TableCell MakeHeaderCell(string text)
+        // Вспомогательные методы
+        private string FormatLessonInfo(Lesson lesson)
         {
-            return MakeCell(text, bold: true);
+            string theme = lesson.Theme?.ShortName ?? lesson.Theme?.Name ?? "Тема";
+            string type = lesson.TypeOfExercise?.ShortName ?? "Занятие";
+
+            return $"{lesson.Date:dd.MM.yyyy}\n{theme}\n{type}";
         }
 
-        private static TableCell MakeRotatedHeaderCell(List<string> lines)
+        private string FormatStudentName(Student student)
         {
-            Run run = new Run();
-            foreach (var (line, i) in lines.Select((l, idx) => (l, idx)))
+            if (string.IsNullOrEmpty(student.Name))
+                return student.LastName ?? "";
+
+            if (string.IsNullOrEmpty(student.Surname))
+                return $"{student.LastName} {student.Name}";
+
+            return $"{student.LastName} {student.Name[0]}.{student.Surname[0]}.";
+        }
+
+        private void FormatWorksheet(ExcelWorksheet sheet)
+        {
+            try
             {
-                run.Append(new Text(line) { Space = SpaceProcessingModeValues.Preserve });
-                if (i < lines.Count - 1)
-                    run.Append(new Break());
+                // Устанавливаем ширину колонок
+                sheet.Column(1).Width = 8;   // №
+                sheet.Column(2).Width = 25;  // ФИО
+
+                // Колонки для занятий (максимум для 5 занятий)
+                for (int col = 3; col <= 11; col += 2) // C=3, E=5, G=7, I=9, K=11
+                {
+                    try
+                    {
+                        sheet.Column(col).Width = 15;
+                    }
+                    catch
+                    {
+                        // Колонка может не существовать
+                    }
+                }
+
+                // Форматируем заголовок
+                sheet.Cells["B2"].Style.HorizontalAlignment = ExcelHorizontalAlignment.Center;
+                sheet.Cells["B2"].Style.Font.Bold = true;
+                sheet.Cells["B2"].Style.Font.Size = 14;
+
+                // Центрируем номера студентов
+                for (int row = 6; row <= 30; row++)
+                {
+                    try
+                    {
+                        if (sheet.Cells[row, 1].Value != null)
+                        {
+                            sheet.Cells[row, 1].Style.HorizontalAlignment = ExcelHorizontalAlignment.Center;
+                        }
+                    }
+                    catch
+                    {
+                        // Строка может не существовать
+                    }
+                }
             }
-
-            ApplyFont(run, "Times New Roman", 24);
-
-            Paragraph p = new Paragraph(run)
+            catch
             {
-                ParagraphProperties = new ParagraphProperties(
-                    new Justification { Val = JustificationValues.Center }
-                )
-            };
-
-            TableCellProperties props = new TableCellProperties(
-                new TableCellVerticalAlignment { Val = TableVerticalAlignmentValues.Center },
-                new TextDirection { Val = TextDirectionValues.BottomToTopLeftToRight }, // 90° поворот
-                new TableCellWidth { Type = TableWidthUnitValues.Dxa, Width = "600" }   // ≈ 1 см
-            );
-
-            return new TableCell(p) { TableCellProperties = props };
-        }
-
-        private static TableCell MakeCell(string text, bool bold = false)
-        {
-            Run run = new Run(new Text(text ?? ""));
-            if (bold)
-                run.RunProperties = new RunProperties(new Bold());
-
-            ApplyFont(run, "Times New Roman", 24);
-
-            Paragraph p = new Paragraph(run)
-            {
-                ParagraphProperties = new ParagraphProperties(
-                    new Justification { Val = JustificationValues.Center }
-                )
-            };
-
-            TableCellProperties props = new TableCellProperties(
-                new TableCellVerticalAlignment { Val = TableVerticalAlignmentValues.Center }
-            );
-
-            return new TableCell(p) { TableCellProperties = props };
-        }
-
-        private static void ApplyFont(OpenXmlElement element, string fontName, int sizeHalfPoints)
-        {
-            var runProps = new RunProperties(
-                new RunFonts { Ascii = fontName, HighAnsi = fontName, ComplexScript = fontName },
-                new FontSize { Val = sizeHalfPoints.ToString() }
-            );
-
-            foreach (var run in element.Descendants<Run>())
-            {
-                run.PrependChild(runProps.CloneNode(true));
+                // Игнорируем ошибки форматирования
             }
         }
 
