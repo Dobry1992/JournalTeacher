@@ -728,19 +728,19 @@ namespace Portal
 
             using (var package = new ExcelPackage(new FileInfo(templatePath)))
             {
-                // Конфигурация на основе вашего шаблона
+                // Конфигурация на основе шаблона
                 int maxStudentsPerPage = 25; // 25 строк для студентов (строки 6-30)
                 int studentStartRow = 6;     // строка с первым студентом
 
-                // Колонки для № и ФИО (не трогаем нумерацию из шаблона!)
-                int studentNumberColumn = 1; // колонка A для № (уже есть в шаблоне)
+                // Колонки для № и ФИО
+                int studentNumberColumn = 1; // колонка A для №
                 int studentNameColumn = 2;   // колонка B для ФИО
 
                 // Количество занятий на странице и начальные колонки
-                int maxLessonsOddPage = 14;   // нечетная страница (лист 1,3,5...)
+                int maxLessonsOddPage = 6;    // нечетная страница (лист 1,3,5...)
                 int oddPageStartColumn = 7;   // колонка G (7) для нечетных страниц
 
-                int maxLessonsEvenPage = 26;  // четная страница (лист 2,4,6...)
+                int maxLessonsEvenPage = 12;  // четная страница (лист 2,4,6...)
                 int evenPageStartColumn = 2;  // колонка B (2) для четных страниц
 
                 // Получаем шаблоны страниц из файла
@@ -756,7 +756,7 @@ namespace Portal
                 }
                 else
                 {
-                    evenTemplate = CreateEvenTemplate(oddTemplate, package);
+                    evenTemplate = package.Workbook.Worksheets.Add("Страница 2", oddTemplate);
                 }
 
                 // РАСПРЕДЕЛЯЕМ ЗАНЯТИЯ ПО СТРАНИЦАМ
@@ -810,17 +810,30 @@ namespace Portal
                     int pageLessonIndex = currentPage - 1;
                     int lessonsThisPage = lessonsPerPage[pageLessonIndex];
 
-                    // Определяем начальную колонку
+                    // Определяем начальную колонку для занятий
                     int startColumn = currentPageIsOdd ? oddPageStartColumn : evenPageStartColumn;
 
-                    // Заголовок дисциплины
-                    string title = currentPage == 1 ?
-                        $"{subject.Name} ({group.Name})" :
-                        $"{subject.Name} ({group.Name}) - стр. {currentPage}";
-                    sheet.Cells["B2"].Value = title;
-                    sheet.Cells["B2"].Style.HorizontalAlignment = ExcelHorizontalAlignment.Center;
-                    sheet.Cells["B2"].Style.Font.Bold = true;
-                    sheet.Cells["B2"].Style.Font.Size = 12;
+                    // ЗАГОЛОВОК ДИСЦИПЛИНЫ - РАЗНЫЕ ЯЧЕЙКИ
+                    string title = subject.ShortName ?? subject.Name;
+
+                    if (currentPageIsOdd)
+                    {
+                        // Нечетная страница - ячейка F2
+                        var titleCell = sheet.Cells["F2"];
+                        titleCell.Value = title;
+                        titleCell.Style.Font.Name = "Times New Roman";
+                        titleCell.Style.Font.Size = 10;
+                        titleCell.Style.HorizontalAlignment = ExcelHorizontalAlignment.Center;
+                    }
+                    else
+                    {
+                        // Четная страница - ячейка G2 (колонка 7)
+                        var titleCell = sheet.Cells["G2"];
+                        titleCell.Value = title;
+                        titleCell.Style.Font.Name = "Times New Roman";
+                        titleCell.Style.Font.Size = 10;
+                        titleCell.Style.HorizontalAlignment = ExcelHorizontalAlignment.Center;
+                    }
 
                     // ЗАПОЛНЯЕМ ЗАГОЛОВКИ ЗАНЯТИЙ НА ЭТОЙ СТРАНИЦЕ
                     for (int i = 0; i < lessonsThisPage; i++)
@@ -831,19 +844,19 @@ namespace Portal
                         var lesson = lessons[lessonIdx];
                         int column = startColumn + i;
 
-                        // Заполняем только нижнюю ячейку (строка 5) - дата, тема, вид
+                        // Заполняем нижнюю ячейку (строка 5) - дата, тема, вид
                         var infoCell = sheet.Cells[5, column];
                         infoCell.Value = FormatLessonInfo(lesson);
 
-                        // Поворачиваем текст на 90 градусов на ВСЕХ страницах
+                        // ПОВОРАЧИВАЕМ ТЕКСТ НА 90 ГРАДУСОВ
                         infoCell.Style.TextRotation = 90;
                         infoCell.Style.WrapText = true;
                         infoCell.Style.VerticalAlignment = ExcelVerticalAlignment.Center;
                         infoCell.Style.HorizontalAlignment = ExcelHorizontalAlignment.Center;
-                        infoCell.Style.Font.Size = 8;
 
-                        // Верхнюю ячейку (строка 4) не трогаем - оставляем как в шаблоне
-                        // "Преподаватель подпись" уже есть в шаблоне
+                        // ШРИФТ Times New Roman 8
+                        infoCell.Style.Font.Name = "Times New Roman";
+                        infoCell.Style.Font.Size = 8;
                     }
 
                     // ЗАПОЛНЯЕМ СТУДЕНТОВ И ОЦЕНКИ НА ЭТОЙ СТРАНИЦЕ
@@ -854,11 +867,18 @@ namespace Portal
                         int row = studentStartRow + studentIdx;
 
                         // НЕ ТРОГАЕМ НУМЕРАЦИЮ СТУДЕНТОВ! Она уже есть в шаблоне
-                        // Не изменяем колонку A - оставляем как в шаблоне
 
-                        // ФИО (колонка B) - заполняем на ВСЕХ страницах
-                        sheet.Cells[row, studentNameColumn].Value = FormatStudentName(student);
-                        sheet.Cells[row, studentNameColumn].Style.Font.Size = 10;
+                        // ФИО (колонка B) - заполняем на ВСЕХ страницах ПОЛНОЕ ФИО
+                        var nameCell = sheet.Cells[row, studentNameColumn];
+                        nameCell.Value = FormatStudentNameFull(student);
+
+                        // ВЫРАВНИВАЕМ ФАМИЛИИ ПО ЛЕВОМУ КРАЮ
+                        nameCell.Style.HorizontalAlignment = ExcelHorizontalAlignment.Left;
+                        nameCell.Style.VerticalAlignment = ExcelVerticalAlignment.Center;
+
+                        // ШРИФТ Times New Roman 10
+                        nameCell.Style.Font.Name = "Times New Roman";
+                        nameCell.Style.Font.Size = 10;
 
                         // ОЦЕНКИ за занятия на этой странице
                         for (int lessonIdx = 0; lessonIdx < lessonsThisPage; lessonIdx++)
@@ -874,13 +894,17 @@ namespace Portal
                                 m.StudentID == student.StudentID &&
                                 m.LessonID == lesson.LessonID);
 
-                            // Заполняем оценку (НЕ ВЫДЕЛЯЕМ ЖИРНЫМ)
+                            // Заполняем оценку
                             var markCell = sheet.Cells[row, column];
                             markCell.Value = mark?.Value ?? "";
+
+                            // ВЫРАВНИВАЕМ ОТМЕТКИ ПО ЦЕНТРУ ЯЧЕЙКИ
                             markCell.Style.HorizontalAlignment = ExcelHorizontalAlignment.Center;
                             markCell.Style.VerticalAlignment = ExcelVerticalAlignment.Center;
+
+                            // ШРИФТ Times New Roman 10 для оценок
+                            markCell.Style.Font.Name = "Times New Roman";
                             markCell.Style.Font.Size = 10;
-                            markCell.Style.Font.Bold = false; // убеждаемся, что не жирный
                         }
                     }
 
@@ -909,7 +933,7 @@ namespace Portal
                             int lessonsThisPage = lessonsPerPage[lessonPage];
                             bool pageIsOdd = (newPageNumber % 2 == 1);
 
-                            // Определяем начальную колонку
+                            // Определяем начальную колонку для занятий
                             int startColumn = pageIsOdd ? oddPageStartColumn : evenPageStartColumn;
 
                             // Выбираем шаблон
@@ -921,11 +945,27 @@ namespace Portal
                             // Создаем новую страницу
                             var newSheet = package.Workbook.Worksheets.Add(newSheetName, template);
 
-                            // Заголовок
-                            newSheet.Cells["B2"].Value = $"{subject.Name} ({group.Name}) - стр. {newPageNumber}";
-                            newSheet.Cells["B2"].Style.HorizontalAlignment = ExcelHorizontalAlignment.Center;
-                            newSheet.Cells["B2"].Style.Font.Bold = true;
-                            newSheet.Cells["B2"].Style.Font.Size = 12;
+                            // ЗАГОЛОВОК ДИСЦИПЛИНЫ
+                            string title = subject.ShortName ?? subject.Name;
+
+                            if (pageIsOdd)
+                            {
+                                // Нечетная страница - ячейка F2
+                                var titleCell = newSheet.Cells["F2"];
+                                titleCell.Value = title;
+                                titleCell.Style.Font.Name = "Times New Roman";
+                                titleCell.Style.Font.Size = 10;
+                                titleCell.Style.HorizontalAlignment = ExcelHorizontalAlignment.Center;
+                            }
+                            else
+                            {
+                                // Четная страница - ячейка G2 (колонка 7)
+                                var titleCell = newSheet.Cells["G2"];
+                                titleCell.Value = title;
+                                titleCell.Style.Font.Name = "Times New Roman";
+                                titleCell.Style.Font.Size = 10;
+                                titleCell.Style.HorizontalAlignment = ExcelHorizontalAlignment.Center;
+                            }
 
                             // ЗАПОЛНЯЕМ ЗАГОЛОВКИ ЗАНЯТИЙ
                             for (int i = 0; i < lessonsThisPage; i++)
@@ -938,10 +978,15 @@ namespace Portal
 
                                 var infoCell = newSheet.Cells[5, column];
                                 infoCell.Value = FormatLessonInfo(lesson);
-                                infoCell.Style.TextRotation = 90; // на четных тоже поворачиваем
+
+                                // ПОВОРАЧИВАЕМ ТЕКСТ НА 90 ГРАДУСОВ
+                                infoCell.Style.TextRotation = 90;
                                 infoCell.Style.WrapText = true;
                                 infoCell.Style.VerticalAlignment = ExcelVerticalAlignment.Center;
                                 infoCell.Style.HorizontalAlignment = ExcelHorizontalAlignment.Center;
+
+                                // ШРИФТ Times New Roman 8
+                                infoCell.Style.Font.Name = "Times New Roman";
                                 infoCell.Style.Font.Size = 8;
                             }
 
@@ -955,13 +1000,20 @@ namespace Portal
                                 int row = studentStartRow + i;
 
                                 // НЕ ТРОГАЕМ КОЛОНКУ A - нумерация уже есть в шаблоне
-                                // НЕ ЗАПОЛНЯЕМ НОВЫЕ НОМЕРА!
 
-                                // ФИО
-                                newSheet.Cells[row, studentNameColumn].Value = FormatStudentName(student);
-                                newSheet.Cells[row, studentNameColumn].Style.Font.Size = 10;
+                                // ФИО - ПОЛНОЕ ФИО
+                                var nameCell = newSheet.Cells[row, studentNameColumn];
+                                nameCell.Value = FormatStudentNameFull(student);
 
-                                // ОЦЕНКИ (НЕ ВЫДЕЛЯЕМ ЖИРНЫМ)
+                                // ВЫРАВНИВАЕМ ФАМИЛИИ ПО ЛЕВОМУ КРАЮ
+                                nameCell.Style.HorizontalAlignment = ExcelHorizontalAlignment.Left;
+                                nameCell.Style.VerticalAlignment = ExcelVerticalAlignment.Center;
+
+                                // ШРИФТ Times New Roman 10
+                                nameCell.Style.Font.Name = "Times New Roman";
+                                nameCell.Style.Font.Size = 10;
+
+                                // ОЦЕНКИ
                                 for (int j = 0; j < lessonsThisPage; j++)
                                 {
                                     int lessonIdx = currentLessonIndex + j;
@@ -976,42 +1028,20 @@ namespace Portal
 
                                     var markCell = newSheet.Cells[row, column];
                                     markCell.Value = mark?.Value ?? "";
+
+                                    // ВЫРАВНИВАЕМ ОТМЕТКИ ПО ЦЕНТРУ ЯЧЕЙКИ
                                     markCell.Style.HorizontalAlignment = ExcelHorizontalAlignment.Center;
                                     markCell.Style.VerticalAlignment = ExcelVerticalAlignment.Center;
+
+                                    // ШРИФТ Times New Roman 10 для оценок
+                                    markCell.Style.Font.Name = "Times New Roman";
                                     markCell.Style.Font.Size = 10;
-                                    markCell.Style.Font.Bold = false; // не жирный
                                 }
                             }
 
                             currentLessonIndex += lessonsThisPage;
                         }
                     }
-                }
-
-                // НАСТРАИВАЕМ ШИРИНУ КОЛОНОК (только для занятий)
-                foreach (var sheet in package.Workbook.Worksheets)
-                {
-                    try
-                    {
-                        // Определяем тип страницы по имени
-                        bool isOdd = int.TryParse(sheet.Name.Replace("Страница ", ""), out int pageNum) && (pageNum % 2 == 1);
-                        int startCol = isOdd ? oddPageStartColumn : evenPageStartColumn;
-                        int maxLessons = isOdd ? maxLessonsOddPage : maxLessonsEvenPage;
-
-                        // Узкие колонки для занятий (только если они существуют)
-                        for (int col = startCol; col < startCol + maxLessons; col++)
-                        {
-                            try
-                            {
-                                if (col <= sheet.Dimension?.End.Column)
-                                {
-                                    sheet.Column(col).Width = 4;
-                                }
-                            }
-                            catch { }
-                        }
-                    }
-                    catch { }
                 }
 
                 using (var memoryStream = new MemoryStream())
@@ -1027,17 +1057,6 @@ namespace Portal
             }
         }
 
-        // Метод для создания четного шаблона
-        private ExcelWorksheet CreateEvenTemplate(ExcelWorksheet oddTemplate, ExcelPackage package)
-        {
-            var newSheet = package.Workbook.Worksheets.Add("Страница 2", oddTemplate);
-
-            // Оставляем шаблон как есть, не трогаем нумерацию студентов
-            // В шаблоне уже есть нужная структура
-
-            return newSheet;
-        }
-
         // Вспомогательные методы
         private string FormatLessonInfo(Lesson lesson)
         {
@@ -1045,13 +1064,13 @@ namespace Portal
             string theme = lesson.Theme?.ShortName ?? lesson.Theme?.Name ?? "Тема";
             string type = lesson.TypeOfExercise?.ShortName ?? "Вид";
 
-            // Короткий формат для вертикального отображения
-            if (theme.Length > 12) theme = theme.Substring(0, 10) + "..";
+            // Форматирование для вертикального отображения
+            if (theme.Length > 15) theme = theme.Substring(0, 12) + "..";
 
-            return $"{date}\n{theme}";
+            return $"{date}\n{theme}\n{type}";
         }
 
-        private string FormatStudentName(Student student)
+        private string FormatStudentNameFull(Student student)
         {
             if (string.IsNullOrEmpty(student.Name))
                 return student.LastName ?? "";
@@ -1059,11 +1078,8 @@ namespace Portal
             if (string.IsNullOrEmpty(student.Surname))
                 return $"{student.LastName} {student.Name}";
 
-            // Для экономии места используем инициалы
-            string firstNameInitial = student.Name.Length > 0 ? student.Name[0].ToString() : "";
-            string surnameInitial = student.Surname.Length > 0 ? student.Surname[0].ToString() : "";
-
-            return $"{student.LastName} {firstNameInitial}.{surnameInitial}.";
+            // ПОЛНОЕ ФИО без сокращений
+            return $"{student.LastName} {student.Name} {student.Surname}";
         }
 
     }
