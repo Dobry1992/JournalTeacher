@@ -6,6 +6,7 @@
     ViewData["Title"] = "Журнал";
     int i = 1;
     int j = 1;
+    int k = 1;
 }
 
 @await Html.PartialAsync("_NavMenuJournal")
@@ -71,10 +72,6 @@ else
                     <a class="btn btn-outline-success mr-2" data-toggle="modal" data-target="#modal-content-2">
                         Экспорт
                     </a>
-                    @* <a class="btn btn-outline-success mr-2" asp-controller="Journals" asp-action="ExportToExcel"
-                       asp-route-subjectID="@Model.Subject.SubjectID" asp-route-groupID="@Model.Group.GroupID">
-                        Экспорт Excel
-                    </a> *@
                     <button class="btn btn-outline-danger mr-2" data-toggle="modal" data-target="#modal-content-1">
                         Экзаменационная ведомость
                     </button>
@@ -236,10 +233,33 @@ else
                 <div class="modal-body">
                     <table class="table table-bordered compact table-sm">
                         <thead class="thead-dark">
-                            
+                            <tr>
+                                <th class="text-center p-1 fix">#</th>
+                                <th class="text-center p-1 fix">Учебный год</th>
+                                <th class="text-center p-1 fix"></th>
+                            </tr>
                         </thead>
                         <tbody class="bg-white compact">
-                            
+                            @foreach (var l in ViewBag.AcademicYears)
+                            {
+                                <tr>
+                                    <td class="text-center p-1 bg-light fix">@k</td>
+                                    <td class="text-center p-1 bg-light fix">@l.Name</td>
+                                    @* <td class="text-center p-1 bg-light fix">
+                                        <a class="btn btn-warning"
+                                           asp-controller="Print"
+                                           asp-action="PrintStatement"
+                                           asp-route-id="@l.LessonID"
+                                           target="_blank"
+                                           rel="noopener">Выбрать</a>
+                                    </td> *@
+                                </tr>
+                                @* <a class="btn btn-outline-success mr-2" asp-controller="Journals" asp-action="ExportToExcel"
+                       asp-route-subjectID="@Model.Subject.SubjectID" asp-route-groupID="@Model.Group.GroupID">
+                        Экспорт Excel
+                    </a> *@
+                                k++;
+                            }
                         </tbody>
                     </table>
                 </div>
