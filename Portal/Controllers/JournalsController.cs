@@ -1,5 +1,4 @@
 ﻿using DocumentFormat.OpenXml;
-using DocumentFormat.OpenXml.Wordprocessing;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
@@ -212,6 +211,9 @@ namespace Portal
         [Authorize(Roles = "SuperAdmin,ANB-UMCH")]
         public async Task<IActionResult> AdjustedJournal(int GroupID, int SubjectID)
         {
+            var academicYears = await GetAcademicYearsForSubjectAndGroup(GroupID, SubjectID);
+            ViewBag.AcademicYears = academicYears;
+
             return await PrepareJournalView(GroupID, SubjectID, "AdjustedJournal");
         }
 
@@ -420,6 +422,8 @@ namespace Portal
                 .Include(l => l.Theme)
                 .AsNoTracking()
                 .ToListAsync();
+
+
 
             var students = await _context.Students
                 .Where(s =>
@@ -1080,6 +1084,51 @@ namespace Portal
 
             // ПОЛНОЕ ФИО без сокращений
             return $"{student.LastName} {student.Name} {student.Surname}";
+        }
+
+        //Учебные года
+        private async Task<List<AcademicYearInfo>> GetAcademicYearsForSubjectAndGroup(int groupID, int subjectID)
+        {
+            // Получаем даты уроков для конкретной группы и предмета
+            var lessonDates = await _context.Lessons
+                .Where(l => l.GroupID == groupID && l.Theme.SubjectID == subjectID)
+                .Select(l => l.Date)
+                .Distinct()
+                .ToListAsync();
+
+            if (!lessonDates.Any())
+                return new List<AcademicYearInfo>();
+
+            var minDate = lessonDates.Min();
+            var maxDate = lessonDates.Max();
+
+            return GenerateAcademicYears(minDate, maxDate);
+        }
+
+        private List<AcademicYearInfo> GenerateAcademicYears(DateTime fromDate, DateTime toDate)
+        {
+            var academicYears = new List<AcademicYearInfo>();
+
+            // Определяем первый учебный год
+            int startYear = fromDate.Month >= 9 ? fromDate.Year : fromDate.Year - 1;
+
+            // Определяем последний учебный год
+            int endYear = toDate.Month >= 9 ? toDate.Year : toDate.Year - 1;
+
+            // Генерируем учебные годы
+            for (int year = startYear; year <= endYear; year++)
+            {
+                var academicYear = new AcademicYearInfo
+                {
+                    StartDate = new DateTime(year, 9, 1),
+                    EndDate = new DateTime(year + 1, 7, 31),
+                    Name = $"{year}/{year + 1}"
+                };
+
+                academicYears.Add(academicYear);
+            }
+
+            return academicYears.OrderByDescending(ay => ay.StartDate).ToList();
         }
 
     }
