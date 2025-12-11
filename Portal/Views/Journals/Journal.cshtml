@@ -45,26 +45,26 @@ else if (User.IsInRole("SuperAdmin") || User.IsInRole("ANB-UMCH") || User.IsInRo
                 </h6>
 
                 <div class="mb-3 d-flex flex-wrap gap-2">
-                    <a class="btn btn-dark mr-2" asp-controller="Lessons" asp-action="Create"
+                    <a class="btn btn-dark mr-2 btn-sm" asp-controller="Lessons" asp-action="Create"
                        asp-route-GroupID="@Model.Group.GroupID" asp-route-SubjectID="@Model.Subject.SubjectID">
                         Занятие
                     </a>
-                    <a class="btn btn-danger mr-2" asp-controller="Lessons" asp-action="CreateF"
+                    <a class="btn btn-danger mr-2 btn-sm" asp-controller="Lessons" asp-action="CreateF"
                        asp-route-GroupID="@Model.Group.GroupID" asp-route-SubjectID="@Model.Subject.SubjectID">
                         Экзамен/Зачёт
                     </a>
-                    <a class="btn btn-primary mr-2" asp-controller="Lessons" asp-action="CreateK"
+                    <a class="btn btn-primary mr-2 btn-sm" asp-controller="Lessons" asp-action="CreateK"
                        asp-route-GroupID="@Model.Group.GroupID" asp-route-SubjectID="@Model.Subject.SubjectID">
                         Курсовой проект
                     </a>
-                    <a class="btn btn-outline-warning mr-2" asp-action="Final"
+                    <a class="btn btn-outline-warning mr-2 btn-sm" asp-action="Final"
                        asp-route-GroupID="@Model.Group.GroupID" asp-route-SubjectID="@Model.Subject.SubjectID">
                         Итоги обучения
                     </a>
-                    <button class="btn btn-outline-danger mr-2" data-toggle="modal" data-target="#modal-content">
+                    <button class="btn btn-outline-danger mr-2 btn-sm" data-toggle="modal" data-target="#modal-content">
                         Экзаменационная ведомость
                     </button>
-                    <button id="collapseToggleBtn" class="btn btn-outline-secondary ml-auto">
+                    <button id="collapseToggleBtn" class="btn btn-outline-secondary ml-auto btn-sm">
                         Скрыть занятия и отметки
                     </button>
                 </div>

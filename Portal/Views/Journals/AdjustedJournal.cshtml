@@ -47,35 +47,35 @@ else
                 </h6>
 
                 <div class="mb-3 d-flex flex-wrap gap-2">
-                    <a class="btn btn-dark mr-2" asp-controller="Lessons" asp-action="AdjustmentCreate"
+                    <a class="btn btn-dark mr-2 btn-sm" asp-controller="Lessons" asp-action="AdjustmentCreate"
                        asp-route-GroupID="@Model.Group.GroupID" asp-route-SubjectID="@Model.Subject.SubjectID">
                         Занятие
                     </a>
-                    <a class="btn btn-danger mr-2" asp-controller="Lessons" asp-action="AdjustmentCreateF"
+                    <a class="btn btn-danger mr-2 btn-sm" asp-controller="Lessons" asp-action="AdjustmentCreateF"
                        asp-route-GroupID="@Model.Group.GroupID" asp-route-SubjectID="@Model.Subject.SubjectID">
                         Экзамен/Зачёт
                     </a>
-                    <a class="btn btn-primary mr-2" asp-controller="Lessons" asp-action="AdjustmentCreateK"
+                    <a class="btn btn-primary mr-2 btn-sm" asp-controller="Lessons" asp-action="AdjustmentCreateK"
                        asp-route-GroupID="@Model.Group.GroupID" asp-route-SubjectID="@Model.Subject.SubjectID">
                         Курсовой проект
                     </a>
-                    <a class="btn btn-info mr-2"
+                    <a class="btn btn-info mr-2 btn-sm"
                        asp-action="Controls"
                        asp-route-GroupID="@Model.Group.GroupID"
                        asp-route-SubjectID="@Model.Subject.SubjectID">
                         Котрольные занятия
                     </a>
-                    <a class="btn btn-outline-warning mr-2" asp-action="Final"
+                    <a class="btn btn-outline-warning mr-2 btn-sm" asp-action="Final"
                        asp-route-GroupID="@Model.Group.GroupID" asp-route-SubjectID="@Model.Subject.SubjectID">
                         Итоги обучения
                     </a>
-                    <a class="btn btn-outline-success mr-2" data-toggle="modal" data-target="#modal-content-2">
+                    <button class="btn btn-outline-success mr-2 btn-sm" data-toggle="modal" data-target="#modal-content-2">
                         Экспорт
-                    </a>
-                    <button class="btn btn-outline-danger mr-2" data-toggle="modal" data-target="#modal-content-1">
+                    </button>
+                    <button class="btn btn-outline-danger mr-2 btn-sm" data-toggle="modal" data-target="#modal-content-1">
                         Экзаменационная ведомость
                     </button>
-                    <button id="collapseToggleBtn" class="btn btn-outline-secondary ml-auto">
+                    <button id="collapseToggleBtn" class="btn btn-outline-secondary ml-auto btn-sm">
                         Скрыть занятия и отметки
                     </button>
                 </div>
@@ -245,19 +245,27 @@ else
                                 <tr>
                                     <td class="text-center p-1 bg-light fix">@k</td>
                                     <td class="text-center p-1 bg-light fix">@l.Name</td>
-                                    @* <td class="text-center p-1 bg-light fix">
-                                        <a class="btn btn-warning"
-                                           asp-controller="Print"
-                                           asp-action="PrintStatement"
-                                           asp-route-id="@l.LessonID"
+                                    <td class="text-center p-1 bg-light fix">
+                                        <a class="btn btn-outline-warning btn-sm"
+                                           asp-controller="Journals"
+                                           asp-action="ExportToExcel"
+                                           asp-route-subjectID="@Model.Subject.SubjectID"
+                                           asp-route-groupID="@Model.Group.GroupID"
                                            target="_blank"
-                                           rel="noopener">Выбрать</a>
-                                    </td> *@
+                                           rel="noopener">
+                                            <i class="fas fa-file-pdf btn-sm"></i>
+                                        </a>
+                                        <a class="btn btn-warning btn-sm"
+                                           asp-controller="Journals"
+                                           asp-action="ExportToExcel"
+                                           asp-route-subjectID="@Model.Subject.SubjectID"
+                                           asp-route-groupID="@Model.Group.GroupID"
+                                           target="_blank"
+                                           rel="noopener">
+                                            <i class="fas fa-file-excel"></i>
+                                        </a>
+                                    </td>
                                 </tr>
-                                @* <a class="btn btn-outline-success mr-2" asp-controller="Journals" asp-action="ExportToExcel"
-                       asp-route-subjectID="@Model.Subject.SubjectID" asp-route-groupID="@Model.Group.GroupID">
-                        Экспорт Excel
-                    </a> *@
                                 k++;
                             }
                         </tbody>
