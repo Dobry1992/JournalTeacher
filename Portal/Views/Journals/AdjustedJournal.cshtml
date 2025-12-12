@@ -246,24 +246,11 @@ else
                                     <td class="text-center p-1 bg-light fix">@k</td>
                                     <td class="text-center p-1 bg-light fix">@l.Name</td>
                                     <td class="text-center p-1 bg-light fix">
-                                        <a class="btn btn-outline-warning btn-sm"
-                                           asp-controller="Journals"
-                                           asp-action="ExportToExcel"
-                                           asp-route-d1="@l.StartDate?.ToString("yyyy-MM-dd")"
-                                           asp-route-d2="@l.EndDate?.ToString("yyyy-MM-dd")"
-                                           asp-route-flg="0"
-                                           asp-route-SubjectID="@Model.Subject.SubjectID"
-                                           asp-route-GroupID="@Model.Group.GroupID"
-                                           target="_blank"
-                                           rel="noopener">
-                                            <i class="fas fa-file-pdf btn-sm"></i>
-                                        </a>
                                         <a class="btn btn-warning btn-sm"
                                            asp-controller="Journals"
                                            asp-action="ExportToExcel"
                                            asp-route-d1="@l.StartDate?.ToString("yyyy-MM-dd")"
                                            asp-route-d2="@l.EndDate?.ToString("yyyy-MM-dd")"
-                                           asp-route-flg="1"
                                            asp-route-SubjectID="@Model.Subject.SubjectID"
                                            asp-route-GroupID="@Model.Group.GroupID"
                                            target="_blank"

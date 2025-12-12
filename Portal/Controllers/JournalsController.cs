@@ -701,7 +701,7 @@ namespace Portal
             return 0;
         }
 
-        public async Task<IActionResult> ExportToExcel(int GroupID, int SubjectID, DateTime d1, DateTime d2, int flg)
+        public async Task<IActionResult> ExportToExcel(int GroupID, int SubjectID, DateTime d1, DateTime d2)
         {
             var group = await _context.Groups.FindAsync(GroupID);
             var subject = await _context.Subjects.FindAsync(SubjectID);
