@@ -714,8 +714,29 @@ namespace Portal
                 .OrderBy(s => s.LastName)
                 .ToListAsync();
 
+            var typeEKZ = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Экзамен");
+            var typeKR = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Курсовая работа");
+            var typeKP = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Курсовой проект");
+            var typeIO = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Итоговая отметка");
+            var typeZ = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Зачёт");
+            var typeDZ = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Дифференцированный зачёт");
+
+            var excludedTypeIds = new[]
+            {
+                typeEKZ?.TypeOfExerciseID,
+                typeKR?.TypeOfExerciseID,
+                typeKP?.TypeOfExerciseID,
+                typeIO?.TypeOfExerciseID,
+                typeZ?.TypeOfExerciseID,
+                typeDZ?.TypeOfExerciseID
+            }
+            .OfType<int>() // Автоматически фильтрует null и преобразует в int
+            .ToList();
+
             var lessons = await _context.Lessons
-                .Where(l => l.GroupID == GroupID && l.Theme.SubjectID == SubjectID)
+                .Where(l => l.GroupID == GroupID
+                            && l.Theme.SubjectID == SubjectID
+                            && !excludedTypeIds.Contains(l.TypeOfExerciseID))
                 .Include(l => l.Theme)
                 .Include(l => l.TypeOfExercise)
                 .OrderBy(l => l.Date)
@@ -1130,6 +1151,5 @@ namespace Portal
 
             return academicYears.OrderByDescending(ay => ay.StartDate).ToList();
         }
-
     }
 }
