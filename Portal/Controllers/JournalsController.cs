@@ -701,7 +701,7 @@ namespace Portal
             return 0;
         }
 
-        public async Task<IActionResult> ExportToExcel(int GroupID, int SubjectID)
+        public async Task<IActionResult> ExportToExcel(int GroupID, int SubjectID, DateTime d1, DateTime d2, int flg)
         {
             var group = await _context.Groups.FindAsync(GroupID);
             var subject = await _context.Subjects.FindAsync(SubjectID);
@@ -734,16 +734,23 @@ namespace Portal
             .ToList();
 
             var lessons = await _context.Lessons
-                .Where(l => l.GroupID == GroupID
-                            && l.Theme.SubjectID == SubjectID
-                            && !excludedTypeIds.Contains(l.TypeOfExerciseID))
-                .Include(l => l.Theme)
-                .Include(l => l.TypeOfExercise)
-                .OrderBy(l => l.Date)
-                .ToListAsync();
+               .Where(l => l.GroupID == GroupID
+                           && l.Theme.SubjectID == SubjectID
+                           && l.Date >= d1  // Дата урока >= d1
+                           && l.Date <= d2  // Дата урока <= d2
+                           && !excludedTypeIds.Contains(l.TypeOfExerciseID))
+               .Include(l => l.Theme)
+               .Include(l => l.TypeOfExercise)
+               .OrderBy(l => l.Date)
+               .ToListAsync();
 
             var marks = await _context.Marks
-                .Where(m => m.GroupID == GroupID && m.SubjectID == SubjectID)
+                .Where(m => m.GroupID == GroupID && 
+                    m.SubjectID == SubjectID &&
+                    !excludedTypeIds.Contains(m.TypeOfExerciseID) &&
+                    m.Date >= d1 &&
+                    m.Date <= d2
+                )
                 .ToListAsync();
 
             string templatePath = Path.Combine(_env.WebRootPath, "template", "journal_template.xlsx");

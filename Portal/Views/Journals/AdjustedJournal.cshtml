@@ -249,8 +249,11 @@ else
                                         <a class="btn btn-outline-warning btn-sm"
                                            asp-controller="Journals"
                                            asp-action="ExportToExcel"
-                                           asp-route-subjectID="@Model.Subject.SubjectID"
-                                           asp-route-groupID="@Model.Group.GroupID"
+                                           asp-route-d1="@l.StartDate?.ToString("yyyy-MM-dd")"
+                                           asp-route-d2="@l.EndDate?.ToString("yyyy-MM-dd")"
+                                           asp-route-flg="0"
+                                           asp-route-SubjectID="@Model.Subject.SubjectID"
+                                           asp-route-GroupID="@Model.Group.GroupID"
                                            target="_blank"
                                            rel="noopener">
                                             <i class="fas fa-file-pdf btn-sm"></i>
@@ -258,8 +261,11 @@ else
                                         <a class="btn btn-warning btn-sm"
                                            asp-controller="Journals"
                                            asp-action="ExportToExcel"
-                                           asp-route-subjectID="@Model.Subject.SubjectID"
-                                           asp-route-groupID="@Model.Group.GroupID"
+                                           asp-route-d1="@l.StartDate?.ToString("yyyy-MM-dd")"
+                                           asp-route-d2="@l.EndDate?.ToString("yyyy-MM-dd")"
+                                           asp-route-flg="1"
+                                           asp-route-SubjectID="@Model.Subject.SubjectID"
+                                           asp-route-GroupID="@Model.Group.GroupID"
                                            target="_blank"
                                            rel="noopener">
                                             <i class="fas fa-file-excel"></i>
