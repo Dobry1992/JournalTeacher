@@ -646,7 +646,7 @@ namespace Portal
 
             // Загружаем студентов и их оценки (без TryParse!)
             var studentsData = await _context.Students
-                .Where(s => s.GroupID == id)
+                .Where(s => s.GroupID == id && s.Status == true)
                 .OrderBy(s => s.LastName)
                 .Select(s => new
                 {
