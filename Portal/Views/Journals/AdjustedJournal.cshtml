@@ -129,7 +129,7 @@ else
                             {
                                     <tr>
                                     <td class="align-middle text-center p-1 bg-light fix col-fixed-1">@i</td>
-                                    <td class="align-middle text-center p-1 bg-light fix col-fixed-2">@student.LastName @student.Name @student.Surname</td>
+                                    <td class="align-middle text-left p-1 bg-light fix col-fixed-2">@student.LastName @student.Name @student.Surname</td>
                                     @foreach (var mark in Model.JournalMarks.Where(m => m.Mark.StudentID == student.StudentID))
                                     {
                                         if (mark.Mark.MarkID != 0)
