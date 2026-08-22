@@ -1,5 +1,6 @@
 ﻿$(document).ready(function () {
     $('#Table').DataTable({
+        "lengthMenu": [10, 25, 50, 100, 150], // ваши значения
         "language": {
             "processing": "Подождите...",
             "search": "Поиск:",
@@ -17,7 +18,7 @@
                 "last": "Последняя"
             }
         }
-        });
+    });
 });
 
 $(document).ready(function () {
