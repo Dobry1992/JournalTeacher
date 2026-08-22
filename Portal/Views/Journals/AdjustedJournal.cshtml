@@ -81,37 +81,6 @@ else
                 </div>
 
                 <div class="table-responsive" id="sd">
-                    <style>
-                        /* Fixed first two columns: number and full name */
-                        :root { --col1-width: 50px; --col2-width: 220px; }
-                        .table-responsive { position: relative; }
-                        .table { border-collapse: separate; }
-                        .table thead th.tableRowSticky { position: sticky; top: 0; z-index: 5; }
-                        .table th.col-fixed-1, .table td.col-fixed-1 {
-                            position: sticky;
-                            left: 0;
-                            z-index: 4;
-                            background: #313538;
-                            box-sizing: border-box;
-                        }
-                        .table th.col-fixed-2, .table td.col-fixed-2 {
-                            position: sticky;
-                            /* account for table cell borders to avoid visual gap */
-                            left: calc(var(--col1-width) + 1px);
-                            z-index: 4;
-                            background: #313538;
-                            box-sizing: border-box;
-                            /* subtle shadow to hide seam when scrolling */
-                            box-shadow: 2px 0 4px rgba(0,0,0,0.05);
-                        }
-                        /* Avoid double borders between fixed columns */
-                        .table th.col-fixed-1, .table td.col-fixed-1 { border-right: 0; }
-                        .table th.col-fixed-2, .table td.col-fixed-2 { border-left: 0; }
-                        .table th.col-fixed-1 { width: var(--col1-width); min-width: var(--col1-width); }
-                        .table th.col-fixed-2 { min-width: var(--col2-width); width: var(--col2-width); }
-                        /* Ensure header cells overlap body cells when sticky */
-                        .table thead th.col-fixed-1, .table thead th.col-fixed-2 { top: 0; z-index: 6; }
-                    </style>
                     <table class="table table-bordered table-sm compact">
                         <thead class="thead-dark">
                             <tr>

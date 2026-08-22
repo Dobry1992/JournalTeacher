@@ -398,7 +398,25 @@ span {
 @media (min-width: 2560px) {
     .birthday {
         left: 57%;
+        /* placeholder no-op to ensure patch format */
     }
+}
+
+/* Fixed-column styles appended */
+.fixed-column {
+    position: sticky;
+    left: 0;
+    top: 0;
+    z-index: 3;
+    background-color: #ffffff;
+    box-shadow: 2px 0 6px rgba(0, 0, 0, 0.05);
+}
+
+.fixed-column .cell,
+.fixed-col {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 @media (min-width: 768px) {
@@ -447,3 +465,30 @@ span {
         margin: 20% auto;
     }
 }
+
+/* Journal fixed first two columns styling */
+:root { --col1-width: 50px; --col2-width: 220px; }
+.table-responsive { position: relative; }
+.table { border-collapse: separate; }
+.table thead th.tableRowSticky { position: sticky; top: 0; z-index: 5; }
+.table th.col-fixed-1, .table td.col-fixed-1 {
+    position: sticky;
+    left: 0;
+    z-index: 4;
+    background: #313336;
+    box-sizing: border-box;
+    border-right: 0;
+}
+.table th.col-fixed-2, .table td.col-fixed-2 {
+    position: sticky;
+    left: calc(var(--col1-width) + 1px);
+    z-index: 4;
+    background: #313336;
+    box-sizing: border-box;
+    box-shadow: 2px 0 4px rgba(0,0,0,0.05);
+    border-left: 0;
+}
+.table th.col-fixed-1 { width: var(--col1-width); min-width: var(--col1-width); }
+.table th.col-fixed-2 { min-width: var(--col2-width); width: var(--col2-width); }
+.table thead th.col-fixed-1, .table thead th.col-fixed-2 { top: 0; z-index: 6; }
+
