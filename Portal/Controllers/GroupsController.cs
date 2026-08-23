@@ -987,7 +987,7 @@ namespace Portal
             return View(students);
         }
 
-        public async Task<IActionResult> GetUnsatisfactoryMarks(int id)
+        public async Task<IActionResult> GetUnsatisfactoryMarks(int id, DateTime date_1, DateTime date_2)
         {
             var group = await _context.Groups.FindAsync(id);
 
@@ -996,26 +996,58 @@ namespace Portal
                 return NotFound();
             }
 
-            var unsatisfactoryMarks = await (
-                from m in _context.UnsatisfactoryMarks
-                join st in _context.Students on m.StudentID equals st.StudentID
-                join sb in _context.Subjects on m.SubjectID equals sb.SubjectID
-                where m.GroupID == id
-                select new UnsatisfactoryViewModel
+            // Подготовим запрос и применим фильтр по датам согласно правилам:
+            // - если оба конца не заданы -> все отметки
+            // - если задана только начальная дата -> отметки с этой даты и дальше
+            // - если задана только конечная дата -> отметки до этой даты (включительно)
+            // - если заданы обе даты -> отметки в диапазоне [date_1, date_2]
+
+            var query = from m in _context.UnsatisfactoryMarks
+                        join st in _context.Students on m.StudentID equals st.StudentID
+                        join sb in _context.Subjects on m.SubjectID equals sb.SubjectID
+                        where m.GroupID == id
+                        select new UnsatisfactoryViewModel
+                        {
+                            StudentID = m.StudentID,
+                            SubjectID = m.SubjectID,
+                            StudentFullName = (st.LastName + " " + st.Name + " " + st.Surname).Trim(),
+                            SubjectFullName = sb.Name.Trim(),
+                            UnsatisfactoryMark = m.UnsatisfactoryValue,
+                            UsatisfactoryDate = m.UnsatisfactoryDate,
+                            CorrectedValue = m.CorrectedValue,
+                            CorrectedDate = m.CorrectedDate,
+                            GroupID = m.GroupID
+                        };
+
+            bool hasStart = date_1 != default(DateTime);
+            bool hasEnd = date_2 != default(DateTime);
+
+            if (hasStart && hasEnd)
+            {
+                var startDate = date_1.Date;
+                var endDate = date_2.Date;
+                // Ensure start <= end
+                if (startDate > endDate)
                 {
-                    StudentID = m.StudentID,
-                    SubjectID = m.SubjectID,
-                    StudentFullName = (st.LastName + " " + st.Name + " " + st.Surname).Trim(),
-                    SubjectFullName = sb.Name.Trim(),
-                    UnsatisfactoryMark = m.UnsatisfactoryValue,
-                    UsatisfactoryDate = m.UnsatisfactoryDate,
-                    CorrectedValue = m.CorrectedValue,
-                    CorrectedDate = m.CorrectedDate,
-                    GroupID = m.GroupID
+                    var tmp = startDate; startDate = endDate; endDate = tmp;
                 }
-            ).ToListAsync();
+                query = query.Where(x => x.UsatisfactoryDate.Date >= startDate && x.UsatisfactoryDate.Date <= endDate);
+            }
+            else if (hasStart)
+            {
+                var startDate = date_1.Date;
+                query = query.Where(x => x.UsatisfactoryDate.Date >= startDate);
+            }
+            else if (hasEnd)
+            {
+                var endDate = date_2.Date;
+                query = query.Where(x => x.UsatisfactoryDate.Date <= endDate);
+            }
+
+            var unsatisfactoryMarks = await query.ToListAsync();
 
             ViewBag.GroupName = group.Name;
+            ViewBag.id = id;
 
             return View(unsatisfactoryMarks);
         }
