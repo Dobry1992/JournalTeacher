@@ -810,49 +810,69 @@ namespace Portal.Controllers
             return double.TryParse(value, NumberStyles.Any, new CultureInfo("ru-RU"), out number);
         }
 
+        private static readonly HashSet<string> UnsatisfactoryValues =
+         new() { "1", "2", "3", "НЗ" };
+
         private async Task HandleUnsatisfactoryMarkAsync(Mark mark)
         {
-            var usatisfactoryMark = await _context.UnsatisfactoryMarks
-                .FirstOrDefaultAsync(m =>
-                    m.MarkID == mark.MarkID &&
-                    m.Status == false
-                );
+            var unsatisfactoryMark = await GetActiveUnsatisfactoryMarkAsync(mark.MarkID);
 
-            if (usatisfactoryMark != null)
+            if (unsatisfactoryMark != null)
             {
-                if (mark.Value == "1" || mark.Value == "2" || mark.Value == "3")
-                {
-                    usatisfactoryMark.UnsatisfactoryValue = mark.Value;
-                    usatisfactoryMark.UnsatisfactoryDate = mark.Date;
-                    _context.UnsatisfactoryMarks.Update(usatisfactoryMark);
-                }
-                else
-                {
-                    usatisfactoryMark.CorrectedValue = mark.Value;
-                    usatisfactoryMark.CorrectedDate = mark.Date;
-                    usatisfactoryMark.Status = true;
-                    _context.UnsatisfactoryMarks.Update(usatisfactoryMark);
-                }
+                ProcessExistingUnsatisfactoryMark(unsatisfactoryMark, mark);
             }
-            else
+            else if (IsUnsatisfactoryValue(mark.Value))
             {
-                if (mark.Value == "1" || mark.Value == "2" || mark.Value == "3")
-                {
-                    UnsatisfactoryMark newUnsatisfactoryMark = new()
-                    {
-                        MarkID = mark.MarkID,
-                        GroupID = mark.GroupID,
-                        StudentID = mark.StudentID,
-                        SubjectID = mark.SubjectID,
-                        UnsatisfactoryValue = mark.Value,
-                        UnsatisfactoryDate = mark.Date,
-                        Status = false
-                    };
-                    _context.UnsatisfactoryMarks.Add(newUnsatisfactoryMark);
-                }
+                CreateNewUnsatisfactoryMark(mark);
             }
 
             await _context.SaveChangesAsync();
+        }
+
+        private Task<UnsatisfactoryMark> GetActiveUnsatisfactoryMarkAsync(int markId)
+        {
+            return _context.UnsatisfactoryMarks
+                .FirstOrDefaultAsync(m => m.MarkID == markId && !m.Status);
+        }
+
+        private void ProcessExistingUnsatisfactoryMark(UnsatisfactoryMark unsatisfactoryMark, Mark mark)
+        {
+            // Если отметка неудовлетворительная - обновляем только дату
+            // Если исправлена - записываем исправление
+            if (IsUnsatisfactoryValue(mark.Value))
+            {
+                unsatisfactoryMark.UnsatisfactoryValue = mark.Value;
+                unsatisfactoryMark.UnsatisfactoryDate = DateTime.UtcNow;
+            }
+            else
+            {
+                unsatisfactoryMark.CorrectedValue = mark.Value;
+                unsatisfactoryMark.CorrectedDate = DateTime.UtcNow;
+                unsatisfactoryMark.Status = true;
+            }
+
+            _context.UnsatisfactoryMarks.Update(unsatisfactoryMark);
+        }
+
+        private void CreateNewUnsatisfactoryMark(Mark mark)
+        {
+            var newUnsatisfactoryMark = new UnsatisfactoryMark
+            {
+                MarkID = mark.MarkID,
+                GroupID = mark.GroupID,
+                StudentID = mark.StudentID,
+                SubjectID = mark.SubjectID,
+                UnsatisfactoryValue = mark.Value,
+                UnsatisfactoryDate = DateTime.UtcNow,
+                Status = false
+            };
+
+            _context.UnsatisfactoryMarks.Add(newUnsatisfactoryMark);
+        }
+
+        private bool IsUnsatisfactoryValue(string value)
+        {
+            return UnsatisfactoryValues.Contains(value);
         }
 
         private bool MarkExists(int id)
