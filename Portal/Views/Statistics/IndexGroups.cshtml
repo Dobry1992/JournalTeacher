@@ -31,7 +31,7 @@
             <section class="content">
                 <div class="container-fluid">
                     <h4 class="mb-3 text-center bg-@colors[i] headGroup p-2 rounded">@inst.Name</h4>
-                    <div class="d-flex flex-row">
+                    <div class="d-flex flex-row flex-wrap">
                         @foreach (var item in Model)
                         {
                             @if (inst.InstituteID == item.InstituteID)

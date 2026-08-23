@@ -81,6 +81,11 @@ body {
     width: 100%;
 }
 
+/* Ensure group blocks behave as non-flexible items and wrap correctly */
+.groups {
+    flex: 0 0 auto; /* do not grow or shrink, occupy intrinsic width */
+}
+
 .fix {
     position: sticky;
     left: 0;
