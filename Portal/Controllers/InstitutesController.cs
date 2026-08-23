@@ -177,7 +177,7 @@ namespace Portal
                 .ToListAsync());
         }
 
-        [Authorize(Roles = "SuperAdmin, ANB-UMCH, ANB-HEAD, ANB-CI, ANB-ICDA, ANB-IST, User")]
+        [Authorize(Roles = "SuperAdmin, ANB-UMCH, ANB-HEAD, ANB-CI, ANB-ICDA, ANB-IST, ANB-SFIPKIP, User")]
         public async Task<IActionResult> Details(int? id)
         {
             if (id == null)
@@ -335,7 +335,7 @@ namespace Portal
             foreach (var group in groups)
             {
                 var groupStudents = students
-                    .Where(s => s.GroupID == group.GroupID)
+                    .Where(s => s.GroupID == group.GroupID && s.Status == true)
                     .ToList();
 
                 var groupMarks = marks.
