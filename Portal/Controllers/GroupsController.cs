@@ -1010,7 +1010,8 @@ namespace Portal
                     UnsatisfactoryMark = m.UnsatisfactoryValue,
                     UsatisfactoryDate = m.UnsatisfactoryDate,
                     CorrectedValue = m.CorrectedValue,
-                    CorrectedDate = m.CorrectedDate
+                    CorrectedDate = m.CorrectedDate,
+                    GroupID = m.GroupID
                 }
             ).ToListAsync();
 

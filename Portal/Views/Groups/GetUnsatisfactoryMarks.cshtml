@@ -32,6 +32,7 @@
                             <th class="text-center align-middle p-1 tableRowSticky">Дата получения</th>
                             <th class="text-center align-middle p-1 tableRowSticky">Исправленная отметка</th>
                             <th class="text-center align-middle p-1 tableRowSticky">Дата исправления</th>
+                            <th class="text-center align-middle p-1 tableRowSticky"></th>
                         </tr>
                     </thead>
                     <tbody class="bg-white compact">
@@ -45,6 +46,7 @@
                                 <td class="text-center align-middle p-1">@mark.UsatisfactoryDate.ToShortDateString()</td>
                                 <td class="text-center align-middle p-1">@(mark.CorrectedValue ?? "-")</td>
                                 <td class="text-center align-middle p-1">@(mark.CorrectedDate?.ToShortDateString() ?? "-")</td>
+                                <td class="text-center align-middle p-1"><a asp-action="AdjustedJournal" asp-controller="Journals" asp-route-GroupID="@mark.GroupID" asp-route-SubjectID="@mark.SubjectID" class="btn btn-sm btn-primary">журнал</a></td>
                             </tr>
                             i++;
                         }

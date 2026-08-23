@@ -5,6 +5,7 @@ namespace Portal.ViewModel
     public class UnsatisfactoryViewModel
     {
         public int StudentID { get; set; }
+        public int GroupID { get; set; }
         public string StudentFullName { get; set; }
         public int SubjectID { get; set; }
         public string SubjectFullName { get; set; }
