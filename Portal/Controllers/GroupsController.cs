@@ -1005,6 +1005,8 @@ namespace Portal
             var query = from m in _context.UnsatisfactoryMarks
                         join st in _context.Students on m.StudentID equals st.StudentID
                         join sb in _context.Subjects on m.SubjectID equals sb.SubjectID
+                        join mk in _context.Marks on m.MarkID equals mk.MarkID
+                        join toe in _context.Types on mk.TypeOfExerciseID equals toe.TypeOfExerciseID
                         where m.GroupID == id
                         select new UnsatisfactoryViewModel
                         {
@@ -1016,7 +1018,9 @@ namespace Portal
                             UsatisfactoryDate = m.UnsatisfactoryDate,
                             CorrectedValue = m.CorrectedValue,
                             CorrectedDate = m.CorrectedDate,
-                            GroupID = m.GroupID
+                            GroupID = m.GroupID,
+                            TypeName = toe.Name,
+                            Comment = mk.Comment
                         };
 
             bool hasStart = date_1 != default(DateTime);

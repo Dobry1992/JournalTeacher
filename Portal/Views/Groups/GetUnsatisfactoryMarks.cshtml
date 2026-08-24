@@ -47,6 +47,8 @@
                             <th class="text-center align-middle p-1 fix tableRowSticky title-row">#</th>
                             <th class="text-center align-middle p-1 fix tableRowSticky title-row">Ф.И.О.</th>
                             <th class="text-center align-middle p-1 tableRowSticky">Дисциплина</th>
+                            <th class="text-center align-middle p-1 tableRowSticky">Тип занятия</th>
+                            <th class="text-center align-middle p-1 tableRowSticky">Комментарий</th>
                             <th class="text-center align-middle p-1 tableRowSticky">Неудовлетворительная отметка</th>
                             <th class="text-center align-middle p-1 tableRowSticky">Дата получения</th>
                             <th class="text-center align-middle p-1 tableRowSticky">Исправленная отметка</th>
@@ -61,6 +63,8 @@
                                 <td class="text-center align-middle bg-light p-1 fix">@i</td>
                                 <td class="text-center align-middle bg-light p-1 fix" style="white-space:nowrap">@mark.StudentFullName</td>
                                 <td class="text-center align-middle p-1">@mark.SubjectFullName</td>
+                                <td class="text-center align-middle p-1">@mark.TypeName</td>
+                                <td class="text-center align-middle p-1">@mark.Comment</td>
                                 <td class="text-center align-middle p-1">@mark.UnsatisfactoryMark</td>
                                 <td class="text-center align-middle p-1">@mark.UsatisfactoryDate.ToShortDateString()</td>
                                 <td class="text-center align-middle p-1">@(mark.CorrectedValue ?? "-")</td>
