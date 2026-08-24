@@ -504,6 +504,26 @@ namespace Portal
                     IsEdit = false
                 };
 
+                // determine collapse status for stat (average) lesson using same rules as for normal lessons
+                var todayLocal = DateTime.Today;
+                int semesterNow = GetSemester(todayLocal);
+                int semesterOfStat = GetSemester(statlesson.Date);
+                if (semesterOfStat != semesterNow)
+                {
+                    journalLesson.CollapseId = "collapse";
+                }
+                else
+                {
+                    if (todayLocal.Year != statlesson.Date.Year)
+                    {
+                        journalLesson.CollapseId = "collapse";
+                    }
+                    else
+                    {
+                        journalLesson.CollapseId = "";
+                    }
+                }
+
                 statLessons.Add(journalLesson);
 
                 foreach (var student in students)

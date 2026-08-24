@@ -271,11 +271,69 @@ else
             });
 
             const btn = document.getElementById("collapseToggleBtn");
-            const cells = document.querySelectorAll("th[id^='collapse'], td[id^='collapse']");
+            // Determine table and header columns; hide entire columns whose header has collapse id
+            const table = document.querySelector('#sd table');
+            const headers = table ? Array.from(table.querySelectorAll('thead tr:first-child th')) : [];
+            // use DOM cellIndex to account for colspans and ensure correct column mapping
+            const collapseIndices = headers
+                .map(th => (th.id && th.id.startsWith('collapse')) ? th.cellIndex : -1)
+                .filter(i => i >= 0)
+                .sort((a,b)=>a-b);
+
+            // Determine which CO headers belong to previous contiguous collapse ranges.
+            // Strategy: compress collapseIndices into contiguous ranges [start..end]. For each range, if there is a header
+            // immediately to the right at cellIndex = end+1 and its text is CO/СО, mark that CO to hide. This avoids hiding
+            // COs that are not directly associated with a collapsed group.
+            const hideIndicesSet = new Set(collapseIndices);
+            if (collapseIndices.length) {
+                // build ranges
+                const ranges = [];
+                let rangeStart = collapseIndices[0];
+                let prev = collapseIndices[0];
+                for (let i = 1; i < collapseIndices.length; i++) {
+                    const cur = collapseIndices[i];
+                    if (cur === prev + 1) {
+                        prev = cur; // extend range
+                    } else {
+                        ranges.push([rangeStart, prev]);
+                        rangeStart = cur; prev = cur;
+                    }
+                }
+                ranges.push([rangeStart, prev]);
+
+                // for each range, check header at end+1
+                ranges.forEach(r => {
+                    const end = r[1];
+                    const candidateIndex = end + 1;
+                    const th = headers.find(h => h.cellIndex === candidateIndex);
+                    if (th) {
+                        const text = (th.innerText||th.textContent||'').trim().toUpperCase();
+                        if (text === 'CO' || text === 'СО') {
+                            hideIndicesSet.add(candidateIndex);
+                        }
+                    }
+                });
+            }
+            const hideIndicesArr = Array.from(hideIndicesSet).sort((a,b)=>a-b);
+
+            function setColumnDisplay(idx, display) {
+                if (!table) return;
+                Array.from(table.querySelectorAll('tr')).forEach(tr => {
+                    const cell = tr.children[idx];
+                    if (cell) cell.style.display = display;
+                });
+            }
+
             let hidden = localStorage.getItem("collapseHidden") === "true";
 
             function toggleCells() {
-                cells.forEach(el => el.style.display = hidden ? "none" : "");
+                if (!table) return;
+                // hide/show columns determined by hideIndices (collapse columns + corresponding CO columns)
+                // use computed array hideIndicesArr if available, otherwise fallback to hideIndices
+                const targets = typeof hideIndicesArr !== 'undefined' ? hideIndicesArr : hideIndices;
+                targets.forEach(idx => setColumnDisplay(idx, hidden ? 'none' : ''));
+                // also hide any individual cell that has collapse id (defensive)
+                Array.from(table.querySelectorAll('[id^="collapse"]')).forEach(c => { c.style.display = hidden ? 'none' : ''; });
                 btn.textContent = hidden
                     ? "Показать занятия и отметки"
                     : "Скрыть занятия и отметки";
