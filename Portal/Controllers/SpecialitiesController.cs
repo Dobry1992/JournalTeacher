@@ -239,159 +239,179 @@ namespace Portal.Controllers
                 return NotFound();
             }
 
-            //Количество групп
+            // Получаем специальность
+            var speciality = await _context.Specialities.FindAsync(id);
+            if (speciality == null)
+            {
+                return NotFound();
+            }
+
+            // Получаем группы
             var groups = await _context.Groups
                 .Where(g => g.SpecialityID == id && g.DateEnter.Year == year)
                 .ToListAsync();
 
-            var groupIds = groups
-                .Select(g => g.GroupID)
-                .ToList();
+            var groupIds = groups.Select(g => g.GroupID).ToList();
 
-            //Расчёт среднего бала за текущий семестр.
-            string term;
-            var date = DateTime.Now.AddYears(-1);
+            if (!groupIds.Any())
+            {
+                return View(new SpecialityAnalyticViewModel
+                {
+                    SpecialityID = id,
+                    SpecialityName = speciality.Name,
+                    EnterYear = year,
+                    StudentNumber = 0,
+                    GroupNumber = 0,
+                    TimeRaiting = new Dictionary<string, string>()
+                });
+            }
+
+            // Получаем типы занятий
             var typeSZ = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Семинарское занятие");
             var typePZ = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Практическое занятие");
             var typeLZ = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Лабораторное занятие");
             var typeL = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Лекция");
             var typeKM = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Контрольное мероприятие");
             var typeGPZ = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Городское практическое занятие");
-            List<double> marksAverage = new();
+
+            // Типы для учебных отметок
+            var studyTypeIds = new HashSet<int>
+    {
+        typeKM?.TypeOfExerciseID ?? 0,
+        typeGPZ?.TypeOfExerciseID ?? 0,
+        typeSZ?.TypeOfExerciseID ?? 0,
+        typePZ?.TypeOfExerciseID ?? 0,
+        typeLZ?.TypeOfExerciseID ?? 0,
+        typeL?.TypeOfExerciseID ?? 0
+    };
+
             List<Mark> marks = new();
-            if (DateTime.Now.Month.ToString() == "9" || DateTime.Now.Month.ToString() == "10" || DateTime.Now.Month.ToString() == "11" || DateTime.Now.Month.ToString() == "12")
+            List<double> marksAverage = new();
+            string term;
+            var date = DateTime.Now.AddYears(-1);
+
+            // Получаем ВСЕ отметки для групп специальности
+            var allMarks = await _context.Marks
+                .Where(m => m.SpecialityID == id && groupIds.Contains(m.GroupID))
+                .ToListAsync();
+
+            // ========================================
+            // ОПРЕДЕЛЯЕМ УЧЕБНЫЙ ГОД
+            // ========================================
+            int startYear, endYear;
+            if (DateTime.Now.Month >= 9)
             {
-                term = "первый семестр";
-                marks = await _context.Marks
-                    .Where(m =>
-                        m.SpecialityID == id &&
-                        groupIds.Contains(m.GroupID) &&
-                        (m.TypeOfExerciseID == typeKM.TypeOfExerciseID ||
-                            m.TypeOfExerciseID == typeGPZ.TypeOfExerciseID ||
-                            m.TypeOfExerciseID == typeSZ.TypeOfExerciseID ||
-                            m.TypeOfExerciseID == typePZ.TypeOfExerciseID ||
-                            m.TypeOfExerciseID == typeLZ.TypeOfExerciseID ||
-                            m.TypeOfExerciseID == typeL.TypeOfExerciseID) &&
-                        m.Date.Year == DateTime.Now.Year &&
-                            (m.Date.Month.ToString() == "9" ||
-                            m.Date.Month.ToString() == "10" ||
-                            m.Date.Month.ToString() == "11" ||
-                            m.Date.Month.ToString() == "12")
-                    )
-                    .ToListAsync();
-                if (marks != null)
-                {
-                    foreach (var mark in marks)
-                    {
-                        if (double.TryParse(mark.Value, out var m))
-                        {
-                            marksAverage.Add(m);
-                        }
-                    }
-                }
+                startYear = DateTime.Now.Year;
+                endYear = DateTime.Now.Year + 1;
             }
-            else if (DateTime.Now.Month.ToString() == "1")
+            else
+            {
+                startYear = DateTime.Now.Year - 1;
+                endYear = DateTime.Now.Year;
+            }
+
+            // ========================================
+            // ФИЛЬТРУЕМ ОТМЕТКИ ДЛЯ РЕЙТИНГОВ (ТОЛЬКО ТЕКУЩИЙ СЕМЕСТР)
+            // ========================================
+
+            if (DateTime.Now.Month >= 9 && DateTime.Now.Month <= 12)
             {
                 term = "первый семестр";
-                marks = await _context.Marks
+
+                var semesterMarks = allMarks
                     .Where(m =>
-                        m.SpecialityID == id &&
-                        groupIds.Contains(m.GroupID) &&
-                            (
-                                m.TypeOfExerciseID == typeKM.TypeOfExerciseID ||
-                                m.TypeOfExerciseID == typeGPZ.TypeOfExerciseID ||
-                                m.TypeOfExerciseID == typeSZ.TypeOfExerciseID ||
-                                m.TypeOfExerciseID == typePZ.TypeOfExerciseID ||
-                                m.TypeOfExerciseID == typeLZ.TypeOfExerciseID ||
-                                m.TypeOfExerciseID == typeL.TypeOfExerciseID
-                            ) &&
-                        ((m.Date.Year == DateTime.Now.Year &&
-                        (m.Date.Month.ToString() == "1") ||
-                            m.Date.Year == date.Year &&
-                            (m.Date.Month.ToString() == "9" ||
-                            m.Date.Month.ToString() == "10" ||
-                            m.Date.Month.ToString() == "11" ||
-                            m.Date.Month.ToString() == "12")))
+                        studyTypeIds.Contains(m.TypeOfExerciseID) &&
+                        m.Date.Year == DateTime.Now.Year &&
+                        m.Date.Month >= 9 && m.Date.Month <= 12
                     )
-                    .ToListAsync();
-                if (marks != null)
-                {
-                    foreach (var mark in marks)
-                    {
-                        if (double.TryParse(mark.Value, out var m))
-                        {
-                            marksAverage.Add(m);
-                        }
-                    }
-                }
+                    .ToList();
+
+                var incompleteMarks = allMarks.Where(m => m.FlagF == 0).ToList();
+
+                var allIds = new HashSet<int>();
+                marks = semesterMarks
+                    .Concat(incompleteMarks)
+                    .Where(m => allIds.Add(m.MarkID))
+                    .ToList();
+            }
+            else if (DateTime.Now.Month == 1)
+            {
+                term = "первый семестр";
+
+                var semesterMarks = allMarks
+                    .Where(m =>
+                        studyTypeIds.Contains(m.TypeOfExerciseID) &&
+                        ((m.Date.Year == DateTime.Now.Year && m.Date.Month == 1) ||
+                         (m.Date.Year == date.Year && m.Date.Month >= 9 && m.Date.Month <= 12))
+                    )
+                    .ToList();
+
+                var incompleteMarks = allMarks.Where(m => m.FlagF == 0).ToList();
+
+                var allIds = new HashSet<int>();
+                marks = semesterMarks
+                    .Concat(incompleteMarks)
+                    .Where(m => allIds.Add(m.MarkID))
+                    .ToList();
             }
             else
             {
                 term = "второй семестр";
-                marks = await _context.Marks
-                    .Where(m => m.SpecialityID == id &&
-                        groupIds.Contains(m.GroupID) &&
-                        (
-                            m.TypeOfExerciseID == typeKM.TypeOfExerciseID ||
-                            m.TypeOfExerciseID == typeGPZ.TypeOfExerciseID ||
-                            m.TypeOfExerciseID == typeSZ.TypeOfExerciseID ||
-                            m.TypeOfExerciseID == typePZ.TypeOfExerciseID ||
-                            m.TypeOfExerciseID == typeLZ.TypeOfExerciseID ||
-                            m.TypeOfExerciseID == typeL.TypeOfExerciseID) &&
-                    ((m.Date.Year == DateTime.Now.Year &&
-                        (m.Date.Month.ToString() == "2" ||
-                        m.Date.Month.ToString() == "3" ||
-                        m.Date.Month.ToString() == "4" ||
-                        m.Date.Month.ToString() == "5" ||
-                        m.Date.Month.ToString() == "6" ||
-                        m.Date.Month.ToString() == "7" ||
-                        m.Date.Month.ToString() == "8")))
+
+                var semesterMarks = allMarks
+                    .Where(m =>
+                        studyTypeIds.Contains(m.TypeOfExerciseID) &&
+                        m.Date.Year == DateTime.Now.Year &&
+                        m.Date.Month >= 2 && m.Date.Month <= 8
                     )
-                    .ToListAsync();
-                if (marks != null)
+                    .ToList();
+
+                var incompleteMarks = allMarks.Where(m => m.FlagF == 0).ToList();
+
+                var allIds = new HashSet<int>();
+                marks = semesterMarks
+                    .Concat(incompleteMarks)
+                    .Where(m => allIds.Add(m.MarkID))
+                    .ToList();
+            }
+
+            // Извлекаем числовые отметки для расчетов
+            foreach (var mark in marks)
+            {
+                if (double.TryParse(mark.Value, out var m))
                 {
-                    foreach (var mark in marks)
-                    {
-                        if (double.TryParse(mark.Value, out var m))
-                        {
-                            marksAverage.Add(m);
-                        }
-                    }
+                    marksAverage.Add(m);
                 }
             }
 
-            //Специальность
-            var speciality = await _context.Specialities.FindAsync(id);
-
-            //Количество обучающихся
-            var students = _context.Students
+            // ========================================
+            // КОЛИЧЕСТВО ОБУЧАЮЩИХСЯ
+            // ========================================
+            var students = await _context.Students
                 .Include(s => s.Group)
                 .Where(s => groupIds.Contains(s.GroupID) && s.Status == true)
-                .AsNoTracking();
-            int studentNumber = students.Count();
+                .AsNoTracking()
+                .ToListAsync();
+            int studentNumber = students.Count;
 
-            //Рейтинг учащихся
+            // ========================================
+            // РЕЙТИНГ УЧАЩИХСЯ
+            // ========================================
             List<StudentRaiting> studentRaitings = new();
             foreach (var student in students)
             {
                 double? studentRating = _studentAverageMarkService.GetStudentAverageMark(student, marks);
-
-                if (studentRating == null)
-                {
-                    studentRating = 0;
-                }
-
-                StudentRaiting sr = new StudentRaiting()
+                studentRaitings.Add(new StudentRaiting
                 {
                     Group = student.Group,
                     Student = student,
-                    Raiting = studentRating,
-                };
-
-                studentRaitings.Add(sr);
+                    Raiting = studentRating ?? 0
+                });
             }
 
-            //Рейтинг учебных групп
+            // ========================================
+            // РЕЙТИНГ УЧЕБНЫХ ГРУПП
+            // ========================================
             List<InstGroupRaiting> groupsRating = new();
             foreach (var group in groups)
             {
@@ -399,348 +419,141 @@ namespace Portal.Controllers
                     .Where(s => s.GroupID == group.GroupID)
                     .ToList();
 
-                var groupMarks = marks.
-                    Where(m => m.GroupID == group.GroupID)
+                var groupMarks = marks
+                    .Where(m => m.GroupID == group.GroupID)
                     .ToList();
 
                 List<double> groupStudentRatings = new();
                 foreach (var student in groupStudents)
                 {
                     double? studentRating = _studentAverageMarkService.GetStudentAverageMark(student, groupMarks);
-                    if (studentRating == null)
+                    if (studentRating.HasValue && studentRating.Value > 0)
                     {
-                        studentRating = 0;
+                        groupStudentRatings.Add(studentRating.Value);
                     }
-                    groupStudentRatings.Add((double)studentRating);
                 }
 
-                groupStudentRatings.RemoveAll(m => m == 0);
-                double groupRating = 0;
+                double groupRating = groupStudentRatings.Any()
+                    ? Math.Round(groupStudentRatings.Average(), 3, MidpointRounding.AwayFromZero)
+                    : 0;
 
-                if (groupStudentRatings.Any())
-                {
-                    groupRating = Math.Round(groupStudentRatings.Average(), 3, MidpointRounding.AwayFromZero);
-                }
-
-                InstGroupRaiting instGroupRaiting = new()
+                groupsRating.Add(new InstGroupRaiting
                 {
                     Group = group,
                     Raiting = groupRating
-                };
-
-                groupsRating.Add(instGroupRaiting);
+                });
             }
 
-            //Средний балл курса
+            // ========================================
+            // СРЕДНИЙ БАЛЛ КУРСА
+            // ========================================
             double courseRating = 0;
             var filterGroupsRating = groupsRating
-                .Where(m => m.Raiting != 0)
+                .Where(m => m.Raiting > 0)
                 .ToList();
+
             if (filterGroupsRating.Any())
             {
                 courseRating = Math.Round(filterGroupsRating.Average(g => g.Raiting), 3, MidpointRounding.AwayFromZero);
             }
 
-            //Оценочные показатели курса
+            // ========================================
+            // ОЦЕНОЧНЫЕ ПОКАЗАТЕЛИ КУРСА
+            // ========================================
             Dictionary<int, int> marksNumber = new();
             Dictionary<int, decimal> marksPercent = new();
+
             for (int i = 1; i <= 10; i++)
             {
-                if (marksAverage.Count != 0)
-                {
-                    decimal n1 = marksAverage.Where(x => x == i).Count();
-                    decimal n2 = marksAverage.Count;
-                    decimal mp = n1 / n2 * 100;
-                    marksPercent.Add(i, Math.Round(mp, 3, MidpointRounding.AwayFromZero));
-                }
-                marksNumber.Add(i, marksAverage.Where(x => x == i).Count());
+                int count = marksAverage.Where(x => (int)x == i).Count();
+                marksNumber.Add(i, count);
+
+                marksPercent.Add(i, marksAverage.Any()
+                    ? Math.Round((decimal)count / marksAverage.Count * 100, 3, MidpointRounding.AwayFromZero)
+                    : 0);
             }
 
-            //Средняя месячная успеваемость
+            // ========================================
+            // СРЕДНЯЯ МЕСЯЧНАЯ УСПЕВАЕМОСТЬ
+            // ========================================
             Dictionary<string, string> raitingTime = new();
-            var septemberMarks = marks.Where(m => m.Date.Month.ToString() == "9");
-            List<Mark> sepMarks = new();
-            foreach (var m in septemberMarks)
+
+            // Массив месяцев
+            string[] monthNames = { "Сентябрь", "Октябрь", "Ноябрь", "Декабрь",
+                            "Январь", "Февраль", "Март", "Апрель",
+                            "Май", "Июнь", "Июль", "Август" };
+
+            // Получаем отметки за учебный год
+            var yearMarks = allMarks
+                .Where(m => studyTypeIds.Contains(m.TypeOfExerciseID))
+                .ToList();
+
+            // Сентябрь-Декабрь (startYear)
+            for (int month = 9; month <= 12; month++)
             {
-                if (double.TryParse(m.Value, out var mark))
-                {
-                    sepMarks.Add(m);
-                }
-            }
-            if (sepMarks.Count != 0)
-            {
-                raitingTime.Add("Сентябрь", Math.Round(await _instituteAverage.GetInstituteAverageMarkAsync(sepMarks), 3, MidpointRounding.AwayFromZero).ToString().Replace(",", "."));
-            }
-            else
-            {
-                raitingTime.Add("Сентябрь", "0");
+                string monthName = GetMonthName(month);
+                var monthMarks = yearMarks
+                    .Where(m => m.Date.Month == month && m.Date.Year == startYear)
+                    .ToList();
+
+                double avg = CalculateAverageMark(monthMarks);
+                raitingTime.Add(monthName, avg.ToString("0.000").Replace(",", "."));
             }
 
-            var octoberMarks = marks.Where(m => m.Date.Month.ToString() == "10");
-            List<Mark> octMarks = new();
-            foreach (var m in octoberMarks)
+            // Январь-Август (endYear)
+            for (int month = 1; month <= 8; month++)
             {
-                if (double.TryParse(m.Value, out var mark))
-                {
-                    octMarks.Add(m);
-                }
-            }
-            if (octMarks.Count != 0)
-            {
-                raitingTime.Add("Октябрь", Math.Round(await _instituteAverage.GetInstituteAverageMarkAsync(octMarks), 3, MidpointRounding.AwayFromZero).ToString().Replace(",", "."));
-            }
-            else
-            {
-                raitingTime.Add("Октябрь", "0");
+                string monthName = GetMonthName(month);
+                var monthMarks = yearMarks
+                    .Where(m => m.Date.Month == month && m.Date.Year == endYear)
+                    .ToList();
+
+                double avg = CalculateAverageMark(monthMarks);
+                raitingTime.Add(monthName, avg.ToString("0.000").Replace(",", "."));
             }
 
-            var novemberMarks = marks.Where(m => m.Date.Month.ToString() == "11");
-            List<Mark> novMarks = new();
-            foreach (var m in novemberMarks)
-            {
-                if (double.TryParse(m.Value, out var mark))
-                {
-                    novMarks.Add(m);
-                }
-            }
-            if (novMarks.Count != 0)
-            {
-                raitingTime.Add("Ноябрь", Math.Round(await _instituteAverage.GetInstituteAverageMarkAsync(novMarks), 3, MidpointRounding.AwayFromZero).ToString().Replace(",", "."));
-            }
-            else
-            {
-                raitingTime.Add("Ноябрь", "0");
-            }
+            // ========================================
+            // УЧЕБНЫЙ ГОД
+            // ========================================
+            string yearsStudy = $"{startYear}/{endYear}";
 
+            // ========================================
+            // ЛУЧШИЙ И ХУДШИЙ СТУДЕНТ (для ViewBag)
+            // ========================================
+            var bestStudent = studentRaitings
+                .Where(s => s.Raiting > 0)
+                .OrderByDescending(s => s.Raiting)
+                .FirstOrDefault();
 
-            var decemberMarks = marks.Where(m => m.Date.Month.ToString() == "12");
-            List<Mark> decMarks = new();
-            foreach (var m in decemberMarks)
-            {
-                if (double.TryParse(m.Value, out var mark))
-                {
-                    decMarks.Add(m);
-                }
-            }
-            if (decMarks.Count != 0)
-            {
-                raitingTime.Add("Декабрь", Math.Round(await _instituteAverage.GetInstituteAverageMarkAsync(decMarks), 3, MidpointRounding.AwayFromZero).ToString().Replace(",", "."));
-            }
-            else
-            {
-                raitingTime.Add("Декабрь", "0");
-            }
+            var worstStudent = studentRaitings
+                .Where(s => s.Raiting > 0)
+                .OrderBy(s => s.Raiting)
+                .FirstOrDefault();
 
-            var januaryMarks = marks.Where(m => m.Date.Month.ToString() == "1");
-            List<Mark> janMarks = new();
-            foreach (var m in januaryMarks)
-            {
-                if (double.TryParse(m.Value, out var mark))
-                {
-                    janMarks.Add(m);
-                }
-            }
-            if (janMarks.Count != 0)
-            {
-                raitingTime.Add("Январь", Math.Round(await _instituteAverage.GetInstituteAverageMarkAsync(janMarks), 3, MidpointRounding.AwayFromZero).ToString().Replace(",", "."));
-            }
-            else
-            {
-                raitingTime.Add("Январь", "0");
-            }
+            // ========================================
+            // ЛУЧШАЯ И ХУДШАЯ ГРУППА (для ViewBag)
+            // ========================================
+            var bestGroup = groupsRating
+                .Where(g => g.Raiting > 0)
+                .OrderByDescending(g => g.Raiting)
+                .FirstOrDefault();
 
-            var februaryMarks = marks.Where(m => m.Date.Month.ToString() == "2");
-            List<Mark> febMarks = new();
-            foreach (var m in februaryMarks)
-            {
-                if (double.TryParse(m.Value, out var mark))
-                {
-                    febMarks.Add(m);
-                }
-            }
-            if (febMarks.Count != 0)
-            {
-                raitingTime.Add("Февраль", Math.Round(await _instituteAverage.GetInstituteAverageMarkAsync(febMarks), 3, MidpointRounding.AwayFromZero).ToString().Replace(",", "."));
-            }
-            else
-            {
-                raitingTime.Add("Февраль", "0");
-            }
+            var worstGroup = groupsRating
+                .Where(g => g.Raiting > 0)
+                .OrderBy(g => g.Raiting)
+                .FirstOrDefault();
 
-            var marchMarks = marks.Where(m => m.Date.Month.ToString() == "3");
-            List<Mark> marMarks = new();
-            foreach (var m in marchMarks)
-            {
-                if (double.TryParse(m.Value, out var mark))
-                {
-                    marMarks.Add(m);
-                }
-            }
-            if (marMarks.Count != 0)
-            {
-                raitingTime.Add("Март", Math.Round(await _instituteAverage.GetInstituteAverageMarkAsync(marMarks), 3, MidpointRounding.AwayFromZero).ToString().Replace(",", "."));
-            }
-            else
-            {
-                raitingTime.Add("Март", "0");
-            }
+            // ========================================
+            // ViewBag
+            // ========================================
+            ViewBag.BestStudent = bestStudent ?? new StudentRaiting { Raiting = 0 };
+            ViewBag.WorseStudent = worstStudent ?? new StudentRaiting { Raiting = 0 };
+            ViewBag.BestGroup = bestGroup ?? new InstGroupRaiting { Raiting = 0 };
+            ViewBag.WorseGroup = worstGroup ?? new InstGroupRaiting { Raiting = 0 };
 
-            var aprilMarks = marks.Where(m => m.Date.Month.ToString() == "4");
-            List<Mark> aprMarks = new();
-            foreach (var m in aprilMarks)
-            {
-                if (double.TryParse(m.Value, out var mark))
-                {
-                    aprMarks.Add(m);
-                }
-            }
-            if (aprMarks.Count != 0)
-            {
-                raitingTime.Add("Апрель", Math.Round(await _instituteAverage.GetInstituteAverageMarkAsync(aprMarks), 3, MidpointRounding.AwayFromZero).ToString().Replace(",", "."));
-            }
-            else
-            {
-                raitingTime.Add("Апрель", "0");
-            }
-
-            var mayMarks = marks.Where(m => m.Date.Month.ToString() == "5");
-            List<Mark> mMarks = new();
-            foreach (var m in mayMarks)
-            {
-                if (double.TryParse(m.Value, out var mark))
-                {
-                    mMarks.Add(m);
-                }
-            }
-            if (mMarks.Count != 0)
-            {
-                raitingTime.Add("Май", Math.Round(await _instituteAverage.GetInstituteAverageMarkAsync(mMarks), 3, MidpointRounding.AwayFromZero).ToString().Replace(",", "."));
-            }
-            else
-            {
-                raitingTime.Add("Май", "0");
-            }
-
-            var juneMarks = marks.Where(m => m.Date.Month.ToString() == "6");
-            List<Mark> junMarks = new();
-            foreach (var m in juneMarks)
-            {
-                if (double.TryParse(m.Value, out var mark))
-                {
-                    junMarks.Add(m);
-                }
-            }
-            if (junMarks.Count != 0)
-            {
-                raitingTime.Add("Июнь", Math.Round(await _instituteAverage.GetInstituteAverageMarkAsync(junMarks), 3, MidpointRounding.AwayFromZero).ToString().Replace(",", "."));
-            }
-            else
-            {
-                raitingTime.Add("Июнь", "0");
-            }
-
-            var julyMarks = marks.Where(m => m.Date.Month.ToString() == "7");
-            List<Mark> julMarks = new();
-            foreach (var m in julyMarks)
-            {
-                if (double.TryParse(m.Value, out var mark))
-                {
-                    julMarks.Add(m);
-                }
-            }
-            if (julMarks.Count != 0)
-            {
-                raitingTime.Add("Июль", Math.Round(await _instituteAverage.GetInstituteAverageMarkAsync(julMarks), 3, MidpointRounding.AwayFromZero).ToString().Replace(",", "."));
-            }
-            else
-            {
-                raitingTime.Add("Июль", "0");
-            }
-
-            var augustMarks = marks.Where(m => m.Date.Month.ToString() == "8");
-            List<Mark> augMarks = new();
-            foreach (var m in augustMarks)
-            {
-                if (double.TryParse(m.Value, out var mark))
-                {
-                    augMarks.Add(m);
-                }
-            }
-            if (augMarks.Count != 0)
-            {
-                raitingTime.Add("Август", Math.Round(await _instituteAverage.GetInstituteAverageMarkAsync(augMarks), 3, MidpointRounding.AwayFromZero).ToString().Replace(",", "."));
-            }
-            else
-            {
-                raitingTime.Add("Август", "0");
-            }
-
-            //Учебный год
-            string yearsStudy = "";
-            if (DateTime.Now.Month.ToString() == "9" || DateTime.Now.Month.ToString() == "10" || DateTime.Now.Month.ToString() == "11" || DateTime.Now.Month.ToString() == "12")
-            {
-                DateTime dateTimePlus = DateTime.Now.AddYears(1);
-                yearsStudy = DateTime.Now.Year + "/" + dateTimePlus.Year;
-            }
-            else
-            {
-                DateTime dateTimeMinus = DateTime.Now.AddYears(-1);
-                yearsStudy = dateTimeMinus.Year + "/" + DateTime.Now.Year;
-            }
-
-            var bestStudent = studentRaitings.OrderByDescending(s => s.Raiting).FirstOrDefault();
-            if (bestStudent == null)
-            {
-                InstStudRaiting i = new();
-                i.Raiting = 0;
-                ViewBag.BestStudent = i;
-            }
-            else
-            {
-                if (bestStudent.Raiting == null)
-                {
-                    bestStudent.Raiting = 0;
-                }
-                ViewBag.BestStudent = bestStudent;
-            }
-            var worseStudent = studentRaitings.OrderByDescending(s => s.Raiting).LastOrDefault();
-            if (worseStudent == null)
-            {
-                InstStudRaiting i = new();
-                i.Raiting = 0;
-                ViewBag.WorseStudent = i;
-            }
-            else
-            {
-                if (worseStudent.Raiting == null)
-                {
-                    worseStudent.Raiting = 0;
-                }
-                ViewBag.WorseStudent = worseStudent;
-            }
-            var bestGroup = groupsRating.OrderByDescending(g => g.Raiting).FirstOrDefault();
-            if (bestGroup == null)
-            {
-                InstStudRaiting i = new();
-                i.Raiting = 0;
-                ViewBag.BestGroup = i;
-            }
-            else
-            {
-                ViewBag.BestGroup = bestGroup;
-            }
-            var worseGroup = groupsRating.OrderByDescending(g => g.Raiting).LastOrDefault();
-            if (worseGroup == null)
-            {
-                InstStudRaiting i = new();
-                i.Raiting = 0;
-                ViewBag.WorseGroup = i;
-            }
-            else
-            {
-                ViewBag.WorseGroup = worseGroup;
-            }
-
+            // ========================================
+            // ФОРМИРОВАНИЕ VIEWMODEL
+            // ========================================
             SpecialityAnalyticViewModel specialityAnalyticViewModel = new()
             {
                 SpecialityID = id,
@@ -748,14 +561,10 @@ namespace Portal.Controllers
                 Term = term,
                 Raiting = Math.Round(courseRating, 3, MidpointRounding.AwayFromZero),
                 StudentNumber = studentNumber,
-                GroupNumber = groups.Count(),
+                GroupNumber = groups.Count,
                 EnterYear = year,
-                StudentsRaiting = studentRaitings
-                    .OrderByDescending(s => s.Raiting)
-                    .ToList(),
-                GroupsRaiting = groupsRating
-                    .OrderByDescending(g => g.Raiting)
-                    .ToList(),
+                StudentsRaiting = studentRaitings.OrderByDescending(s => s.Raiting).ToList(),
+                GroupsRaiting = groupsRating.OrderByDescending(g => g.Raiting).ToList(),
                 MarksNumber = marksNumber,
                 MarksPercent = marksPercent,
                 TimeRaiting = raitingTime,
@@ -763,6 +572,27 @@ namespace Portal.Controllers
             };
 
             return View(specialityAnalyticViewModel);
+        }
+
+        // Вспомогательные методы
+        private string GetMonthName(int month)
+        {
+            string[] months = { "Январь", "Февраль", "Март", "Апрель", "Май", "Июнь",
+                        "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь" };
+            return months[month - 1];
+        }
+
+        private double CalculateAverageMark(List<Mark> marks)
+        {
+            var numericMarks = marks
+                .Select(m => double.TryParse(m.Value, out var value) ? value : (double?)null)
+                .Where(v => v.HasValue)
+                .Select(v => v.Value)
+                .ToList();
+
+            return numericMarks.Any()
+                ? Math.Round(numericMarks.Average(), 3, MidpointRounding.AwayFromZero)
+                : 0;
         }
 
         [Authorize]
