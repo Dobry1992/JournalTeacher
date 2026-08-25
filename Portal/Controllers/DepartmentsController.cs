@@ -46,15 +46,13 @@ namespace Portal.Controllers
             return View(await departments.ToListAsync());
         }
 
-        public async Task<IActionResult> SetSubject(int GroupID, DateTime date_1, DateTime date_2)
+        public async Task<IActionResult> SetSubject(int GroupID, DateTime date_1, DateTime date_2, bool showCompleted = false)
         {
             // Получаем группу
             var group = await _context.Groups.FindAsync(GroupID);
             if (group == null) return NotFound();
 
-            var speciality = await _context.Specialities.FindAsync(group.SpecialityID);
-
-            // Получаем ссылки Sub_SpecLinks и преобразуем SubjectID в int на клиенте
+            // Получаем ссылки Sub_SpecLinks
             var links = await _context.Sub_SpecLinks
                 .Where(l => l.SpecialityID == group.SpecialityID.ToString())
                 .ToListAsync();
@@ -64,9 +62,15 @@ namespace Portal.Controllers
                 .ToList();
 
             // Получаем все предметы по ссылкам
-            var subjects = await _context.Subjects
+            var allSubjects = await _context.Subjects
                 .Where(s => subjectIds.Contains(s.SubjectID))
                 .OrderBy(s => s.Name)
+                .ToListAsync();
+
+            // Получаем ID завершенных предметов для этой группы
+            var completedSubjectIds = await _context.CompletedSubjects
+                .Where(cs => cs.GroupID == GroupID)
+                .Select(cs => cs.SubjectID)
                 .ToListAsync();
 
             // Фильтруем занятия по группе, предметам и датам
@@ -86,15 +90,31 @@ namespace Portal.Controllers
                 .Distinct()
                 .ToList();
 
+            // Фильтруем по датам
             if (date_1 != default || date_2 != default)
             {
-                subjects = subjects
-                .Where(s => subjectIdsFromLessons.Contains(s.SubjectID))
-                .ToList();
+                allSubjects = allSubjects
+                    .Where(s => subjectIdsFromLessons.Contains(s.SubjectID))
+                    .ToList();
             }
 
-            // Получаем все департаменты за один запрос
-            var departmentIds = subjects
+            // Разделяем предметы на доступные и завершенные
+            var availableSubjects = allSubjects
+                .Where(s => !completedSubjectIds.Contains(s.SubjectID))
+                .ToList();
+
+            var completedSubjects = allSubjects
+                .Where(s => completedSubjectIds.Contains(s.SubjectID))
+                .ToList();
+
+            // Если showCompleted = true, показываем все предметы (доступные + завершенные)
+            // Иначе только доступные
+            var subjectsToShow = showCompleted
+                ? allSubjects
+                : availableSubjects;
+
+            // Получаем департаменты для отображаемых предметов
+            var departmentIds = subjectsToShow
                 .Select(s => s.DepartmentID)
                 .Distinct()
                 .ToList();
@@ -108,7 +128,11 @@ namespace Portal.Controllers
             var setSubjectModel = new SetSubjectModel
             {
                 Departments = departments,
-                Subjects = subjects.OrderBy(d => d.Name).ToList()
+                Subjects = subjectsToShow.OrderBy(s => s.Name).ToList(),
+                CompletedSubjectIds = completedSubjectIds,
+                ShowCompleted = showCompleted,
+                AvailableSubjectsCount = availableSubjects.Count,
+                CompletedSubjectsCount = completedSubjects.Count
             };
 
             ViewBag.GroupID = GroupID;

@@ -7,5 +7,9 @@ namespace Portal.ViewModel
     {
         public List<Department> Departments { get; set; }
         public List<Subject> Subjects { get; set; }
+        public List<int> CompletedSubjectIds { get; set; } = new List<int>();
+        public bool ShowCompleted { get; set; }
+        public int AvailableSubjectsCount { get; set; }
+        public int CompletedSubjectsCount { get; set; }
     }
 }

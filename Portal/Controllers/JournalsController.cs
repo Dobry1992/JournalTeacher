@@ -388,6 +388,10 @@ namespace Portal
         {
             var group = await _context.Groups.FindAsync(GroupID);
             var subject = await _context.Subjects.FindAsync(SubjectID);
+            bool isActive = true;
+            var completedSubject = await _context.CompletedSubjects.FirstOrDefaultAsync(cs => cs.GroupID == GroupID && cs.SubjectID == SubjectID);
+
+            if (completedSubject != null) isActive = false;
 
             if (group == null || subject == null)
                 return NotFound();
@@ -422,8 +426,6 @@ namespace Portal
                 .Include(l => l.Theme)
                 .AsNoTracking()
                 .ToListAsync();
-
-
 
             var students = await _context.Students
                 .Where(s =>
@@ -615,7 +617,8 @@ namespace Portal
                 Department = department,
                 Subject = subject,
                 Group = group,
-                StatementLessons = statementLessons
+                StatementLessons = statementLessons,
+                IsActive = isActive,
             };
 
             return View(viewName, journalViewModel);
@@ -765,7 +768,7 @@ namespace Portal
                .ToListAsync();
 
             var marks = await _context.Marks
-                .Where(m => m.GroupID == GroupID && 
+                .Where(m => m.GroupID == GroupID &&
                     m.SubjectID == SubjectID &&
                     !excludedTypeIds.Contains(m.TypeOfExerciseID) &&
                     m.Date >= d1 &&

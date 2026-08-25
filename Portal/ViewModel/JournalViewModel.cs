@@ -12,5 +12,6 @@ namespace Portal.ViewModel
         public Subject Subject { get; set; }
         public Group Group { get; set; }
         public Department Department { get; set; }
+        public bool IsActive { get; set; }
     }
 }

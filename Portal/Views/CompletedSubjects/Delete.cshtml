@@ -1,27 +1,74 @@
 @model Portal.Models.CompletedSubject
 
 @{
-    ViewData["Title"] = "Удалить пройденный предмет";
+    ViewData["Title"] = "Продолжить предмет";
+    var returnUrl = ViewData["ReturnUrl"]?.ToString() ?? "";
 }
 
 @await Html.PartialAsync("_NavMenuJournal")
 
-<div class="container mt-3">
-    <h4>@ViewData["Title"]</h4>
-    <div class="alert alert-warning">
-        Вы уверены, что хотите удалить запись о пройденном предмете?
-    </div>
-    <dl class="row">
-        <dt class="col-sm-2">Id</dt>
-        <dd class="col-sm-10">@Model.Id</dd>
-        <dt class="col-sm-2">SubjectID</dt>
-        <dd class="col-sm-10">@Model.SubjectID</dd>
-        <dt class="col-sm-2">GroupID</dt>
-        <dd class="col-sm-10">@Model.GroupID</dd>
-    </dl>
-    <form asp-action="Delete">
-        <input type="hidden" asp-for="Id" />
-        <button type="submit" class="btn btn-danger">Удалить</button>
-        <a asp-controller="Home" asp-action="Index" class="btn btn-secondary">Отмена</a>
-    </form>
+<div style="padding:10%">
+    <section class="content-header">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-sm-6">
+                    <h3>Продолжить предмет</h3>
+                </div>
+            </div>
+        </div>
+    </section>
+    <section class="content">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-body">
+                            <div id="example1_wrapper" class="dataTables_wrapper dt-bootstrap4">
+                                <div class="row">
+                                    <div class="col-sm-12">
+                                        <form asp-action="Delete" method="post">
+                                            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                                            
+                                            <input type="hidden" name="returnUrl" value="@returnUrl" />
+                                            <input type="hidden" asp-for="SubjectID" />
+                                            <input type="hidden" asp-for="GroupID" />
+                                            
+                                            <div class="form-group">
+                                                <label class="control-label">Дисциплина</label>
+                                                <p class="form-control-plaintext font-weight-bold">@ViewData["SubjectName"]</p>
+                                            </div>
+                                            
+                                            <div class="form-group">
+                                                <label class="control-label">Группа</label>
+                                                <p class="form-control-plaintext font-weight-bold">@ViewData["GroupName"]</p>
+                                            </div>
+                                            
+                                            <div class="alert alert-warning mt-3">
+                                                <i class="fas fa-exclamation-triangle"></i>
+                                                Вы действительно желаете продолжить данный предмет?
+                                                После этого предмет станет доступен для редактирования.
+                                            </div>
+                                            
+                                            <div class="form-group mt-3">
+                                                <input type="submit" value="Да, продолжить" class="btn btn-warning" />
+                                                <a href="@returnUrl" class="btn btn-secondary">
+                                                    <i class="fas fa-arrow-left"></i> Нет, отменить
+                                                </a>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
 </div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

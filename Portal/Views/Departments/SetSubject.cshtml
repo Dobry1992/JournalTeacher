@@ -23,51 +23,110 @@
             <input type="hidden" name="GroupID" value="@ViewBag.GroupID" />
             <div class="mr-2">
                 <label for="date_1" class="form-label">Начальная дата:</label>
-                <input class="form-control" type="date" name="date_1" id="date_1" />
+                <input class="form-control" type="date" name="date_1" id="date_1" value="@Context.Request.Query["date_1"]" />
             </div>
             <div class="mr-2">
                 <label for="date_2" class="form-label">Конечная дата:</label>
-                <input class="form-control" type="date" name="date_2" id="date_2" />
+                <input class="form-control" type="date" name="date_2" id="date_2" value="@Context.Request.Query["date_2"]" />
             </div>
             <div class="mr-2">
                 <button type="submit" class="btn btn-primary">Поиск</button>
+            </div>
+            <div class="mr-2">
+                <input type="hidden" name="showCompleted" id="showCompletedHidden" value="@Model.ShowCompleted.ToString().ToLower()" />
+                <button type="button" id="toggleCompletedBtn" 
+                        class="btn @(Model.ShowCompleted ? "btn-warning" : "btn-secondary")">
+                    <i class="fas @(Model.ShowCompleted ? "fa-eye-slash" : "fa-eye")"></i>
+                    @if (Model.ShowCompleted)
+                    {
+                        <span>Скрыть пройденные (@Model.CompletedSubjectsCount)</span>
+                    }
+                    else
+                    {
+                        <span>Показать пройденные (@Model.CompletedSubjectsCount)</span>
+                    }
+                </button>
+            </div>
+            <div class="mr-2">
+                <span class="badge badge-success">Доступно: @Model.AvailableSubjectsCount</span>
+                <span class="badge badge-secondary">Пройдено: @Model.CompletedSubjectsCount</span>
             </div>
         </form>
     </div>
 </section>
 
-@foreach (var departmemt in Model.Departments)
+@if (!Model.Subjects.Any())
 {
-    if (i == colors.Length) i = 0;
-    if (departmemt.Arch == false && (User.IsInRole(departmemt.Role) || User.IsInRole("SuperAdmin") || User.IsInRole("ANB-UMCH") || User.IsInRole("ANB-HEAD")))
+    <div class="alert alert-info text-center">
+        <h5>Нет доступных предметов</h5>
+        @if (Model.CompletedSubjectsCount > 0)
+        {
+            <p>Все предметы пройдены. Нажмите "Показать пройденные" для просмотра.</p>
+        }
+    </div>
+}
+else
+{
+    @foreach (var departmemt in Model.Departments)
     {
-        <section class="content">
-            <div class="container-fluid">
-                <h4 class="mb-3 text-center bg-@colors[i] headGroup p-2 rounded">@Html.DisplayFor(dep => departmemt.Name)</h4>
-                <div class="d-flex flex-row flex-wrap">
-                    @foreach (var subject in Model.Subjects)
-                    {
-                        if (subject.Arch == false && subject.DepartmentID == departmemt.DepartmentID && !(User.IsInRole("ANB-UMCH") || User.IsInRole("SuperAdmin")))
+        if (i == colors.Length) i = 0;
+        if (departmemt.Arch == false && (User.IsInRole(departmemt.Role) || User.IsInRole("SuperAdmin") || User.IsInRole("ANB-UMCH") || User.IsInRole("ANB-HEAD")))
+        {
+            <section class="content">
+                <div class="container-fluid">
+                    <h4 class="mb-3 text-center bg-@colors[i] headGroup p-2 rounded">@Html.DisplayFor(dep => departmemt.Name)</h4>
+                    <div class="d-flex flex-row flex-wrap">
+                        @foreach (var subject in Model.Subjects)
                         {
-                            <a asp-controller="Journals" asp-action="Journal" asp-route-GroupID="@ViewBag.GroupID" asp-route-SubjectID="@subject.SubjectID" class="groups d-block p-4 mr-3 mb-3 text-decoration-none rounded shadow-lg bg-@colors[i]">
-                                <h6 class="text-center">@subject.Name</h6>
-                            </a>
+                            if (subject.Arch == false && subject.DepartmentID == departmemt.DepartmentID)
+                            {
+                                bool isCompleted = Model.CompletedSubjectIds.Contains(subject.SubjectID);
+                                string cardClass = isCompleted ? "bg-gray" : "bg-" + colors[i];
+                                string textClass = isCompleted ? "text-white" : "text-white";
+                                string action = (User.IsInRole("ANB-UMCH") || User.IsInRole("SuperAdmin")) ? "AdjustedJournal" : "Journal";
+                                
+                                <a asp-controller="Journals" 
+                                   asp-action="@action" 
+                                   asp-route-GroupID="@ViewBag.GroupID" 
+                                   asp-route-SubjectID="@subject.SubjectID" 
+                                   class="groups d-block p-4 mr-3 mb-3 text-decoration-none rounded shadow-lg @cardClass @(isCompleted ? "completed-subject" : "")">
+                                    <h6 class="text-center @textClass">
+                                        @subject.Name
+                                    </h6>
+                                </a>
+                            }
                         }
-                        if (subject.Arch == false && subject.DepartmentID == departmemt.DepartmentID && (User.IsInRole("ANB-UMCH") || User.IsInRole("SuperAdmin")))
-                        {
-                            <a asp-controller="Journals" asp-action="AdjustedJournal" asp-route-GroupID="@ViewBag.GroupID" asp-route-SubjectID="@subject.SubjectID" class="groups d-block p-4 mr-3 mb-3 text-decoration-none rounded shadow-lg bg-@colors[i]">
-                                <h6 class="text-center">@subject.Name</h6>
-                            </a>
-                        }
-                    }
+                    </div>
                 </div>
-            </div>
-        </section>
-        i++;
+            </section>
+            i++;
+        }
     }
 }
 
 @section Scripts {
+    <script>
+        $(document).ready(function() {
+            $('#toggleCompletedBtn').on('click', function() {
+                var currentValue = $('#showCompletedHidden').val();
+                var newValue = currentValue === 'true' ? 'false' : 'true';
+                
+                var form = $(this).closest('form');
+                var groupId = form.find('input[name="GroupID"]').val();
+                var date1 = form.find('input[name="date_1"]').val();
+                var date2 = form.find('input[name="date_2"]').val();
+                
+                var url = '@Url.Action("SetSubject", "Departments")' + 
+                    '?GroupID=' + groupId + 
+                    '&date_1=' + date1 + 
+                    '&date_2=' + date2 + 
+                    '&showCompleted=' + newValue;
+                
+                window.location.href = url;
+            });
+        });
+    </script>
+    
     @{
         await Html.RenderPartialAsync("_ValidationScriptsPartial");
     }

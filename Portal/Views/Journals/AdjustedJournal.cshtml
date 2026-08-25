@@ -75,6 +75,21 @@ else
                     <button class="btn btn-outline-danger mr-2 btn-sm" data-toggle="modal" data-target="#modal-content-1">
                         Экзаменационная ведомость
                     </button>
+
+                    @if(Model.IsActive)
+                    {
+                        <a class="btn btn-success mr-2 btn-sm" asp-controller="CompletedSubjects" asp-action="Create"
+                       asp-route-GroupID="@Model.Group.GroupID" asp-route-SubjectID="@Model.Subject.SubjectID">
+                        Завершить предмет
+                    </a>
+                    }
+                    else
+                    {
+                        <a class="btn btn-success mr-2 btn-sm" asp-controller="CompletedSubjects" asp-action="Delete"
+                       asp-route-GroupID="@Model.Group.GroupID" asp-route-SubjectID="@Model.Subject.SubjectID">
+                        Продолжить предмет
+                    </a>
+                    }
                     <button id="collapseToggleBtn" class="btn btn-outline-secondary ml-auto btn-sm">
                         Скрыть занятия и отметки
                     </button>
