@@ -40,6 +40,7 @@ namespace Portal.Data
         public DbSet<ElectiveMark> ElectiveMarks { get; set; }
         public DbSet<El_Stud_Link> El_Stud_Links { get; set; }
         public DbSet<UnsatisfactoryMark> UnsatisfactoryMarks { get; set; }
+        public DbSet<CompletedSubject>  CompletedSubjects { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -74,6 +75,7 @@ namespace Portal.Data
             modelBuilder.Entity<ElectiveMark>().ToTable("ElectiveMarks");
             modelBuilder.Entity<El_Stud_Link>().ToTable("El_Stud_Links");
             modelBuilder.Entity<UnsatisfactoryMark>().ToTable("UnsatisfactoryMarks");
+            modelBuilder.Entity<CompletedSubject>().ToTable("CompletedSubjects");
         }
     }
 }
