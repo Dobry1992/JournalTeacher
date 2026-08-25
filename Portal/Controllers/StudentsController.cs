@@ -92,6 +92,21 @@ namespace Portal.Controllers
             var allMarks = student.Marks.ToList();
 
             // ========================================
+            // ОПРЕДЕЛЯЕМ УЧЕБНЫЙ ГОД
+            // ========================================
+            int startYear, endYear;
+            if (DateTime.Now.Month >= 9)
+            {
+                startYear = DateTime.Now.Year;
+                endYear = DateTime.Now.Year + 1;
+            }
+            else
+            {
+                startYear = DateTime.Now.Year - 1;
+                endYear = DateTime.Now.Year;
+            }
+
+            // ========================================
             // ФИЛЬТРУЕМ ОТМЕТКИ В ЗАВИСИМОСТИ ОТ СЕМЕСТРА
             // ========================================
 
@@ -191,9 +206,7 @@ namespace Portal.Controllers
             // ========================================
             // УЧЕБНЫЙ ГОД
             // ========================================
-            string yearsStudy = DateTime.Now.Month >= 9 && DateTime.Now.Month <= 12
-                ? $"{DateTime.Now.Year}/{DateTime.Now.Year + 1}"
-                : $"{DateTime.Now.Year - 1}/{DateTime.Now.Year}";
+            string yearsStudy = $"{startYear}/{endYear}";
 
             // ========================================
             // ОЦЕНОЧНЫЕ ПОКАЗАТЕЛИ СЛУШАТЕЛЯ/КУРСАНТА
@@ -271,29 +284,12 @@ namespace Portal.Controllers
             var subjectMarks = marks.Where(m => m.SubjectID == subjectID).ToList();
 
             Dictionary<string, string> raitingTimeSubject = new();
-            Dictionary<string, string> raitingTime = new();
             string[] months = { "Январь", "Февраль", "Март", "Апрель", "Май", "Июнь",
                         "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь" };
 
             foreach (string month in months)
             {
                 int monthNumber = Array.IndexOf(months, month) + 1;
-
-                // Общая успеваемость по месяцам
-                var timeMarks = marks
-                    .Where(m => m.Date.Month == monthNumber)
-                    .ToList();
-
-                var timeNumericMarks = timeMarks
-                    .Select(m => double.TryParse(m.Value, out var value) ? value : (double?)null)
-                    .Where(v => v.HasValue)
-                    .Select(v => v.Value)
-                    .ToList();
-
-                double timeAvg = timeNumericMarks.Any()
-                    ? Math.Round(timeNumericMarks.Average(), 3, MidpointRounding.AwayFromZero)
-                    : 0;
-                raitingTime.Add(month, timeAvg.ToString("0.000").Replace(",", "."));
 
                 // Успеваемость по предмету по месяцам
                 var monthMarks = subjectMarks
@@ -310,6 +306,45 @@ namespace Portal.Controllers
                     ? Math.Round(monthNumericMarks.Average(), 3, MidpointRounding.AwayFromZero)
                     : 0;
                 raitingTimeSubject.Add(month, subjectAvg.ToString("0.000").Replace(",", "."));
+            }
+
+            // ========================================
+            // ОБЩАЯ СРЕДНЕМЕСЯЧНАЯ УСПЕВАЕМОСТЬ (ЗА ВЕСЬ УЧЕБНЫЙ ГОД)
+            // ========================================
+            Dictionary<string, string> raitingTime = new();
+
+            // Получаем отметки за учебный год
+            var yearMarks = allMarks
+                .Where(m => studyTypeIds.Contains(m.TypeOfExerciseID))
+                .ToList();
+
+            // Массив месяцев для представления (сентябрь-август)
+            string[] monthNames = { "Сентябрь", "Октябрь", "Ноябрь", "Декабрь",
+                            "Январь", "Февраль", "Март", "Апрель",
+                            "Май", "Июнь", "Июль", "Август" };
+
+            // Сентябрь-Декабрь (startYear)
+            for (int month = 9; month <= 12; month++)
+            {
+                string monthName = GetMonthName(month);
+                var monthMarks = yearMarks
+                    .Where(m => m.Date.Month == month && m.Date.Year == startYear)
+                    .ToList();
+
+                double avg = CalculateAverageMark(monthMarks);
+                raitingTime.Add(monthName, avg.ToString("0.000").Replace(",", "."));
+            }
+
+            // Январь-Август (endYear)
+            for (int month = 1; month <= 8; month++)
+            {
+                string monthName = GetMonthName(month);
+                var monthMarks = yearMarks
+                    .Where(m => m.Date.Month == month && m.Date.Year == endYear)
+                    .ToList();
+
+                double avg = CalculateAverageMark(monthMarks);
+                raitingTime.Add(monthName, avg.ToString("0.000").Replace(",", "."));
             }
 
             // ========================================
@@ -440,6 +475,27 @@ namespace Portal.Controllers
             };
 
             return View(studentDetailsView);
+        }
+
+        // Вспомогательные методы
+        private string GetMonthName(int month)
+        {
+            string[] months = { "Январь", "Февраль", "Март", "Апрель", "Май", "Июнь",
+                        "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь" };
+            return months[month - 1];
+        }
+
+        private double CalculateAverageMark(List<Mark> marks)
+        {
+            var numericMarks = marks
+                .Select(m => double.TryParse(m.Value, out var value) ? value : (double?)null)
+                .Where(v => v.HasValue)
+                .Select(v => v.Value)
+                .ToList();
+
+            return numericMarks.Any()
+                ? Math.Round(numericMarks.Average(), 3, MidpointRounding.AwayFromZero)
+                : 0;
         }
 
         [Authorize(Roles = "SuperAdmin, ANB-UMCH")]
