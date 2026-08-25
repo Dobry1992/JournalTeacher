@@ -286,6 +286,17 @@ namespace Portal
             var typeKM = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Контрольное мероприятие");
             var typeGPZ = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Городское практическое занятие");
 
+            // Типы для учебных отметок
+            var studyTypeIds = new HashSet<int>
+    {
+        typeKM?.TypeOfExerciseID ?? 0,
+        typeGPZ?.TypeOfExerciseID ?? 0,
+        typeSZ?.TypeOfExerciseID ?? 0,
+        typePZ?.TypeOfExerciseID ?? 0,
+        typeLZ?.TypeOfExerciseID ?? 0,
+        typeL?.TypeOfExerciseID ?? 0
+    };
+
             var institute = await _context.Institutes
                 .FirstOrDefaultAsync(i => i.InstituteID == group.InstituteID);
 
@@ -300,96 +311,78 @@ namespace Portal
                 .ToListAsync();
 
             // ========================================
+            // ОПРЕДЕЛЯЕМ УЧЕБНЫЙ ГОД
+            // ========================================
+            int startYear, endYear;
+            if (DateTime.Now.Month >= 9)
+            {
+                startYear = DateTime.Now.Year;
+                endYear = DateTime.Now.Year + 1;
+            }
+            else
+            {
+                startYear = DateTime.Now.Year - 1;
+                endYear = DateTime.Now.Year;
+            }
+
+            // ========================================
             // ФИЛЬТРУЕМ ОТМЕТКИ В ЗАВИСИМОСТИ ОТ СЕМЕСТРА
             // ========================================
 
-            // Сентябрь-Декабрь - первый семестр
             if (DateTime.Now.Month >= 9 && DateTime.Now.Month <= 12)
             {
                 term = "первый семестр";
 
-                // Отметки за сентябрь-декабрь текущего года
                 var semesterMarks = allMarks
                     .Where(m =>
-                        (m.TypeOfExerciseID == typeKM.TypeOfExerciseID ||
-                         m.TypeOfExerciseID == typeGPZ.TypeOfExerciseID ||
-                         m.TypeOfExerciseID == typeSZ.TypeOfExerciseID ||
-                         m.TypeOfExerciseID == typePZ.TypeOfExerciseID ||
-                         m.TypeOfExerciseID == typeLZ.TypeOfExerciseID ||
-                         m.TypeOfExerciseID == typeL.TypeOfExerciseID) &&
+                        studyTypeIds.Contains(m.TypeOfExerciseID) &&
                         m.Date.Year == DateTime.Now.Year &&
-                        (m.Date.Month >= 9 && m.Date.Month <= 12)
+                        m.Date.Month >= 9 && m.Date.Month <= 12
                     )
                     .ToList();
 
-                // Добавляем незавершенную аттестацию
-                var incompleteMarks = allMarks
-                    .Where(m => m.FlagF == 0)
-                    .ToList();
+                var incompleteMarks = allMarks.Where(m => m.FlagF == 0).ToList();
 
-                // Объединяем и убираем дубликаты
                 var allIds = new HashSet<int>();
                 marks = semesterMarks
                     .Concat(incompleteMarks)
                     .Where(m => allIds.Add(m.MarkID))
                     .ToList();
             }
-            // Январь - первый семестр (добираем отметки)
             else if (DateTime.Now.Month == 1)
             {
                 term = "первый семестр";
 
-                // Отметки за сентябрь-декабрь прошлого года + январь текущего
                 var semesterMarks = allMarks
                     .Where(m =>
-                        (m.TypeOfExerciseID == typeKM.TypeOfExerciseID ||
-                         m.TypeOfExerciseID == typeGPZ.TypeOfExerciseID ||
-                         m.TypeOfExerciseID == typeSZ.TypeOfExerciseID ||
-                         m.TypeOfExerciseID == typePZ.TypeOfExerciseID ||
-                         m.TypeOfExerciseID == typeLZ.TypeOfExerciseID ||
-                         m.TypeOfExerciseID == typeL.TypeOfExerciseID) &&
+                        studyTypeIds.Contains(m.TypeOfExerciseID) &&
                         ((m.Date.Year == DateTime.Now.Year && m.Date.Month == 1) ||
                          (m.Date.Year == date.Year && m.Date.Month >= 9 && m.Date.Month <= 12))
                     )
                     .ToList();
 
-                // Добавляем незавершенную аттестацию
-                var incompleteMarks = allMarks
-                    .Where(m => m.FlagF == 0)
-                    .ToList();
+                var incompleteMarks = allMarks.Where(m => m.FlagF == 0).ToList();
 
-                // Объединяем и убираем дубликаты
                 var allIds = new HashSet<int>();
                 marks = semesterMarks
                     .Concat(incompleteMarks)
                     .Where(m => allIds.Add(m.MarkID))
                     .ToList();
             }
-            // Февраль-Август - второй семестр
             else
             {
                 term = "второй семестр";
 
-                // Отметки за февраль-август текущего года
                 var semesterMarks = allMarks
                     .Where(m =>
-                        (m.TypeOfExerciseID == typeKM.TypeOfExerciseID ||
-                         m.TypeOfExerciseID == typeGPZ.TypeOfExerciseID ||
-                         m.TypeOfExerciseID == typeSZ.TypeOfExerciseID ||
-                         m.TypeOfExerciseID == typePZ.TypeOfExerciseID ||
-                         m.TypeOfExerciseID == typeLZ.TypeOfExerciseID ||
-                         m.TypeOfExerciseID == typeL.TypeOfExerciseID) &&
+                        studyTypeIds.Contains(m.TypeOfExerciseID) &&
                         m.Date.Year == DateTime.Now.Year &&
-                        (m.Date.Month >= 2 && m.Date.Month <= 8)
+                        m.Date.Month >= 2 && m.Date.Month <= 8
                     )
                     .ToList();
 
-                // Добавляем незавершенную аттестацию
-                var incompleteMarks = allMarks
-                    .Where(m => m.FlagF == 0)
-                    .ToList();
+                var incompleteMarks = allMarks.Where(m => m.FlagF == 0).ToList();
 
-                // Объединяем и убираем дубликаты
                 var allIds = new HashSet<int>();
                 marks = semesterMarks
                     .Concat(incompleteMarks)
@@ -428,17 +421,17 @@ namespace Portal
             var subjectMarks = marks.Where(m => m.SubjectID == subjectID);
 
             Dictionary<string, string> raitingTimeSubject = new();
-            List<string> months = new List<string>() { "Январь", "Февраль", "Март", "Апрель", "Май", "Июнь",
-                                               "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь" };
+            string[] months = { "Январь", "Февраль", "Март", "Апрель", "Май", "Июнь",
+                        "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь" };
 
             foreach (var month in months)
             {
-                int monthNumber = months.IndexOf(month) + 1;
+                int monthNumber = Array.IndexOf(months, month) + 1;
                 var monthMarks = subjectMarks
                     .Where(m => m.Date.Month == monthNumber)
                     .ToList();
 
-                double avg = await CalculateAverageMarkAsync(monthMarks);
+                double avg = CalculateAverageMark(monthMarks);
                 raitingTimeSubject.Add(month, avg.ToString("0.000").Replace(",", "."));
             }
 
@@ -521,30 +514,45 @@ namespace Portal
             // ========================================
             // УЧЕБНЫЙ ГОД
             // ========================================
-            string yearsStudy = "";
-            if (DateTime.Now.Month >= 9 && DateTime.Now.Month <= 12)
-            {
-                yearsStudy = $"{DateTime.Now.Year}/{DateTime.Now.Year + 1}";
-            }
-            else
-            {
-                yearsStudy = $"{DateTime.Now.Year - 1}/{DateTime.Now.Year}";
-            }
+            string yearsStudy = $"{startYear}/{endYear}";
 
             // ========================================
-            // ОБЩАЯ СРЕДНЕМЕСЯЧНАЯ УСПЕВАЕМОСТЬ
+            // ОБЩАЯ СРЕДНЕМЕСЯЧНАЯ УСПЕВАЕМОСТЬ (ЗА ВЕСЬ УЧЕБНЫЙ ГОД)
             // ========================================
             Dictionary<string, string> raitingTime = new();
 
-            foreach (var month in months)
+            // Получаем отметки за учебный год
+            var yearMarks = allMarks
+                .Where(m => studyTypeIds.Contains(m.TypeOfExerciseID))
+                .ToList();
+
+            // Массив месяцев для представления (сентябрь-август)
+            string[] monthNames = { "Сентябрь", "Октябрь", "Ноябрь", "Декабрь",
+                            "Январь", "Февраль", "Март", "Апрель",
+                            "Май", "Июнь", "Июль", "Август" };
+
+            // Сентябрь-Декабрь (startYear)
+            for (int month = 9; month <= 12; month++)
             {
-                int monthNumber = months.IndexOf(month) + 1;
-                var monthMarks = marks
-                    .Where(m => m.Date.Month == monthNumber)
+                string monthName = GetMonthName(month);
+                var monthMarks = yearMarks
+                    .Where(m => m.Date.Month == month && m.Date.Year == startYear)
                     .ToList();
 
-                double avg = await CalculateAverageMarkAsync(monthMarks);
-                raitingTime.Add(month, avg.ToString("0.000").Replace(",", "."));
+                double avg = CalculateAverageMark(monthMarks);
+                raitingTime.Add(monthName, avg.ToString("0.000").Replace(",", "."));
+            }
+
+            // Январь-Август (endYear)
+            for (int month = 1; month <= 8; month++)
+            {
+                string monthName = GetMonthName(month);
+                var monthMarks = yearMarks
+                    .Where(m => m.Date.Month == month && m.Date.Year == endYear)
+                    .ToList();
+
+                double avg = CalculateAverageMark(monthMarks);
+                raitingTime.Add(monthName, avg.ToString("0.000").Replace(",", "."));
             }
 
             // ========================================
@@ -573,8 +581,15 @@ namespace Portal
             return View(group);
         }
 
-        // Вспомогательный метод для подсчета среднего балла
-        private async Task<double> CalculateAverageMarkAsync(List<Mark> marks)
+        // Вспомогательные методы
+        private string GetMonthName(int month)
+        {
+            string[] months = { "Январь", "Февраль", "Март", "Апрель", "Май", "Июнь",
+                        "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь" };
+            return months[month - 1];
+        }
+
+        private double CalculateAverageMark(List<Mark> marks)
         {
             var numericMarks = marks
                 .Select(m => double.TryParse(m.Value, out var value) ? value : (double?)null)
@@ -582,12 +597,9 @@ namespace Portal
                 .Select(v => v.Value)
                 .ToList();
 
-            if (numericMarks.Any())
-            {
-                return Math.Round(numericMarks.Average(), 3, MidpointRounding.AwayFromZero);
-            }
-
-            return 0;
+            return numericMarks.Any()
+                ? Math.Round(numericMarks.Average(), 3, MidpointRounding.AwayFromZero)
+                : 0;
         }
 
         [Authorize(Roles = "SuperAdmin, ANB-UMCH")]
