@@ -1,0 +1,27 @@
+@model Portal.Models.CompletedSubject
+
+@{
+    ViewData["Title"] = "Удалить пройденный предмет";
+}
+
+@await Html.PartialAsync("_NavMenuJournal")
+
+<div class="container mt-3">
+    <h4>@ViewData["Title"]</h4>
+    <div class="alert alert-warning">
+        Вы уверены, что хотите удалить запись о пройденном предмете?
+    </div>
+    <dl class="row">
+        <dt class="col-sm-2">Id</dt>
+        <dd class="col-sm-10">@Model.Id</dd>
+        <dt class="col-sm-2">SubjectID</dt>
+        <dd class="col-sm-10">@Model.SubjectID</dd>
+        <dt class="col-sm-2">GroupID</dt>
+        <dd class="col-sm-10">@Model.GroupID</dd>
+    </dl>
+    <form asp-action="Delete">
+        <input type="hidden" asp-for="Id" />
+        <button type="submit" class="btn btn-danger">Удалить</button>
+        <a asp-controller="Home" asp-action="Index" class="btn btn-secondary">Отмена</a>
+    </form>
+</div>
