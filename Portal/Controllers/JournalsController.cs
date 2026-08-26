@@ -86,6 +86,12 @@ namespace Portal
 
         public async Task<IActionResult> Statement(int GroupID)
         {
+            var group = await _context.Groups.FindAsync(GroupID);
+            if (group == null)
+                return NotFound("Группа не найдена.");
+
+            var inst = await _context.Institutes.FindAsync(group.InstituteID);
+
             var typeDR = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Дипломная работа");
             var typeGE = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Государственный экзамен");
             var typeS = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Стажировка");
@@ -93,39 +99,68 @@ namespace Portal
             var typeUP = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Учебная практика");
             var typeDP = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Дипломный проект");
             var typeMR = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Магистерская работа");
+            var typeKR = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Курсовая работа");
+            var typeKP = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Курсовой проект");
 
-            var group = await _context.Groups.FindAsync(GroupID);
-            var inst = await _context.Institutes.FindAsync(group.InstituteID);
+            var typeIds = new List<int?>();
+            if (typeDR != null) typeIds.Add(typeDR.TypeOfExerciseID);
+            if (typeGE != null) typeIds.Add(typeGE.TypeOfExerciseID);
+            if (typeS != null) typeIds.Add(typeS.TypeOfExerciseID);
+            if (typePP != null) typeIds.Add(typePP.TypeOfExerciseID);
+            if (typeUP != null) typeIds.Add(typeUP.TypeOfExerciseID);
+            if (typeDP != null) typeIds.Add(typeDP.TypeOfExerciseID);
+            if (typeMR != null) typeIds.Add(typeMR.TypeOfExerciseID);
+            if (typeKR != null) typeIds.Add(typeKR.TypeOfExerciseID);
+            if (typeKP != null) typeIds.Add(typeKP.TypeOfExerciseID);
 
-            var lessons = _context.StatementLessons.Where(l => l.GroupID == GroupID && (l.TypeOfExerciseID == typeDR.TypeOfExerciseID || l.TypeOfExerciseID == typeGE.TypeOfExerciseID
-                || l.TypeOfExerciseID == typeS.TypeOfExerciseID || l.TypeOfExerciseID == typePP.TypeOfExerciseID || l.TypeOfExerciseID == typeUP.TypeOfExerciseID
-                || l.TypeOfExerciseID == typeDP.TypeOfExerciseID || l.TypeOfExerciseID == typeMR.TypeOfExerciseID))
-                .OrderBy(l => l.Date);
+            var validTypeIds = typeIds.Where(id => id.HasValue).Select(id => id.Value).ToList();
 
-            var students = _context.Students
-               .Where(s => s.GroupID == GroupID && s.Status == true)
-               .OrderBy(s => s.LastName);
+            var students = await _context.Students
+                .Where(s => s.GroupID == GroupID && s.Status == true)
+                .OrderBy(s => s.LastName)
+                .ToListAsync();
 
-            var marks = _context.StatementMarks
-                .Where(m => m.GroupID == GroupID && (m.TypeOfExerciseID == typeDR.TypeOfExerciseID || m.TypeOfExerciseID == typeGE.TypeOfExerciseID
-                    || m.TypeOfExerciseID == typeS.TypeOfExerciseID || m.TypeOfExerciseID == typePP.TypeOfExerciseID || m.TypeOfExerciseID == typeUP.TypeOfExerciseID
-                    || m.TypeOfExerciseID == typeDP.TypeOfExerciseID || m.TypeOfExerciseID == typeMR.TypeOfExerciseID))
-                .OrderBy(m => m.Date);
+            var statementLessons = await _context.StatementLessons
+                .Where(l => l.GroupID == GroupID && validTypeIds.Contains(l.TypeOfExerciseID))
+                .Include(l => l.TypeOfExercise)
+                .OrderBy(l => l.Date)
+                .ToListAsync();
+
+            var lessonProjects = await _context.Lessons
+                .Where(l => l.GroupID == GroupID &&
+                            (l.TypeOfExerciseID == typeKR.TypeOfExerciseID ||
+                             l.TypeOfExerciseID == typeKP.TypeOfExerciseID))
+                .Include(l => l.TypeOfExercise)
+                .Include(l => l.Theme)
+                .OrderBy(l => l.Date)
+                .ToListAsync();
+
+            var subjectIds = lessonProjects.Select(l => l.SubjectID).Distinct().ToList();
+            var subjects = await _context.Subjects
+                .Where(s => subjectIds.Contains(s.SubjectID))
+                .ToDictionaryAsync(s => s.SubjectID, s => s);
+
+            var statementMarks = await _context.StatementMarks
+                .Where(m => m.GroupID == GroupID && validTypeIds.Contains(m.TypeOfExerciseID))
+                .ToListAsync();
+
+            var lessonMarks = await _context.Marks
+                .Where(m => m.GroupID == GroupID &&
+                            (m.TypeOfExerciseID == typeKR.TypeOfExerciseID ||
+                             m.TypeOfExerciseID == typeKP.TypeOfExerciseID))
+                .ToListAsync();
 
             ViewBag.Group = group;
-            ViewBag.Marks = marks;
             ViewBag.Students = students;
+            ViewBag.StatementLessons = statementLessons;
+            ViewBag.LessonProjects = lessonProjects;
+            ViewBag.StatementMarks = statementMarks;
+            ViewBag.LessonMarks = lessonMarks;
+            ViewBag.Subjects = subjects;
             ViewBag.GroupID = GroupID;
-            ViewBag.typeDR = typeDR.TypeOfExerciseID;
-            ViewBag.typeGE = typeGE.TypeOfExerciseID;
-            ViewBag.typeS = typeS.TypeOfExerciseID;
-            ViewBag.typePP = typePP.TypeOfExerciseID;
-            ViewBag.typeUP = typeUP.TypeOfExerciseID;
-            ViewBag.typeDP = typeDP.TypeOfExerciseID;
-            ViewBag.typeMR = typeMR.TypeOfExerciseID;
             ViewBag.Institute = inst;
 
-            return View(await lessons.ToListAsync());
+            return View();
         }
 
         public async Task<IActionResult> ElectiveJournal(int electiveID)
@@ -416,6 +451,11 @@ namespace Portal
             var types = await _context.Types.ToListAsync();
             var typesDict = types.ToDictionary(t => t.Name, t => t.TypeOfExerciseID);
 
+            // Получаем ID типов для исключения
+            int? kursovoiProektId = types.FirstOrDefault(t => t.Name == "Курсовой проект")?.TypeOfExerciseID;
+            int? kursovayaRabotaId = types.FirstOrDefault(t => t.Name == "Курсовая работа")?.TypeOfExerciseID;
+
+            // Исключаем курсовые проекты и работы из Lessons
             var lessons = await _context.Lessons
                 .Where(l =>
                     l.Theme.SubjectID == SubjectID &&
@@ -427,6 +467,16 @@ namespace Portal
                 .AsNoTracking()
                 .ToListAsync();
 
+            // Фильтруем Lessons в памяти, исключая курсовые проекты и работы
+            if (kursovoiProektId.HasValue)
+            {
+                lessons = lessons.Where(l => l.TypeOfExerciseID != kursovoiProektId.Value).ToList();
+            }
+            if (kursovayaRabotaId.HasValue)
+            {
+                lessons = lessons.Where(l => l.TypeOfExerciseID != kursovayaRabotaId.Value).ToList();
+            }
+
             var students = await _context.Students
                 .Where(s =>
                     s.GroupID == GroupID &&
@@ -436,6 +486,7 @@ namespace Portal
                 .AsNoTracking()
                 .ToListAsync();
 
+            // Исключаем курсовые проекты и работы из Marks
             var marks = await _context.Marks
                 .Where(m =>
                     m.SubjectID == SubjectID &&
@@ -444,6 +495,16 @@ namespace Portal
                 .OrderBy(m => m.Date)
                 .AsNoTracking()
                 .ToListAsync();
+
+            // Фильтруем Marks в памяти, исключая курсовые проекты и работы
+            if (kursovoiProektId.HasValue)
+            {
+                marks = marks.Where(m => m.TypeOfExerciseID != kursovoiProektId.Value).ToList();
+            }
+            if (kursovayaRabotaId.HasValue)
+            {
+                marks = marks.Where(m => m.TypeOfExerciseID != kursovayaRabotaId.Value).ToList();
+            }
 
             var statementLessons = lessons
                 .Where(l => IsType(l.TypeOfExerciseID, typesDict, "Экзамен", "Дифференцированный зачёт", "Зачёт"))
@@ -455,13 +516,13 @@ namespace Portal
 
             var simpleLessons = lessons
                 .Where(l =>
-                    !IsType(l.TypeOfExerciseID, typesDict, "Экзамен", "Дифференцированный зачёт", "Зачёт", "Итоговая отметка", "Курсовой проект", "Курсовая работа")
+                    !IsType(l.TypeOfExerciseID, typesDict, "Экзамен", "Дифференцированный зачёт", "Зачёт", "Итоговая отметка")
                 )
                 .ToList();
 
             List<Mark> simpleMarks = marks
                 .Where(m =>
-                    !IsType(m.TypeOfExerciseID, typesDict, "Экзамен", "Дифференцированный зачёт", "Зачёт", "Итоговая отметка", "Курсовой проект", "Курсовая работа")
+                    !IsType(m.TypeOfExerciseID, typesDict, "Экзамен", "Дифференцированный зачёт", "Зачёт", "Итоговая отметка")
                 )
                 .ToList();
 
@@ -506,7 +567,6 @@ namespace Portal
                     IsEdit = false
                 };
 
-                // determine collapse status for stat (average) lesson using same rules as for normal lessons
                 var todayLocal = DateTime.Today;
                 int semesterNow = GetSemester(todayLocal);
                 int semesterOfStat = GetSemester(statlesson.Date);

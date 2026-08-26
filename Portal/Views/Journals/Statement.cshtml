@@ -3,135 +3,237 @@
 @{
     ViewData["Title"] = "Итоговые отметки";
     int i = 1;
+    
+    var statementLessons = ViewBag.StatementLessons as IEnumerable<Portal.Models.StatementLesson> ?? new List<Portal.Models.StatementLesson>();
+    var lessonProjects = ViewBag.LessonProjects as IEnumerable<Portal.Models.Lesson> ?? new List<Portal.Models.Lesson>();
+    var subjects = ViewBag.Subjects as Dictionary<int, Portal.Models.Subject> ?? new Dictionary<int, Portal.Models.Subject>();
+    var allLessons = new List<dynamic>();
+    
+    // Добавляем занятия из StatementLessons
+    foreach (var lesson in statementLessons)
+    {
+        allLessons.Add(new { 
+            Type = "Statement",
+            LessonId = lesson.StatementLessonID,
+            Date = lesson.Date,
+            TypeOfExercise = lesson.TypeOfExercise,
+            TypeOfExerciseName = lesson.TypeOfExercise?.Name ?? "",
+            TypeOfExerciseShortName = lesson.TypeOfExercise?.ShortName ?? "",
+            Signature = lesson.Signature ?? "",
+            Comment = lesson.Comment,
+            IsFromStatement = true,
+            SubjectName = ""
+        });
+    }
+    
+    // Добавляем курсовые проекты из Lessons
+    foreach (var lesson in lessonProjects)
+    {
+        var subjectName = subjects.ContainsKey(lesson.SubjectID) 
+            ? subjects[lesson.SubjectID].ShortName 
+            : "";
+            
+        allLessons.Add(new { 
+            Type = "Lesson",
+            LessonId = lesson.LessonID,
+            Date = lesson.Date,
+            TypeOfExercise = lesson.TypeOfExercise,
+            TypeOfExerciseName = lesson.TypeOfExercise?.Name ?? "",
+            TypeOfExerciseShortName = lesson.TypeOfExercise?.ShortName ?? "",
+            Signature = lesson.Signature ?? "",
+            Comment = lesson.Comment,
+            IsFromStatement = false,
+            SubjectID = lesson.SubjectID,
+            SubjectName = subjectName
+        });
+    }
+    
+    // Сортируем по дате
+    allLessons = allLessons.OrderBy(l => l.Date).ToList();
 }
 
 @await Html.PartialAsync("_NavMenuJournal")
+<div>
+    <section class="content-header">
+        <div class="container-fluid">
+            <div class="row">
+            </div>
+        </div>
+    </section>
+</div>
+    <div class="container-fluid mt-3">
+        <div class="card">
+            <div class="card-body">
+                <h6 class="text-center mb-4 bg-warning p-2 rounded">
+                    Группа: @ViewBag.Group.Name
+                </h6>
 
-@if (User.IsInRole("SuperAdmin") || User.IsInRole("ANB-UMCH") || User.IsInRole(ViewBag.Institute.Role))
-{
-    <div style="padding: 5%">
-        <section class="content-header">
-            <div class="container-fluid">
-                <div class="row">
-                    <div class="col-sm-6">
-                        <h3 class="mb-1">Ведомость итоговых отметок</h3>
-                    </div>
+                <div class="mb-3 d-flex flex-wrap gap-2">
+                    <a class="btn btn-success mr-2 btn-sm" 
+                       asp-controller="StatementLessons" 
+                       asp-action="Create"
+                       asp-route-GroupID="@ViewBag.GroupID">
+                        Добавить отметку
+                    </a>
+                    <a class="btn btn-primary mr-2 btn-sm" 
+                       asp-controller="Lessons" 
+                       asp-action="CreateK"
+                       asp-route-GroupID="@ViewBag.GroupID"
+                       asp-route-returnUrl="@Context.Request.Path@Context.Request.QueryString">
+                        Курсовой проект/работа
+                    </a>
+                </div>
+
+                <div class="table-responsive" id="sd">
+                    <table class="table table-bordered table-sm compact">
+                        <thead class="thead-dark">
+                            <tr>
+                                <th class="align-middle text-center p-1 fix tableRowSticky title-row col-fixed-1">#</th>
+                                <th class="align-middle text-center p-1 fix tableRowSticky title-row col-fixed-2">Ф.И.О.</th>
+                                @foreach (var lesson in allLessons)
+                                {
+                                    <th class="align-middle text-center p-0 tableRowSticky" id="collapse@lesson.LessonId">
+                                        @if (lesson.IsFromStatement)
+                                        {
+                                            <a class="btn btn-outline-danger text-white border-0 p-1 btn-tooltip"
+                                               data-toggle="tooltip"
+                                               data-placement="left"
+                                               data-html="true"
+                                               data-title="Подпись: @lesson.Signature<br />@lesson.TypeOfExerciseName"
+                                               asp-controller="StatementLessons"
+                                               asp-action="Delete"
+                                               asp-route-id="@lesson.LessonId"
+                                               asp-route-GroupID="@ViewBag.GroupID">
+                                                <span class="rotate-sm-90">
+                                                    @lesson.TypeOfExerciseShortName<br />
+                                                    @lesson.Date.ToShortDateString()
+                                                </span>
+                                            </a>
+                                        }
+                                        else
+                                        {
+                                            <a class="btn btn-outline-primary text-white border-0 p-1 btn-tooltip"
+                                               data-toggle="tooltip"
+                                               data-placement="left"
+                                               data-html="true"
+                                               data-title="Подпись: @lesson.Signature<br />@lesson.TypeOfExerciseName<br />Предмет: @lesson.SubjectName"
+                                               asp-controller="Lessons"
+                                               asp-action="DeleteK"
+                                               asp-route-id="@lesson.LessonId"
+                                               asp-route-GroupID="@ViewBag.GroupID"
+                                               asp-route-SubjectID="@lesson.SubjectID">
+                                                <span class="rotate-sm-90">
+                                                    @lesson.TypeOfExerciseShortName<br />
+                                                    @(!string.IsNullOrEmpty(lesson.SubjectName) ? lesson.SubjectName : "")<br />
+                                                    @lesson.Date.ToShortDateString()
+                                                </span>
+                                            </a>
+                                        }
+                                    </th>
+                                }
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white compact">
+                            @foreach (var student in ViewBag.Students)
+                            {
+                                <tr>
+                                    <td class="align-middle text-center p-1 bg-light fix col-fixed-1">@i</td>
+                                    <td class="align-middle text-left p-1 bg-light fix col-fixed-2">@student.LastName @student.Name @student.Surname</td>
+                                    @foreach (var lesson in allLessons)
+                                    {
+                                        if (lesson.IsFromStatement)
+                                        {
+                                            var mark = ((IEnumerable<Portal.Models.StatementMark>)ViewBag.StatementMarks)
+                                                .FirstOrDefault(m => m.StudentID == student.StudentID && m.StatementLessonID == lesson.LessonId);
+
+                                            if (mark != null)
+                                            {
+                                                <td class="align-middle text-center p-0" id="collapse@lesson.LessonId">
+                                                    <a asp-controller="StatementMarks"
+                                                       asp-action="Edit"
+                                                       asp-route-id="@mark.StatementMarkID"
+                                                       asp-route-GroupID="@ViewBag.GroupID"
+                                                       class="btn border-0 p-2 btn-tooltip w-100"
+                                                       data-toggle="tooltip"
+                                                       data-placement="left"
+                                                       data-html="true"
+                                                       data-title="Комментарий: @mark.Comment<br>Подпись: @mark.SignatureOfTeacher<br>История:<br>@mark.HistoryOfMark"
+                                                       style="width:100%;">
+                                                        @mark.Value
+                                                    </a>
+                                                </td>
+                                            }
+                                            else
+                                            {
+                                                <td class="align-middle text-center p-0" id="collapse@lesson.LessonId">
+                                                    <span class="btn border-0 p-2 text-muted w-100" style="width:100%;">
+                                                        -
+                                                    </span>
+                                                </td>
+                                            }
+                                        }
+                                        else
+                                        {
+                                            var mark = ((IEnumerable<Portal.Models.Mark>)ViewBag.LessonMarks)
+                                                .FirstOrDefault(m => m.StudentID == student.StudentID && m.LessonID == lesson.LessonId);
+
+                                            if (mark != null)
+                                            {
+                                                <td class="align-middle text-center p-0" id="collapse@lesson.LessonId">
+                                                    <a asp-controller="Marks"
+                                                       asp-action="EditK"
+                                                       asp-route-MarkID="@mark.MarkID"
+                                                       asp-route-GroupID="@ViewBag.GroupID"
+                                                       asp-route-SubjectID="@mark.SubjectID"
+                                                       class="btn border-0 p-2 btn-tooltip w-100"
+                                                       data-toggle="tooltip"
+                                                       data-placement="left"
+                                                       data-html="true"
+                                                       data-title="Комментарий: @mark.Comment<br>Подпись: @mark.SignatureOfTeacher<br>История:<br>@mark.HistoryOfMark"
+                                                       style="width:100%;">
+                                                        @mark.Value
+                                                    </a>
+                                                </td>
+                                            }
+                                            else
+                                            {
+                                                <td class="align-middle text-center p-0" id="collapse@lesson.LessonId">
+                                                    <span class="btn border-0 p-2 text-muted w-100" style="width:100%;">
+                                                        -
+                                                    </span>
+                                                </td>
+                                            }
+                                        }
+                                    }
+                                </tr>
+                                i++;
+                            }
+                        </tbody>
+                    </table>
                 </div>
             </div>
-        </section>
-        <section class="content">
-            <div class="container-fluid">
-                <div class="row">
-                    <div class="col-12">
-                        <div class="card">
-                            <div class="card-body">
-                                <div id="example1_wrapper" class="dataTables_wrapper dt-bootstrap4">
-                                    <div class="row">
-                                        <div class="col-sm-12">
-                                            <div class="p-2">
-                                                <h6 class="mb-3 text-center bg-warning headGroup p-2 rounded">Группа: @ViewBag.Group.Name</h6>
-                                                <div class="btn-group mr-2 mb-3 border rounded" role="group" aria-label="Занятия">
-                                                    <a class="btn btn-success p-2" asp-route-GroupID="@ViewBag.GroupID" asp-controller="StatementLessons" asp-action="Create">Добавить отметку</a>
-                                                </div>
-                                                <div class="table-wrap">
-                                                    <table class="table table-bordered" id="JournalTable">
-                                                        <thead class="thead-dark compact">
-                                                            <tr role="row">
-                                                                <th class="align-middle text-center p-1 fix">#</th>
-                                                                <th class="align-middle text-center p-1 fix">Ф.И.О.</th>
-                                                                @foreach (var lesson in Model)
-                                                                {
-                                                                    <th class="align-middle text-center p-1">
-                                                                        <a class="btn btn-outline-danger text-white border-0" title="Удалить" asp-controller="StatementLessons" asp-action="Delete" asp-route-id="@lesson.StatementLessonID" asp-route-GroupID="@ViewBag.GroupID"><span class="rotate-sm-90">@lesson.TypeOfExercise.Name<br />@lesson.Date.ToShortDateString()</span></a>
-                                                                    </th>
-                                                                }
-                                                            </tr>
-                                                        </thead>
-                                                        <tbody class="bg-white">
-                                                            @foreach (var student in ViewBag.Students)
-                                                            {
-                                                                <tr>
-                                                                    <td class="align-middle text-center p-1 bg-light fix">@i</td>
-                                                                    <td class="align-middle text-center p-1 bg-light fix" style="white-space:nowrap">@student.LastName @student.Name @student.Surname</td>
-                                                                    @foreach (var mark in ViewBag.Marks)
-                                                                    {
-                                                                        if (mark.StudentID == student.StudentID)
-                                                                        {
-                                                                            if (mark.TypeOfExerciseID == ViewBag.typeDR || mark.TypeOfExerciseID == ViewBag.typeDP || mark.TypeOfExerciseID == ViewBag.typeMR)
-                                                                            {
-                                                                                <td class="align-middle text-center p-0 markDR">
-                                                                                    <a asp-controller="StatementMarks" asp-action="Edit" asp-route-id="@mark.StatementMarkID" asp-route-GroupID="@ViewBag.GroupID" data-toggle="tooltip" id="btn-tooltip" data-placement="left" class="btn border-0 text-center align-middle text-white p-3" data-html="true" data-title="Комментарий: @mark.Comment<br>Подпись: @mark.SignatureOfTeacher<br>История:<br> @mark.HistoryOfMark" style="width:100%;">
-                                                                                        @mark.Value
-                                                                                    </a>
-                                                                                </td>
-                                                                            }
-                                                                            else if (mark.TypeOfExerciseID == ViewBag.typePP || mark.TypeOfExerciseID == ViewBag.typeUP || mark.TypeOfExerciseID == ViewBag.typeS)
-                                                                            {
-                                                                                <td class="align-middle text-center p-0 markPP">
-                                                                                    <a asp-controller="StatementMarks" asp-action="Edit" asp-route-id="@mark.StatementMarkID" asp-route-GroupID="@ViewBag.GroupID" data-toggle="tooltip" id="btn-tooltip" data-placement="left" class="btn border-0 text-center align-middle p-3" data-html="true" data-title="Комментарий: @mark.Comment<br>Подпись: @mark.SignatureOfTeacher<br>История:<br> @mark.HistoryOfMark" style="width:100%;">
-                                                                                        @mark.Value
-                                                                                    </a>
-                                                                                </td>
-                                                                            }
-                                                                            else if (mark.TypeOfExerciseID == ViewBag.typeGE)
-                                                                            {
-                                                                                <td class="align-middle text-center p-0 markGE">
-                                                                                    <a asp-controller="StatementMarks" asp-action="Edit" asp-route-id="@mark.StatementMarkID" asp-route-GroupID="@ViewBag.GroupID" data-toggle="tooltip" id="btn-tooltip" data-placement="left" class="btn border-0 text-center align-middle text-white p-3" data-html="true" data-title="Комментарий: @mark.Comment<br>Подпись: @mark.SignatureOfTeacher<br>История:<br> @mark.HistoryOfMark" style="width:100%;">
-                                                                                        @mark.Value
-                                                                                    </a>
-                                                                                </td>
-                                                                            }
-                                                                        }
-                                                                    }
-                                                                </tr>
-                                                                i++;
-                                                            }
-                                                        </tbody>
-                                                    </table>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
+        </div>
     </div>
-}
-else
-{
-    <div style="padding:15%">
-        <section class="content-header">
-            <div class="container-fluid">
-            </div>
-        </section>
-        <section class="content">
-            <div class="card mb-3" style="max-width: 1000px;">
-                <div class="row no-gutters">
-                    <div class="col-md-4">
-                        <img src="~/images/rejected.jpg" class="w-100 h-100">
-                    </div>
-                    <div class="col-md-8">
-                        <div class="card-body">
-                            <h3 class="card-title text-bold">Отказ в доступе.</h3>
-                            <p class="card-text">Уважаемые пользователь, Вам отказано в доступе к данному журналу.</p>
-                            <p class="card-text"><small class="text-muted">@DateTime.Now.ToLongDateString() @DateTime.Now.ToLongTimeString()</small></p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
-    </div>
-}
+
 
 @section Scripts {
-    <script src="~/js/journal.js"></script>
     <script>
         $(function () {
-            $('[data-toggle="tooltip"]').tooltip();
+            $('.btn-tooltip').tooltip();
+        });
+
+        document.addEventListener("DOMContentLoaded", function () {
+            const div = document.getElementById('sd');
+            const savedScrollLeft = localStorage.getItem('scrollLeft') || 0;
+            const savedScrollTop = localStorage.getItem('scrollTop') || 0;
+
+            div.scrollLeft = savedScrollLeft;
+            div.scrollTop = savedScrollTop;
+
+            div.addEventListener('scroll', () => {
+                localStorage.setItem('scrollLeft', div.scrollLeft);
+                localStorage.setItem('scrollTop', div.scrollTop);
+            });
         });
     </script>
 }

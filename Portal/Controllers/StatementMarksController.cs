@@ -1,23 +1,26 @@
-﻿using System;
-using System.DirectoryServices.AccountManagement;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Portal.Data;
 using Portal.Models;
 using Portal.Repository;
+using Portal.Services;
+using System;
+using System.DirectoryServices.AccountManagement;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace Portal
 {
     public class StatementMarksController : Controller
     {
         private readonly AcademyContext _context;
+        private readonly UserNameService _userNameService;
 
-        public StatementMarksController(AcademyContext context)
+        public StatementMarksController(AcademyContext context, UserNameService userNameService)
         {
             _context = context;
+            _userNameService = userNameService;
         }
 
         [Authorize(Roles = "SuperAdmin, ANB-UMCH")]
@@ -65,24 +68,7 @@ namespace Portal
                 return NotFound();
             }
 
-            string teacher = "";
-            var username = User.Identity.Name;
-            using (var context = new PrincipalContext(ContextType.Domain, AD.root))
-            {
-                try
-                {
-                    var user = UserPrincipal.FindByIdentity(context, username);
-
-                    if (user != null)
-                    {
-                        teacher = user.DisplayName;
-                    }
-                }
-                catch
-                {
-                    teacher = username;
-                }
-            }
+            string teacher = _userNameService.GetDisplayName();
 
             if (statementMark.HistoryOfMark != null)
             {
