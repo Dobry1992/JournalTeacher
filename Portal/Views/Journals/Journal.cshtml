@@ -64,10 +64,28 @@ else if (User.IsInRole("SuperAdmin") || User.IsInRole("ANB-UMCH") || User.IsInRo
                     <button class="btn btn-outline-danger mr-2 btn-sm" data-toggle="modal" data-target="#modal-content">
                         Экзаменационная ведомость
                     </button>
-                    <a class="btn btn-success mr-2 btn-sm" asp-controller="CompletedSubjects" asp-action="Create"
-                       asp-route-GroupID="@Model.Group.GroupID" asp-route-SubjectID="@Model.Subject.SubjectID">
-                        Завершить предмет
-                    </a>
+                   @if(Model.IsActive)
+{
+    <a class="btn btn-success mr-2 btn-sm" 
+       asp-controller="CompletedSubjects" 
+       asp-action="Create"
+       asp-route-GroupID="@Model.Group.GroupID" 
+       asp-route-SubjectID="@Model.Subject.SubjectID"
+       asp-route-returnUrl="@Context.Request.Path@Context.Request.QueryString">
+        Завершить предмет
+    </a>
+}
+else
+{
+    <a class="btn btn-success mr-2 btn-sm" 
+       asp-controller="CompletedSubjects" 
+       asp-action="Delete"
+       asp-route-GroupID="@Model.Group.GroupID" 
+       asp-route-SubjectID="@Model.Subject.SubjectID"
+       asp-route-returnUrl="@Context.Request.Path@Context.Request.QueryString">
+        Продолжить предмет
+    </a>
+}
                     <button id="collapseToggleBtn" class="btn btn-outline-secondary ml-auto btn-sm">
                         Скрыть занятия и отметки
                     </button>

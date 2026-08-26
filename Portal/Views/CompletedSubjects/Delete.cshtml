@@ -1,74 +1,43 @@
-@model Portal.Models.CompletedSubject
-
+@model CompletedSubject
 @{
-    ViewData["Title"] = "Продолжить предмет";
-    var returnUrl = ViewData["ReturnUrl"]?.ToString() ?? "";
+    var returnUrl = ViewData["ReturnUrl"] as string;
+    var subjectName = ViewData["SubjectName"] as string;
+    var groupName = ViewData["GroupName"] as string;
 }
 
-@await Html.PartialAsync("_NavMenuJournal")
-
-<div style="padding:10%">
-    <section class="content-header">
-        <div class="container-fluid">
-            <div class="row">
-                <div class="col-sm-6">
-                    <h3>Продолжить предмет</h3>
-                </div>
-            </div>
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-header bg-danger text-white">
+            <h5>Продолжение предмета</h5>
         </div>
-    </section>
-    <section class="content">
-        <div class="container-fluid">
-            <div class="row">
-                <div class="col-12">
-                    <div class="card">
-                        <div class="card-body">
-                            <div id="example1_wrapper" class="dataTables_wrapper dt-bootstrap4">
-                                <div class="row">
-                                    <div class="col-sm-12">
-                                        <form asp-action="Delete" method="post">
-                                            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-                                            
-                                            <input type="hidden" name="returnUrl" value="@returnUrl" />
-                                            <input type="hidden" asp-for="SubjectID" />
-                                            <input type="hidden" asp-for="GroupID" />
-                                            
-                                            <div class="form-group">
-                                                <label class="control-label">Дисциплина</label>
-                                                <p class="form-control-plaintext font-weight-bold">@ViewData["SubjectName"]</p>
-                                            </div>
-                                            
-                                            <div class="form-group">
-                                                <label class="control-label">Группа</label>
-                                                <p class="form-control-plaintext font-weight-bold">@ViewData["GroupName"]</p>
-                                            </div>
-                                            
-                                            <div class="alert alert-warning mt-3">
-                                                <i class="fas fa-exclamation-triangle"></i>
-                                                Вы действительно желаете продолжить данный предмет?
-                                                После этого предмет станет доступен для редактирования.
-                                            </div>
-                                            
-                                            <div class="form-group mt-3">
-                                                <input type="submit" value="Да, продолжить" class="btn btn-warning" />
-                                                <a href="@returnUrl" class="btn btn-secondary">
-                                                    <i class="fas fa-arrow-left"></i> Нет, отменить
-                                                </a>
-                                            </div>
-                                        </form>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+        <div class="card-body">
+            <div class="alert alert-warning">
+                <p><strong>Группа:</strong> @groupName</p>
+                <p><strong>Предмет:</strong> @subjectName</p>
+                <hr />
+                <p>Вы уверены, что хотите продолжить этот предмет?</p>
             </div>
+            
+            <form asp-action="Delete" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="SubjectID" value="@Model.SubjectID" />
+                <input type="hidden" name="GroupID" value="@Model.GroupID" />
+                <input type="hidden" name="returnUrl" value="@returnUrl" />
+                
+                <div class="text-center">
+                    <button type="submit" class="btn btn-danger">Подтвердить</button>
+                    @if (!string.IsNullOrEmpty(returnUrl))
+                    {
+                        <a href="@returnUrl" class="btn btn-secondary">Отмена</a>
+                    }
+                    else
+                    {
+                        <a asp-controller="Journals" asp-action="AdjustedJournal" 
+                           asp-route-GroupID="@Model.GroupID" asp-route-SubjectID="@Model.SubjectID" 
+                           class="btn btn-secondary">Отмена</a>
+                    }
+                </div>
+            </form>
         </div>
-    </section>
+    </div>
 </div>
-
-@section Scripts {
-    @{
-        await Html.RenderPartialAsync("_ValidationScriptsPartial");
-    }
-}
