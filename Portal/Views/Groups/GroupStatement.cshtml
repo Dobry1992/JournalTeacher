@@ -44,6 +44,14 @@
                                     </span>
                                 </th>
                             }
+                            <th class="text-center align-middle p-0 tableRowSticky">
+                                <span class="btn btn-outline-danger border-0 p-1 text-white btn-tooltip"
+                                      data-toggle="tooltip"
+                                      data-html="true"
+                                      title="Средняя отметка студента">
+                                    <span class="rotate-sm-90">Средняя</span>
+                                </span>
+                            </th>
                         </tr>
                     </thead>
                     <tbody class="bg-white compact">
@@ -56,6 +64,9 @@
                                 {
                                     <td class="text-center align-middle p-1">@(subj.AvgMark.HasValue? subj.AvgMark.Value.ToString("0.000") : "-")</td>
                                 }
+                                <td class="text-center align-middle p-1 font-weight-bold" style="background-color: #fff3cd;">
+                                    @(student.StudentAverage.HasValue ? student.StudentAverage.Value.ToString("0.000") : "-")
+                                </td>
                             </tr>
                             i++;
                         }

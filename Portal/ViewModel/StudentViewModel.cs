@@ -8,9 +8,8 @@ namespace Portal.ViewModel
         public string Name { get; set; }
         public string Surname { get; set; }
         public string LastName { get; set; }
-
-        public string FullName => $"{LastName} {Name} {Surname}".Trim();
-
+        public string FullName => $"{LastName} {Name} {Surname}";
         public List<SubjectAverageViewModel> SubjectAverages { get; set; } = new();
+        public double? StudentAverage { get; set; } // Средняя отметка студента
     }
 }

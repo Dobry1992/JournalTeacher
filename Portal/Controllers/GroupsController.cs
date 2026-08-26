@@ -763,14 +763,9 @@ namespace Portal
                 .ToListAsync();
 
             // Формируем ViewModel
-            var students = studentsData.Select(s => new StudentViewModel
+            var students = studentsData.Select(s =>
             {
-                StudentId = s.Student.StudentID,
-                Name = s.Student.Name,
-                Surname = s.Student.Surname,
-                LastName = s.Student.LastName,
-
-                SubjectAverages = allSubjects.Select(subject =>
+                var subjectAverages = allSubjects.Select(subject =>
                 {
                     // Проверку TryParse делаем уже в C#
                     var marks = s.Marks
@@ -787,7 +782,23 @@ namespace Portal
                         SubjectFullName = subject.Name,
                         AvgMark = marks.Any() ? marks.Average() : (double?)null
                     };
-                }).ToList()
+                }).ToList();
+
+                // Вычисляем среднюю отметку студента (среднее арифметическое средних отметок по предметам)
+                var validAverages = subjectAverages
+                    .Where(sa => sa.AvgMark.HasValue)
+                    .Select(sa => sa.AvgMark.Value)
+                    .ToList();
+
+                return new StudentViewModel
+                {
+                    StudentId = s.Student.StudentID,
+                    Name = s.Student.Name,
+                    Surname = s.Student.Surname,
+                    LastName = s.Student.LastName,
+                    SubjectAverages = subjectAverages,
+                    StudentAverage = validAverages.Any() ? validAverages.Average() : (double?)null
+                };
             }).ToList();
 
             ViewBag.GroupName = group.Name;
@@ -833,6 +844,14 @@ namespace Portal
                 cell.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
             }
 
+            // Добавляем колонку "Средняя отметка студента"
+            var averageCell = worksheet.Cell(1, col++);
+            averageCell.Value = "Средняя";
+            averageCell.Style.Alignment.WrapText = true;
+            averageCell.Style.Alignment.TextRotation = 90;
+            averageCell.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+            averageCell.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
+
             int row = 2;
             int studentNumber = 1;
             foreach (var student in students)
@@ -854,9 +873,23 @@ namespace Portal
                         cell.Value = "-";
                     }
 
-                    cell.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center; // по центру
+                    cell.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
                     cell.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
                 }
+
+                // Добавляем среднюю отметку студента
+                var avgStudentCell = worksheet.Cell(row, col++);
+                if (student.StudentAverage.HasValue)
+                {
+                    avgStudentCell.Value = student.StudentAverage.Value;
+                    avgStudentCell.Style.NumberFormat.Format = "0.000";
+                }
+                else
+                {
+                    avgStudentCell.Value = "-";
+                }
+                avgStudentCell.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+                avgStudentCell.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
 
                 row++;
             }
@@ -922,14 +955,9 @@ namespace Portal
                 .Select(sub => new { sub.SubjectID, sub.Name })
                 .ToListAsync();
 
-            var students = studentsData.Select(s => new StudentViewModel
+            var students = studentsData.Select(s =>
             {
-                StudentId = s.Student.StudentID,
-                Name = s.Student.Name,
-                Surname = s.Student.Surname,
-                LastName = s.Student.LastName,
-
-                SubjectAverages = allSubjects.Select(subject =>
+                var subjectAverages = allSubjects.Select(subject =>
                 {
                     var marks = s.Marks
                         .Where(m => m.SubjectID == subject.SubjectID)
@@ -944,7 +972,23 @@ namespace Portal
                         SubjectName = subject.Name,
                         AvgMark = marks.Any() ? marks.Average() : (double?)null
                     };
-                }).ToList()
+                }).ToList();
+
+                // Вычисляем среднюю отметку студента
+                var validAverages = subjectAverages
+                    .Where(sa => sa.AvgMark.HasValue)
+                    .Select(sa => sa.AvgMark.Value)
+                    .ToList();
+
+                return new StudentViewModel
+                {
+                    StudentId = s.Student.StudentID,
+                    Name = s.Student.Name,
+                    Surname = s.Student.Surname,
+                    LastName = s.Student.LastName,
+                    SubjectAverages = subjectAverages,
+                    StudentAverage = validAverages.Any() ? validAverages.Average() : (double?)null
+                };
             }).ToList();
 
             return students;
