@@ -2,6 +2,6 @@
 {
     static class AD
     {
-        public static string root = "127.0.0.1";
+        public static string root = "10.0.0.2";
     }
 }

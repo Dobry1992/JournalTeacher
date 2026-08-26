@@ -1,15 +1,11 @@
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using Portal.Data;
-using System.Linq;
 using Portal.Models;
 using System.Threading.Tasks;
 
 namespace Portal.Controllers
 {
-    [Authorize(Roles = "SuperAdmin, ANB-UMCH")]
     public class CompletedSubjectsController : Controller
     {
         private readonly AcademyContext _context;
