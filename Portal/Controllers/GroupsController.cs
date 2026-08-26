@@ -925,7 +925,7 @@ namespace Portal
             var typeKP = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Курсовой проект");
 
             var studentsData = await _context.Students
-                .Where(s => s.GroupID == groupId)
+                .Where(s => s.GroupID == groupId && s.Status == true)
                 .OrderBy(s => s.LastName)
                 .Select(s => new
                 {
