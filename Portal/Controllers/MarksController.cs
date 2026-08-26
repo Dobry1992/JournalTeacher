@@ -201,6 +201,10 @@ namespace Portal.Controllers
 
                         foreach (var m in simpleMarks)
                         {
+                            // Пропускаем отметку "З" для контрольных мероприятий при расчете среднего
+                            if (m.TypeOfExerciseID == typeKontrol.TypeOfExerciseID && m.Value == "З")
+                                continue;
+
                             if (TryParseMarkValue(m.Value, out double number))
                             {
                                 simpleDoubleMarks.Add(number);
@@ -216,7 +220,7 @@ namespace Portal.Controllers
                             }
                             else if (TryParseMarkValue(mark.Value, out double num))
                             {
-                                double average = simpleDoubleMarks.Average();
+                                double average = simpleDoubleMarks.Any() ? simpleDoubleMarks.Average() : 0;
                                 double finalValue = average * 0.6 + num * 0.4;
                                 markIOExam.Value = Math.Round(finalValue, 0, MidpointRounding.AwayFromZero).ToString(CultureInfo.InvariantCulture);
                                 markIOExam.ChangeCounter = 3;
@@ -255,6 +259,10 @@ namespace Portal.Controllers
 
                         foreach (var m in marks)
                         {
+                            // Пропускаем отметку "З" для контрольных мероприятий при расчете среднего
+                            if (m.TypeOfExerciseID == typeKontrol.TypeOfExerciseID && m.Value == "З")
+                                continue;
+
                             if (TryParseMarkValue(m.Value, out double number))
                             {
                                 doubleMarks.Add(number);
@@ -303,18 +311,31 @@ namespace Portal.Controllers
                             }
                         }
 
+                        // Проверка условий для "Недопуск"
                         bool hasLowControlMark = doubleControlMarks.Any(x => x <= 3);
                         bool noControlMarks = !doubleControlMarks.Any();
                         bool lowAverage = doubleMarks.Any() && doubleMarks.Average() < 4;
 
+                        // Проверяем, есть ли только положительные отметки "З" в контрольных
+                        var controlMarksWithZ = marks
+                            .Where(m => m.TypeOfExerciseID == typeKontrol.TypeOfExerciseID && m.Value == "З")
+                            .ToList();
+
+                        // Если есть только "З" в контрольных, считаем что это положительно
+                        bool hasOnlyZInControl = controlMarksWithZ.Any() && !doubleControlMarks.Any();
+
                         if (lowAverage || hasLowControlMark || noControlMarks)
                         {
-                            markIA.Value = "Недопуск";
-                            markIO.Value = "Недопуск";
-                            markIA.ChangeCounter = 3;
-                            markIO.ChangeCounter = 3;
-                            _context.Marks.Update(markIA);
-                            _context.Marks.Update(markIO);
+                            // Если есть только "З" в контрольных - не ставим "Недопуск"
+                            if (!hasOnlyZInControl)
+                            {
+                                markIA.Value = "Недопуск";
+                                markIO.Value = "Недопуск";
+                                markIA.ChangeCounter = 3;
+                                markIO.ChangeCounter = 3;
+                                _context.Marks.Update(markIA);
+                                _context.Marks.Update(markIO);
+                            }
                         }
                         else
                         {
@@ -327,7 +348,7 @@ namespace Portal.Controllers
                                 }
                                 else if (double.TryParse(markIA.Value, out double number))
                                 {
-                                    double average = doubleMarks.Average();
+                                    double average = doubleMarks.Any() ? doubleMarks.Average() : 0;
                                     double finalValue = average * 0.6 + number * 0.4;
                                     markIO.Value = Math.Round(finalValue, 0, MidpointRounding.AwayFromZero).ToString(CultureInfo.InvariantCulture);
                                 }
@@ -515,6 +536,10 @@ namespace Portal.Controllers
 
                         foreach (var m in simpleMarks)
                         {
+                            // Пропускаем отметку "З" для контрольных мероприятий при расчете среднего
+                            if (m.TypeOfExerciseID == typeKontrol.TypeOfExerciseID && m.Value == "З")
+                                continue;
+
                             if (TryParseMarkValue(m.Value, out double number))
                             {
                                 if (m.TypeOfExerciseID == typeKontrol.TypeOfExerciseID)
@@ -534,7 +559,7 @@ namespace Portal.Controllers
                             }
                             else if (TryParseMarkValue(mark.Value, out double num))
                             {
-                                double average = simpleDoubleMarks.Average();
+                                double average = simpleDoubleMarks.Any() ? simpleDoubleMarks.Average() : 0;
                                 double finalValue = average * 0.6 + num * 0.4;
                                 markIOExam.Value = Math.Round(finalValue, 0, MidpointRounding.AwayFromZero).ToString(CultureInfo.InvariantCulture);
                                 markIOExam.ChangeCounter = 3;
@@ -545,7 +570,7 @@ namespace Portal.Controllers
                             mark.TypeOfExerciseID != typeExam.TypeOfExerciseID &&
                             mark.TypeOfExerciseID != typeItog.TypeOfExerciseID && mark.TypeOfExerciseID != typeKontrol.TypeOfExerciseID)
                         {
-                            double average = simpleDoubleMarks.Average();
+                            double average = simpleDoubleMarks.Any() ? simpleDoubleMarks.Average() : 0;
                             if (average < 4)
                             {
                                 markExam.Value = "Недопуск";
@@ -596,7 +621,7 @@ namespace Portal.Controllers
                                 }
                                 else
                                 {
-                                    double average = simpleDoubleMarks.Average();
+                                    double average = simpleDoubleMarks.Any() ? simpleDoubleMarks.Average() : 0;
                                     if (markZ.Value == "З")
                                     {
                                         if (TryParseMarkValue(markExam.Value, out double exam))
@@ -629,7 +654,7 @@ namespace Portal.Controllers
                         else if (mark.TypeOfExerciseID == typeZachet.TypeOfExerciseID)
                         {
                             List<double> targets = new() { 1, 2, 3 };
-                            double average = simpleDoubleMarks.Average();
+                            double average = simpleDoubleMarks.Any() ? simpleDoubleMarks.Average() : 0;
                             if (average >= 4 && control_marks.Count() == control_double_marks.Count() && !targets.Any(m => control_double_marks.Contains(m)))
                             {
                                 if (mark.Value == "З")
@@ -684,6 +709,10 @@ namespace Portal.Controllers
 
                         foreach (var m in marks)
                         {
+                            // Пропускаем отметку "З" для контрольных мероприятий при расчете среднего
+                            if (m.TypeOfExerciseID == typeKontrol.TypeOfExerciseID && m.Value == "З")
+                                continue;
+
                             if (TryParseMarkValue(m.Value, out double number))
                             {
                                 doubleMarks.Add(number);
@@ -743,14 +772,25 @@ namespace Portal.Controllers
 
                         string markValue = mark.Value;
 
+                        // Проверяем, есть ли только положительные отметки "З" в контрольных
+                        var controlMarksWithZ = marks
+                            .Where(m => m.TypeOfExerciseID == typeKontrol.TypeOfExerciseID && m.Value == "З")
+                            .ToList();
+
+                        bool hasOnlyZInControl = controlMarksWithZ.Any() && !doubleControlMarks.Any();
+
                         if (lowAverage || hasLowControlMark || noControlMarks || controlMarks.Count != doubleControlMarks.Count)
                         {
-                            markIA.Value = "Недопуск";
-                            markIO.Value = "Недопуск";
-                            markIA.ChangeCounter = 3;
-                            markIO.ChangeCounter = 3;
-                            _context.Marks.Update(markIA);
-                            _context.Marks.Update(markIO);
+                            // Если есть только "З" в контрольных - не ставим "Недопуск"
+                            if (!hasOnlyZInControl)
+                            {
+                                markIA.Value = "Недопуск";
+                                markIO.Value = "Недопуск";
+                                markIA.ChangeCounter = 3;
+                                markIO.ChangeCounter = 3;
+                                _context.Marks.Update(markIA);
+                                _context.Marks.Update(markIO);
+                            }
                         }
                         else
                         {
@@ -764,7 +804,7 @@ namespace Portal.Controllers
                                 }
                                 else if (double.TryParse(markIA.Value, out double number))
                                 {
-                                    double average = doubleMarks.Average();
+                                    double average = doubleMarks.Any() ? doubleMarks.Average() : 0;
                                     double finalValue = average * 0.6 + number * 0.4;
                                     markIO.Value = Math.Round(finalValue, 0, MidpointRounding.AwayFromZero).ToString(CultureInfo.InvariantCulture);
                                 }

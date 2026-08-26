@@ -404,6 +404,12 @@ namespace Portal
 
                 foreach (var mark in previousMarks)
                 {
+                    if (mark.StudentID == student.StudentID && mark.Value == "З" && mark.TypeOfExerciseID == controlTypeId)
+                    {
+                        // Пропускаем "З" для контрольных мероприятий
+                        continue;
+                    }
+
                     if (mark.StudentID == student.StudentID && double.TryParse(mark.Value, out double value))
                     {
                         marks.Add(value);
@@ -420,11 +426,19 @@ namespace Portal
                     }
                 }
 
+                // Проверяем наличие только "З" в контрольных
+                var controlMarksWithZ = previousMarks
+                    .Where(m => m.StudentID == student.StudentID &&
+                                m.TypeOfExerciseID == controlTypeId &&
+                                m.Value == "З")
+                    .ToList();
+
+                bool hasOnlyZInControl = controlMarksWithZ.Any() && !controlMarks.Any();
                 bool hasLowAverage = marks.Any() && marks.Average() < 4;
                 bool hasBadControlMarks = controlMarks.Any(m => m == 1 || m == 2 || m == 3);
                 bool hasMarks = !marks.Any() || !controlMarks.Any();
 
-                if (hasLowAverage || hasBadControlMarks || hasMarks || controls.Count != controlMarks.Count)
+                if ((hasLowAverage || hasBadControlMarks || hasMarks || controls.Count != controlMarks.Count) && !hasOnlyZInControl)
                 {
                     _context.Marks.AddRange(
                         new Mark
@@ -813,6 +827,12 @@ namespace Portal
 
                 foreach (var mark in previousMarks)
                 {
+                    if (mark.StudentID == student.StudentID && mark.Value == "З" && mark.TypeOfExerciseID == controlTypeId)
+                    {
+                        // Пропускаем "З" для контрольных мероприятий
+                        continue;
+                    }
+
                     if (mark.StudentID == student.StudentID && double.TryParse(mark.Value, out double value))
                     {
                         marks.Add(value);
@@ -829,11 +849,19 @@ namespace Portal
                     }
                 }
 
+                // Проверяем наличие только "З" в контрольных
+                var controlMarksWithZ = previousMarks
+                    .Where(m => m.StudentID == student.StudentID &&
+                                m.TypeOfExerciseID == controlTypeId &&
+                                m.Value == "З")
+                    .ToList();
+
+                bool hasOnlyZInControl = controlMarksWithZ.Any() && !controlMarks.Any();
                 bool hasLowAverage = marks.Any() && marks.Average() < 4;
                 bool hasBadControlMarks = controlMarks.Any(m => m == 1 || m == 2 || m == 3);
                 bool hasMarks = !marks.Any() || !controlMarks.Any();
 
-                if (hasLowAverage || hasBadControlMarks || hasMarks || controls.Count != controlMarks.Count)
+                if ((hasLowAverage || hasBadControlMarks || hasMarks || controls.Count != controlMarks.Count) && !hasOnlyZInControl)
                 {
                     _context.Marks.AddRange(
                         new Mark
@@ -934,7 +962,7 @@ namespace Portal
                 _context.Types.Where(t => allowedTypes.Contains(t.Name)),
                 "TypeOfExerciseID", "Name"
             );
-            
+
             ViewBag.UserName = teacher;
             ViewBag.Teachers = _context.Teachers.OrderBy(t => t.FamilyName);
             ViewBag.TeachersNoPC = _context.TeacherNoPCs.OrderBy(t => t.LastName).AsNoTracking();
@@ -989,7 +1017,7 @@ namespace Portal
             {
                 lesson.Signature = teacher;
             }
-               
+
             var typeZ = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Зачёт");
             var typeExam = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Экзамен");
 
@@ -1714,6 +1742,10 @@ namespace Portal
 
                             foreach (var mark in simpleMarks)
                             {
+                                // Пропускаем отметку "З" для контрольных мероприятий
+                                if (mark.TypeOfExerciseID == controlType.TypeOfExerciseID && mark.Value == "З")
+                                    continue;
+
                                 if (double.TryParse(mark.Value, out double number))
                                 {
                                     doubleSimpleMarks.Add(number);
@@ -1724,26 +1756,36 @@ namespace Portal
                             {
                                 foreach (var mark in controlMarks)
                                 {
+                                    if (mark.Value == "З")
+                                        continue;
+
                                     if (double.TryParse(mark.Value, out double number))
                                     {
                                         doubleControlMarks.Add(number);
                                     }
                                 }
 
-                                if (doubleControlMarks.Count != controlMarks.Count)
+                                // Проверяем наличие только "З" в контрольных
+                                var controlMarksWithZ = controlMarks
+                                    .Where(m => m.Value == "З")
+                                    .ToList();
+
+                                bool hasOnlyZInControl = controlMarksWithZ.Any() && !doubleControlMarks.Any();
+
+                                if (doubleControlMarks.Count != controlMarks.Count && !hasOnlyZInControl)
                                 {
                                     await SetNotAllowedMarksAsync(zMark, ioZMark, examMark, ioExamMark);
                                 }
                                 else
                                 {
-                                    if (doubleControlMarks.Any(n => n is 1 or 2 or 3))
+                                    if (doubleControlMarks.Any(n => n is 1 or 2 or 3) && !hasOnlyZInControl)
                                     {
                                         await SetNotAllowedMarksAsync(zMark, ioZMark, examMark, ioExamMark);
                                     }
                                     else
                                     {
-                                        var avarage = doubleSimpleMarks.Average();
-                                        if (avarage < 4)
+                                        var avarage = doubleSimpleMarks.Any() ? doubleSimpleMarks.Average() : 0;
+                                        if (avarage < 4 && !hasOnlyZInControl)
                                         {
                                             await SetNotAllowedMarksAsync(zMark, ioZMark, examMark, ioExamMark);
                                         }
@@ -1896,6 +1938,10 @@ namespace Portal
 
                 foreach (var mark in simpleMarks)
                 {
+                    // Пропускаем отметку "З" для контрольных мероприятий
+                    if (mark.TypeOfExerciseID == controlType?.TypeOfExerciseID && mark.Value == "З")
+                        continue;
+
                     if (double.TryParse(mark.Value, out double num))
                     {
                         simpleDoubleMarks.Add(num);
@@ -1907,10 +1953,16 @@ namespace Portal
                         controlMarks.Add(mark);
                 }
 
+                // Проверяем наличие только "З" в контрольных
+                var controlMarksWithZ = simpleMarks
+                    .Where(m => m.TypeOfExerciseID == controlType?.TypeOfExerciseID && m.Value == "З")
+                    .ToList();
+
+                bool hasOnlyZInControl = controlMarksWithZ.Any() && !controlDoubleMarks.Any();
                 double average = simpleDoubleMarks.Any() ? simpleDoubleMarks.Average() : 0;
 
-                if (average < 4 || controlDoubleMarks.Any(n => n is 1 or 2 or 3) ||
-                    !controlMarks.Any() || controlMarks.Count != controlDoubleMarks.Count)
+                if ((average < 4 || controlDoubleMarks.Any(n => n is 1 or 2 or 3) ||
+                    !controlMarks.Any() || controlMarks.Count != controlDoubleMarks.Count) && !hasOnlyZInControl)
                 {
                     if (markIA != null)
                     {
