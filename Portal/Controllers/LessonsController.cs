@@ -1229,96 +1229,43 @@ namespace Portal
             return RedirectToAction("Journal", "Journals", new { GroupID, SubjectID });
         }
 
-        public IActionResult CreateK(int? GroupID, int? SubjectID, string returnUrl = null)
+        public IActionResult CreateK(int? GroupID, int? SubjectID)
         {
+
             string teacher = _userNameService.GetDisplayName();
 
-            // Получаем все предметы для выбора
-            var subjects = _context.Subjects.OrderBy(s => s.Name).ToList();
-            ViewBag.SubjectsList = subjects;
-
-            // Получаем тему "Контрольное занятие" для выбранного предмета
-            int themeId = 0;
-            if (SubjectID.HasValue && SubjectID.Value > 0)
-            {
-                var controlTheme = _context.Themes
-                    .FirstOrDefault(t => t.SubjectID == SubjectID.Value && t.Name == "Контрольное занятие");
-                if (controlTheme != null)
-                {
-                    themeId = controlTheme.ThemeID;
-                }
-            }
-
-            ViewBag.ThemeID = themeId;
-            ViewBag.SelectedSubjectID = SubjectID;
-
-            ViewData["TypeOfExerciseID"] = new SelectList(
-                _context.Types.Where(t => t.Name == "Курсовая работа" || t.Name == "Курсовой проект"),
-                "TypeOfExerciseID",
-                "Name"
-            );
-
+            ViewData["ThemeID"] = new SelectList(_context.Themes.Where(t => t.SubjectID == SubjectID && t.Name == "Контрольное занятие"), "ThemeID", "Name");
+            ViewData["TypeOfExerciseID"] = new SelectList(_context.Types.Where(t => t.Name == "Курсовая работа" || t.Name == "Курсовой проект"), "TypeOfExerciseID", "Name");
             var teachers = _context.Teachers.OrderBy(t => t.FamilyName);
             var teachersNoPC = _context.TeacherNoPCs.OrderBy(t => t.LastName).AsNoTracking();
-
             ViewBag.UserName = teacher;
             ViewBag.TeachersNoPC = teachersNoPC;
             ViewBag.Teachers = teachers;
             ViewBag.GroupID = GroupID;
             ViewBag.SubjectID = SubjectID;
-            ViewBag.ReturnUrl = returnUrl;
-
             return View();
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> CreateK(int GroupID, int SubjectID,
-    [Bind("LessonID,Date,Comment,FlagX,FlagF,ThemeID,TypeOfExerciseID,GroupID,SubjectID,Signature")] Lesson lessonK,
-    string returnUrl)
+        public async Task<IActionResult> CreateK(int GroupID, int SubjectID, [Bind("LessonID,Date,Comment,FlagX,FlagF,ThemeID,TypeOfExerciseID,GroupID,SubjectID,Signature")] Lesson lessonK)
         {
             string teacher = _userNameService.GetDisplayName();
 
-            if (SubjectID == 0)
+            if (!IsLessonDateValid(lessonK.Date, out var errorMessage))
             {
-                ModelState.AddModelError("SubjectID", "Необходимо выбрать предмет.");
+                ModelState.AddModelError("", errorMessage);
             }
-
-            if (lessonK.TypeOfExerciseID == 0)
-            {
-                ModelState.AddModelError("TypeOfExerciseID", "Необходимо выбрать тип занятия.");
-            }
-
-            // Находим или создаем тему "Контрольное занятие"
-            var controlTheme = await _context.Themes
-                .FirstOrDefaultAsync(t => t.SubjectID == SubjectID && t.Name == "Контрольное занятие");
-
-            if (controlTheme == null)
-            {
-                controlTheme = new Theme
-                {
-                    Name = "Контрольное занятие",
-                    ShortName = "КЗ",
-                    SubjectID = SubjectID
-                };
-                _context.Themes.Add(controlTheme);
-                await _context.SaveChangesAsync();
-            }
-
-            lessonK.ThemeID = controlTheme.ThemeID;
 
             if (!ModelState.IsValid)
             {
-                var subjects = _context.Subjects.OrderBy(s => s.Name).ToList();
-                ViewBag.SubjectsList = subjects;
-                ViewBag.SelectedSubjectID = SubjectID;
-                ViewBag.ThemeID = controlTheme.ThemeID;
+                ViewData["ThemeID"] = new SelectList(
+                    _context.Themes.Where(t => t.SubjectID == SubjectID && t.Name == "Контрольное занятие"),
+                    "ThemeID", "Name");
 
                 ViewData["TypeOfExerciseID"] = new SelectList(
                     _context.Types.Where(t => t.Name == "Курсовая работа" || t.Name == "Курсовой проект"),
-                    "TypeOfExerciseID",
-                    "Name"
-                );
+                    "TypeOfExerciseID", "Name");
 
                 var teachers = _context.Teachers.OrderBy(t => t.FamilyName);
                 var teachersNoPC = _context.TeacherNoPCs.OrderBy(t => t.LastName).AsNoTracking();
@@ -1327,14 +1274,12 @@ namespace Portal
                 ViewBag.Teachers = teachers;
                 ViewBag.GroupID = GroupID;
                 ViewBag.SubjectID = SubjectID;
-                ViewBag.ReturnUrl = returnUrl;
 
                 return View(lessonK);
             }
 
             lessonK.SubjectID = SubjectID;
             lessonK.GroupID = GroupID;
-
             if (!User.IsInRole("ICDA-writer") && !User.IsInRole("K-8Writer"))
             {
                 lessonK.Signature = teacher;
@@ -1345,11 +1290,11 @@ namespace Portal
 
             var subject = await _context.Subjects.FindAsync(SubjectID);
             var group = await _context.Groups.FindAsync(GroupID);
-            var students = await _context.Students.Where(s => s.GroupID == GroupID && s.Status == true).ToListAsync();
+            var students = await _context.Students.Where(s => s.GroupID == GroupID).ToListAsync();
 
             foreach (var student in students)
             {
-                Mark mark = new Mark
+                Mark mark = new()
                 {
                     Value = "",
                     Date = lessonK.Date,
@@ -1360,7 +1305,7 @@ namespace Portal
                     DepartmentID = subject.DepartmentID,
                     InstituteID = group.InstituteID,
                     SpecialityID = group.SpecialityID,
-                    ThemeID = controlTheme.ThemeID,
+                    ThemeID = lessonK.ThemeID,
                     StudentID = student.StudentID
                 };
 
@@ -1369,23 +1314,89 @@ namespace Portal
 
             await _context.SaveChangesAsync();
 
-            // Логируем событие
-            var type = await _context.Types.FindAsync(lessonK.TypeOfExerciseID);
-            Event e = new Event
-            {
-                Date = DateTime.Now,
-                Teacher = teacher,
-                Log = $"Создано занятие (Курсовой проект/работа) от: {lessonK.Date:dd.MM.yyyy}, предмет: {subject?.Name}, тип: {type?.Name}, группа: {group?.Name}"
-            };
-            _context.Events.Add(e);
-            await _context.SaveChangesAsync();
+            return RedirectToAction("Journal", "Journals", new { GroupID, SubjectID });
+        }
 
-            if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+        [Authorize(Roles = "SuperAdmin,ANB-UMCH")]
+        public IActionResult AdjustmentCreateK(int? GroupID, int? SubjectID)
+        {
+
+            string teacher = _userNameService.GetDisplayName();
+
+            ViewData["ThemeID"] = new SelectList(_context.Themes.Where(t => t.SubjectID == SubjectID && t.Name == "Контрольное занятие"), "ThemeID", "Name");
+            ViewData["TypeOfExerciseID"] = new SelectList(_context.Types.Where(t => t.Name == "Курсовая работа" || t.Name == "Курсовой проект"), "TypeOfExerciseID", "Name");
+            var teachers = _context.Teachers.OrderBy(t => t.FamilyName);
+            var teachersNoPC = _context.TeacherNoPCs.OrderBy(t => t.LastName).AsNoTracking();
+            ViewBag.UserName = teacher;
+            ViewBag.TeachersNoPC = teachersNoPC;
+            ViewBag.Teachers = teachers;
+            ViewBag.GroupID = GroupID;
+            ViewBag.SubjectID = SubjectID;
+            return View();
+        }
+
+        [Authorize(Roles = "SuperAdmin,ANB-UMCH")]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> AdjustmentCreateK(int GroupID, int SubjectID, [Bind("LessonID,Date,Comment,FlagX,FlagF,ThemeID,TypeOfExerciseID,GroupID,SubjectID,Signature")] Lesson lessonK)
+        {
+            string teacher = _userNameService.GetDisplayName();
+
+            if (!ModelState.IsValid)
             {
-                return Redirect(returnUrl);
+                ViewData["ThemeID"] = new SelectList(
+                    _context.Themes.Where(t => t.SubjectID == SubjectID && t.Name == "Контрольное занятие"),
+                    "ThemeID", "Name");
+
+                ViewData["TypeOfExerciseID"] = new SelectList(
+                    _context.Types.Where(t => t.Name == "Курсовая работа" || t.Name == "Курсовой проект"),
+                    "TypeOfExerciseID", "Name");
+
+                var teachers = _context.Teachers.OrderBy(t => t.FamilyName);
+                var teachersNoPC = _context.TeacherNoPCs.OrderBy(t => t.LastName).AsNoTracking();
+                ViewBag.UserName = teacher;
+                ViewBag.TeachersNoPC = teachersNoPC;
+                ViewBag.Teachers = teachers;
+                ViewBag.GroupID = GroupID;
+                ViewBag.SubjectID = SubjectID;
+
+                return View(lessonK);
             }
 
-            return RedirectToAction("Statement", "Journals", new { GroupID });
+            lessonK.SubjectID = SubjectID;
+            lessonK.GroupID = GroupID;
+            lessonK.Signature = teacher;
+
+            _context.Add(lessonK);
+            await _context.SaveChangesAsync();
+
+            var subject = await _context.Subjects.FindAsync(SubjectID);
+            var group = await _context.Groups.FindAsync(GroupID);
+            var students = await _context.Students.Where(s => s.GroupID == GroupID).ToListAsync();
+
+            foreach (var student in students)
+            {
+                Mark mark = new()
+                {
+                    Value = "",
+                    Date = lessonK.Date,
+                    SubjectID = SubjectID,
+                    GroupID = GroupID,
+                    LessonID = lessonK.LessonID,
+                    TypeOfExerciseID = lessonK.TypeOfExerciseID,
+                    DepartmentID = subject.DepartmentID,
+                    InstituteID = group.InstituteID,
+                    SpecialityID = group.SpecialityID,
+                    ThemeID = lessonK.ThemeID,
+                    StudentID = student.StudentID
+                };
+
+                _context.Marks.Add(mark);
+            }
+
+            await _context.SaveChangesAsync();
+
+            return RedirectToAction("AdjustedJournal", "Journals", new { GroupID, SubjectID });
         }
 
         public async Task<IActionResult> Delete(int? id, int? GroupID, int? SubjectID)
@@ -1867,57 +1878,6 @@ namespace Portal
             await _context.SaveChangesAsync();
 
             return RedirectToAction("AdjustedJournal", "Journals", new { GroupID, SubjectID });
-        }
-
-        public async Task<IActionResult> DeleteK(int? id, int? GroupID, int? SubjectID)
-        {
-            if (id == null)
-            {
-                return NotFound();
-            }
-
-            var lesson = await _context.Lessons
-                .Include(l => l.Group)
-                .Include(l => l.Theme)
-                    .ThenInclude(t => t.Subject)
-                .Include(l => l.TypeOfExercise)
-                .FirstOrDefaultAsync(m => m.LessonID == id);
-            if (lesson == null)
-            {
-                return NotFound();
-            }
-            ViewBag.GroupID = GroupID;
-            ViewBag.SubjectID = SubjectID;
-            return View(lesson);
-        }
-
-        [HttpPost, ActionName("DeleteK")]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> DeleteKConfirmed(int id, int GroupID, int SubjectID)
-        {
-            string teacher = _userNameService.GetDisplayName(); ;
-
-            var lesson = await _context.Lessons.FindAsync(id);
-            var marks = _context.Marks.Where(m => m.LessonID == id);
-            foreach (var mark in marks)
-            {
-                _context.Marks.Remove(mark);
-            }
-            _context.Lessons.Remove(lesson);
-            await _context.SaveChangesAsync();
-
-            var subject = await _context.Subjects.FindAsync(lesson.SubjectID);
-            var theme = await _context.Themes.FindAsync(lesson.ThemeID);
-            var type = await _context.Types.FindAsync(lesson.TypeOfExerciseID);
-            var group = await _context.Groups.FindAsync(GroupID);
-            Event e = new();
-            e.Date = DateTime.Now;
-            e.Teacher = teacher;
-            e.Log = "Удалено занятие от: " + lesson.Date.ToShortDateString() + ", предмет: " + subject.Name + " , тема: " + theme.Name + ", тип: " + type.Name + ", группа: " + group.Name;
-            _context.Events.Update(e);
-            await _context.SaveChangesAsync();
-
-            return RedirectToAction("Statement", "Journals", new { GroupID });
         }
 
         private static class TypeNames

@@ -1,27 +1,24 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using System;
+using System.DirectoryServices.AccountManagement;
+using System.Linq;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using Portal.Data;
 using Portal.Models;
 using Portal.Repository;
-using Portal.Services;
-using System;
-using System.DirectoryServices.AccountManagement;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace Portal
 {
     public class StatementLessonsController : Controller
     {
         private readonly AcademyContext _context;
-        private readonly UserNameService _userNameService;
 
-        public StatementLessonsController(AcademyContext context, UserNameService userNameService)
+        public StatementLessonsController(AcademyContext context)
         {
             _context = context;
-            _userNameService = userNameService;
         }
 
         [Authorize(Roles = "SuperAdmin, ANB-UMCH")]
@@ -64,8 +61,24 @@ namespace Portal
                 ModelState.AddModelError("", "Невозможно создать занятие в будующем!");
             }
 
-            string teacher = _userNameService.GetDisplayName();
+            string teacher = "";
+            var username = User.Identity.Name;
+            using (var context = new PrincipalContext(ContextType.Domain, AD.root))
+            {
+                try
+                {
+                    var user = UserPrincipal.FindByIdentity(context, username);
 
+                    if (user != null)
+                    {
+                        teacher = user.DisplayName;
+                    }
+                }
+                catch
+                {
+                    teacher = username;
+                }
+            }
 
             if (ModelState.IsValid)
             {
