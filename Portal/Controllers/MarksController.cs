@@ -372,6 +372,332 @@ namespace Portal.Controllers
             return RedirectToAction("Journal", "Journals", new { GroupID, SubjectID });
         }
 
+        public async Task<IActionResult> EditK(int? MarkID, int? GroupID, int? SubjectID)
+        {
+            if (MarkID == null)
+                return NotFound();
+
+            var mark = await _context.Marks.FindAsync(MarkID);
+            if (mark == null)
+                return NotFound();
+
+            string teacher = _userNameService.GetDisplayName();
+
+            ViewBag.UserName = teacher;
+            ViewBag.Teachers = _context.Teachers.OrderBy(t => t.FamilyName).AsNoTracking();
+            ViewBag.TeachersNoPC = _context.TeacherNoPCs.OrderBy(t => t.LastName).AsNoTracking();
+            ViewBag.GroupID = GroupID;
+            ViewBag.SubjectID = SubjectID;
+
+            return View(mark);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> EditK(int MarkID, int? GroupID, int? SubjectID, [Bind("MarkID,Value,Date,Comment,SignatureOfTeacher,HistoryOfMark,SubjectID,GroupID,LessonID,TypeOfExerciseID,DepartmentID,SpecialityID,ThemeID,StudentID,FlagX,FlagF,InstituteID,ChangeCounter")] Mark mark)
+        {
+            if (MarkID != mark.MarkID)
+                return NotFound();
+
+            if (!ModelState.IsValid)
+                return View(mark);
+
+            string teacher = _userNameService.GetDisplayName();
+            bool isWriter = User.IsInRole("ICDA-writer") || User.IsInRole("K-8Writer");
+
+            if (!isWriter)
+                mark.SignatureOfTeacher = teacher;
+
+            if (!string.IsNullOrWhiteSpace(mark.HistoryOfMark))
+            {
+                var subject = await _context.Subjects.FindAsync(mark.SubjectID);
+                var theme = await _context.Themes.FindAsync(mark.ThemeID);
+                var type = await _context.Types.FindAsync(mark.TypeOfExerciseID);
+                var student = await _context.Students.FindAsync(mark.StudentID);
+                var group = await _context.Groups.FindAsync(mark.GroupID);
+
+                if (subject != null && theme != null && type != null && student != null && group != null)
+                {
+                    var e = new Event
+                    {
+                        Date = DateTime.Now,
+                        Teacher = mark.SignatureOfTeacher,
+                        Log = $"Изменение отметки от {mark.Date:dd.MM.yyyy}, предмет: {subject.Name}, тема: {theme.Name}, тип занятия: {type.Name}, курсант/слушатель: {student.LastName} {student.Name[0]}.{student.Surname[0]}. группа: {group.Name}"
+                    };
+                    _context.Events.Add(e);
+                    await _context.SaveChangesAsync();
+                }
+            }
+
+            mark.HistoryOfMark = (mark.HistoryOfMark ?? string.Empty) +
+                                 $"{mark.Value} - {DateTime.Now:dd.MM.yyyy} - {mark.SignatureOfTeacher}</br>";
+            mark.ChangeCounter++;
+            _context.Marks.Update(mark);
+            await _context.SaveChangesAsync();
+
+            try
+            {
+                if (mark.FlagF != 0)
+                {
+                    var types = await _context.Types.ToListAsync();
+                    var typeZachet = types.FirstOrDefault(t => t.Name == "Зачёт");
+                    var typeDiffZachet = types.FirstOrDefault(t => t.Name == "Дифференцированный зачёт");
+                    var typeExam = types.FirstOrDefault(t => t.Name == "Экзамен");
+                    var typeItog = types.FirstOrDefault(t => t.Name == "Итоговая отметка");
+                    var typeKontrol = types.FirstOrDefault(t => t.Name == "Контрольное мероприятие");
+
+                    if (typeZachet == null || typeDiffZachet == null || typeExam == null || typeItog == null || typeKontrol == null)
+                        throw new InvalidOperationException("Не все типы занятий найдены в справочнике.");
+
+                    var requiredTypeIds = new List<int>
+                    {
+                        typeZachet.TypeOfExerciseID,
+                        typeDiffZachet.TypeOfExerciseID,
+                        typeExam.TypeOfExerciseID
+                    };
+
+                    var IALessons = await _context.Lessons
+                        .Where(l =>
+                            l.GroupID == mark.GroupID &&
+                            l.FlagF == mark.FlagF &&
+                            l.SubjectID == mark.SubjectID &&
+                            (l.TypeOfExerciseID == typeExam.TypeOfExerciseID || l.TypeOfExerciseID == typeZachet.TypeOfExerciseID))
+                        .ToListAsync();
+
+                    if (IALessons.Count > 1)
+                    {
+                        var student = await _context.Students.FindAsync(mark.StudentID);
+                        var lessonExam = IALessons.FirstOrDefault(l => l.TypeOfExerciseID == typeExam.TypeOfExerciseID);
+                        var lessonZ = IALessons.FirstOrDefault(l => l.TypeOfExerciseID == typeZachet.TypeOfExerciseID);
+                        var lessonIOExam = await _context.Lessons.FirstOrDefaultAsync(l =>
+                            l.FlagF == mark.FlagF &&
+                            l.TypeOfExerciseID == typeItog.TypeOfExerciseID &&
+                            l.SubjectID == SubjectID &&
+                            l.GroupID == GroupID &&
+                            l.Date.Year == lessonExam.Date.Year &&
+                            l.Date.Month == lessonExam.Date.Month &&
+                            l.Date.Day == lessonExam.Date.Day);
+                        var lessonIOZ = await _context.Lessons.FirstOrDefaultAsync(l =>
+                            l.FlagF == mark.FlagF &&
+                            l.TypeOfExerciseID == typeItog.TypeOfExerciseID &&
+                            l.SubjectID == SubjectID &&
+                            l.GroupID == GroupID &&
+                            l.Date.Year == lessonZ.Date.Year &&
+                            l.Date.Month == lessonZ.Date.Month &&
+                            l.Date.Day == lessonZ.Date.Day);
+
+                        if (lessonExam == null || lessonZ == null || lessonIOExam == null || lessonIOZ == null)
+                        {
+                            return RedirectToAction("Journal", "Journals", new { GroupID, SubjectID });
+                        }
+
+                        var markExam = await _context.Marks.FirstOrDefaultAsync(m =>
+                            m.StudentID == mark.StudentID &&
+                            m.LessonID == lessonExam.LessonID &&
+                            m.TypeOfExerciseID == typeExam.TypeOfExerciseID);
+                        var markZ = await _context.Marks.FirstOrDefaultAsync(m =>
+                            m.StudentID == mark.StudentID &&
+                            m.LessonID == lessonZ.LessonID &&
+                            m.TypeOfExerciseID == typeZachet.TypeOfExerciseID);
+                        var markIOExam = await _context.Marks.FirstOrDefaultAsync(m =>
+                            m.StudentID == mark.StudentID &&
+                            m.LessonID == lessonIOExam.LessonID &&
+                            m.TypeOfExerciseID == typeItog.TypeOfExerciseID);
+                        var markIOZ = await _context.Marks.FirstOrDefaultAsync(m =>
+                            m.StudentID == mark.StudentID &&
+                            m.LessonID == lessonIOZ.LessonID &&
+                            m.TypeOfExerciseID == typeItog.TypeOfExerciseID);
+
+                        if (markExam == null || markZ == null || markIOExam == null || markIOZ == null)
+                        {
+                            return RedirectToAction("Journal", "Statement", new { GroupID });
+                        }
+
+                        var simpleMarks = await _context.Marks
+                            .Where(m => m.FlagF == mark.FlagF &&
+                                        m.StudentID == mark.StudentID &&
+                                        m.SubjectID == SubjectID &&
+                                        m.TypeOfExerciseID != markExam.TypeOfExerciseID &&
+                                        m.TypeOfExerciseID != markIOExam.TypeOfExerciseID &&
+                                        m.TypeOfExerciseID != markZ.TypeOfExerciseID &&
+                                        m.TypeOfExerciseID != markIOZ.TypeOfExerciseID)
+                            .ToListAsync();
+
+                        List<double> simpleDoubleMarks = new();
+
+                        foreach (var m in simpleMarks)
+                        {
+                            // Пропускаем отметку "З" для контрольных мероприятий при расчете среднего
+                            if (m.TypeOfExerciseID == typeKontrol.TypeOfExerciseID && m.Value == "З")
+                                continue;
+
+                            if (TryParseMarkValue(m.Value, out double number))
+                            {
+                                simpleDoubleMarks.Add(number);
+                            }
+                        }
+
+                        if (mark.MarkID == markExam.MarkID)
+                        {
+                            if (new[] { "1", "2", "3" }.Contains(mark.Value))
+                            {
+                                markIOExam.Value = mark.Value;
+                                markIOExam.ChangeCounter = 3;
+                            }
+                            else if (TryParseMarkValue(mark.Value, out double num))
+                            {
+                                double average = simpleDoubleMarks.Any() ? simpleDoubleMarks.Average() : 0;
+                                double finalValue = average * 0.6 + num * 0.4;
+                                markIOExam.Value = Math.Round(finalValue, 0, MidpointRounding.AwayFromZero).ToString(CultureInfo.InvariantCulture);
+                                markIOExam.ChangeCounter = 3;
+                            }
+                        }
+
+                        await _context.SaveChangesAsync();
+                    }
+                    else
+                    {
+                        var markIA = await _context.Marks.FirstOrDefaultAsync(m =>
+                            m.SubjectID == SubjectID &&
+                            m.FlagF == mark.FlagF &&
+                            requiredTypeIds.Contains(m.TypeOfExerciseID) &&
+                            m.StudentID == mark.StudentID);
+
+                        var markIO = await _context.Marks.FirstOrDefaultAsync(m =>
+                            m.SubjectID == SubjectID &&
+                            m.FlagF == mark.FlagF &&
+                            m.TypeOfExerciseID == typeItog.TypeOfExerciseID &&
+                            m.StudentID == mark.StudentID);
+
+                        if (markIA == null || markIO == null)
+                            return RedirectToAction("Journal", "Journals", new { GroupID, SubjectID });
+
+                        var marks = await _context.Marks
+                            .Where(m => m.FlagF == mark.FlagF &&
+                                        m.SubjectID == SubjectID &&
+                                        m.StudentID == mark.StudentID &&
+                                        m.TypeOfExerciseID != markIA.TypeOfExerciseID &&
+                                        m.TypeOfExerciseID != markIO.TypeOfExerciseID)
+                            .ToListAsync();
+
+                        List<double> doubleMarks = new();
+                        List<double> doubleControlMarks = new();
+
+                        foreach (var m in marks)
+                        {
+                            // Пропускаем отметку "З" для контрольных мероприятий при расчете среднего
+                            if (m.TypeOfExerciseID == typeKontrol.TypeOfExerciseID && m.Value == "З")
+                                continue;
+
+                            if (TryParseMarkValue(m.Value, out double number))
+                            {
+                                doubleMarks.Add(number);
+                                if (m.TypeOfExerciseID == typeKontrol.TypeOfExerciseID)
+                                    doubleControlMarks.Add(number);
+                            }
+                        }
+
+                        if (mark.TypeOfExerciseID == markIA.TypeOfExerciseID)
+                        {
+                            bool updatedIO = false;
+
+                            if (markIA.TypeOfExerciseID == typeZachet.TypeOfExerciseID)
+                            {
+                                if (mark.Value == "З")
+                                {
+                                    markIO.Value = "Зачтено";
+                                    updatedIO = true;
+                                }
+                                else if (mark.Value == "НЗ")
+                                {
+                                    markIO.Value = "Не зачтено";
+                                    updatedIO = true;
+                                }
+                            }
+                            else
+                            {
+                                if (new[] { "1", "2", "3" }.Contains(markIA.Value))
+                                {
+                                    markIO.Value = markIA.Value;
+                                    updatedIO = true;
+                                }
+                                else if (TryParseMarkValue(markIA.Value, out double num) && doubleMarks.Any())
+                                {
+                                    double average = doubleMarks.Average();
+                                    double finalValue = average * 0.6 + num * 0.4;
+                                    markIO.Value = Math.Round(finalValue, 0, MidpointRounding.AwayFromZero).ToString(CultureInfo.InvariantCulture);
+                                    updatedIO = true;
+                                }
+                            }
+
+                            if (updatedIO)
+                            {
+                                markIO.ChangeCounter = 3;
+                                _context.Marks.Update(markIO);
+                            }
+                        }
+
+                        // Проверка условий для "Недопуск"
+                        bool hasLowControlMark = doubleControlMarks.Any(x => x <= 3);
+                        bool noControlMarks = !doubleControlMarks.Any();
+                        bool lowAverage = doubleMarks.Any() && doubleMarks.Average() < 4;
+
+                        // Проверяем, есть ли только положительные отметки "З" в контрольных
+                        var controlMarksWithZ = marks
+                            .Where(m => m.TypeOfExerciseID == typeKontrol.TypeOfExerciseID && m.Value == "З")
+                            .ToList();
+
+                        // Если есть только "З" в контрольных, считаем что это положительно
+                        bool hasOnlyZInControl = controlMarksWithZ.Any() && !doubleControlMarks.Any();
+
+                        if (lowAverage || hasLowControlMark || noControlMarks)
+                        {
+                            // Если есть только "З" в контрольных - не ставим "Недопуск"
+                            if (!hasOnlyZInControl)
+                            {
+                                markIA.Value = "Недопуск";
+                                markIO.Value = "Недопуск";
+                                markIA.ChangeCounter = 3;
+                                markIO.ChangeCounter = 3;
+                                _context.Marks.Update(markIA);
+                                _context.Marks.Update(markIO);
+                            }
+                        }
+                        else
+                        {
+                            if (mark.TypeOfExerciseID != typeZachet.TypeOfExerciseID)
+                            {
+                                if (markIA.Value == "Недопуск")
+                                {
+                                    markIA.Value = "";
+                                    markIO.Value = "";
+                                }
+                                else if (double.TryParse(markIA.Value, out double number))
+                                {
+                                    double average = doubleMarks.Any() ? doubleMarks.Average() : 0;
+                                    double finalValue = average * 0.6 + number * 0.4;
+                                    markIO.Value = Math.Round(finalValue, 0, MidpointRounding.AwayFromZero).ToString(CultureInfo.InvariantCulture);
+                                }
+                            }
+                            _context.Marks.Update(markIO);
+                        }
+
+                        await _context.SaveChangesAsync();
+                    }
+                }
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                if (!MarkExists(mark.MarkID))
+                    return NotFound();
+                throw;
+            }
+
+            await HandleUnsatisfactoryMarkAsync(mark);
+
+            return RedirectToAction("Statement", "Journals", new { GroupID });
+        }
+
         public async Task<IActionResult> AdjustmentEdit(int? MarkID, int? GroupID, int? SubjectID)
         {
             if (MarkID == null)
