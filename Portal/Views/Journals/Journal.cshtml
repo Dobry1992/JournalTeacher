@@ -53,6 +53,10 @@ else if (User.IsInRole("SuperAdmin") || User.IsInRole("ANB-UMCH") || User.IsInRo
                        asp-route-GroupID="@Model.Group.GroupID" asp-route-SubjectID="@Model.Subject.SubjectID">
                         Экзамен/Зачёт
                     </a>
+                    <a class="btn btn-primary mr-2 btn-sm" asp-controller="Lessons" asp-action="CreateK"
+                       asp-route-GroupID="@Model.Group.GroupID" asp-route-SubjectID="@Model.Subject.SubjectID">
+                        Курсовой проект
+                    </a>
                     <a class="btn btn-outline-warning mr-2 btn-sm" asp-action="Final"
                        asp-route-GroupID="@Model.Group.GroupID" asp-route-SubjectID="@Model.Subject.SubjectID">
                         Итоги обучения

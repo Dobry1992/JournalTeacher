@@ -55,6 +55,10 @@ else
                        asp-route-GroupID="@Model.Group.GroupID" asp-route-SubjectID="@Model.Subject.SubjectID">
                         Экзамен/Зачёт
                     </a>
+                    <a class="btn btn-primary mr-2 btn-sm" asp-controller="Lessons" asp-action="AdjustmentCreateK"
+                       asp-route-GroupID="@Model.Group.GroupID" asp-route-SubjectID="@Model.Subject.SubjectID">
+                        Курсовой проект
+                    </a>
                     <a class="btn btn-info mr-2 btn-sm"
                        asp-action="Controls"
                        asp-route-GroupID="@Model.Group.GroupID"
