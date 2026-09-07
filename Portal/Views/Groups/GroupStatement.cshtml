@@ -5,6 +5,8 @@
     ViewData["Title"] = "Ведомость";
     int i = 1;
     var subjects = Model?.FirstOrDefault()?.SubjectAverages ?? new List<SubjectAverageViewModel>();
+    var subjectAverages = ViewBag.SubjectAverages as List<SubjectAverageViewModel> ?? new List<SubjectAverageViewModel>();
+    var totalAverage = ViewBag.TotalAverage as double?;
 }
 
 @await Html.PartialAsync("_NavMenuJournal")
@@ -62,7 +64,7 @@
                                 <td class="text-center align-middle bg-light p-1 fix" style="white-space:nowrap">@student.FullName</td>
                                 @foreach (var subj in student.SubjectAverages)
                                 {
-                                    <td class="text-center align-middle p-1">@(subj.AvgMark.HasValue? subj.AvgMark.Value.ToString("0.000") : "-")</td>
+                                    <td class="text-center align-middle p-1">@(subj.AvgMark.HasValue ? subj.AvgMark.Value.ToString("0.000") : "-")</td>
                                 }
                                 <td class="text-center align-middle p-1 font-weight-bold" style="background-color: #fff3cd;">
                                     @(student.StudentAverage.HasValue ? student.StudentAverage.Value.ToString("0.000") : "-")
@@ -70,6 +72,23 @@
                             </tr>
                             i++;
                         }
+                        
+                        <!-- Строка "Средняя по дисциплине" -->
+                        <tr style="background-color: #e9ecef; font-weight: bold;">
+                            <td class="text-center align-middle p-1" colspan="2">
+                                Средняя по дисциплине
+                            </td>
+                            @foreach (var subject in subjects)
+                            {
+                                var avg = subjectAverages.FirstOrDefault(sa => sa.SubjectId == subject.SubjectId);
+                                <td class="text-center align-middle p-1" style="background-color: #d1ecf1;">
+                                    @(avg != null && avg.AvgMark.HasValue ? avg.AvgMark.Value.ToString("0.000") : "-")
+                                </td>
+                            }
+                            <td class="text-center align-middle p-1 font-weight-bold" style="background-color: #d1ecf1;">
+                                @(totalAverage.HasValue ? totalAverage.Value.ToString("0.000") : "-")
+                            </td>
+                        </tr>
                     </tbody>
                 </table>
             </div>

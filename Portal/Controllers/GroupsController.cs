@@ -729,7 +729,7 @@ namespace Portal
             var typeKR = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Курсовая работа");
             var typeKP = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Курсовой проект");
 
-            // Загружаем студентов и их оценки (без TryParse!)
+            // Загружаем студентов и их оценки
             var studentsData = await _context.Students
                 .Where(s => s.GroupID == id && s.Status == true)
                 .OrderBy(s => s.LastName)
@@ -762,12 +762,11 @@ namespace Portal
                 .Select(sub => new { sub.SubjectID, sub.ShortName, sub.Name })
                 .ToListAsync();
 
-            // Формируем ViewModel
+            // Формируем ViewModel для студентов
             var students = studentsData.Select(s =>
             {
                 var subjectAverages = allSubjects.Select(subject =>
                 {
-                    // Проверку TryParse делаем уже в C#
                     var marks = s.Marks
                         .Where(m => m.SubjectID == subject.SubjectID)
                         .Select(m => double.TryParse(m.Value, out var v) ? (double?)v : null)
@@ -784,7 +783,6 @@ namespace Portal
                     };
                 }).ToList();
 
-                // Вычисляем среднюю отметку студента (среднее арифметическое средних отметок по предметам)
                 var validAverages = subjectAverages
                     .Where(sa => sa.AvgMark.HasValue)
                     .Select(sa => sa.AvgMark.Value)
@@ -801,26 +799,203 @@ namespace Portal
                 };
             }).ToList();
 
+            // ========================================
+            // ВЫЧИСЛЯЕМ СРЕДНЮЮ ОТМЕТКУ ПО КАЖДОМУ ПРЕДМЕТУ (ПО ВСЕМ СТУДЕНТАМ)
+            // ========================================
+            var subjectAveragesList = new List<SubjectAverageViewModel>();
+
+            foreach (var subject in allSubjects)
+            {
+                // Собираем все средние отметки студентов по этому предмету
+                var subjectMarks = students
+                    .Select(s => s.SubjectAverages.FirstOrDefault(sa => sa.SubjectId == subject.SubjectID))
+                    .Where(sa => sa != null && sa.AvgMark.HasValue)
+                    .Select(sa => sa.AvgMark.Value)
+                    .ToList();
+
+                subjectAveragesList.Add(new SubjectAverageViewModel
+                {
+                    SubjectId = subject.SubjectID,
+                    SubjectName = subject.ShortName,
+                    SubjectFullName = subject.Name,
+                    AvgMark = subjectMarks.Any() ? subjectMarks.Average() : (double?)null
+                });
+            }
+
+            // Средняя по всем дисциплинам (среднее арифметическое всех средних по предметам)
+            var allSubjectAverages = subjectAveragesList
+                .Where(sa => sa.AvgMark.HasValue)
+                .Select(sa => sa.AvgMark.Value)
+                .ToList();
+
             ViewBag.GroupName = group.Name;
             ViewBag.GroupId = group.GroupID;
+            ViewBag.SubjectAverages = subjectAveragesList;
+            ViewBag.TotalAverage = allSubjectAverages.Any() ? allSubjectAverages.Average() : (double?)null;
 
             return View(students);
         }
 
         public async Task<IActionResult> ExportGroupStatement(int id)
         {
-            // Загружаем студентов и формируем ViewModel так же, как в GroupStatement
             var students = await GetGroupStatementViewModel(id);
             if (students == null || !students.Any())
                 return NotFound("Студентов в группе нет.");
 
-            // Генерируем Excel
-            var content = GenerateExcelFile(students, $"Ведомость_{id}");
+            // Получаем средние по дисциплинам
+            var subjects = students.First().SubjectAverages;
+            var subjectAverages = new List<SubjectAverageViewModel>();
 
-            // Возвращаем файл
+            foreach (var subject in subjects)
+            {
+                var subjectMarks = students
+                    .Select(s => s.SubjectAverages.FirstOrDefault(sa => sa.SubjectId == subject.SubjectId))
+                    .Where(sa => sa != null && sa.AvgMark.HasValue)
+                    .Select(sa => sa.AvgMark.Value)
+                    .ToList();
+
+                subjectAverages.Add(new SubjectAverageViewModel
+                {
+                    SubjectId = subject.SubjectId,
+                    SubjectName = subject.SubjectName,
+                    AvgMark = subjectMarks.Any() ? subjectMarks.Average() : (double?)null
+                });
+            }
+
+            var totalAverage = subjectAverages
+                .Where(sa => sa.AvgMark.HasValue)
+                .Select(sa => sa.AvgMark.Value)
+                .ToList();
+
+            var content = GenerateExcelFile(students, subjectAverages, totalAverage.Any() ? totalAverage.Average() : (double?)null, $"Ведомость_{id}");
+
             return File(content,
                         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                         $"Ведомость_{id}.xlsx");
+        }
+
+        // Обновленный метод генерации Excel
+        private byte[] GenerateExcelFile(List<StudentViewModel> students, List<SubjectAverageViewModel> subjectAverages, double? totalAverage, string fileName)
+        {
+            using var workbook = new XLWorkbook();
+            var worksheet = workbook.Worksheets.Add("Ведомость");
+
+            int col = 1;
+            worksheet.Cell(1, col++).Value = "#";
+            worksheet.Cell(1, col++).Value = "Ф.И.О.";
+
+            var subjects = students.First().SubjectAverages;
+            foreach (var subject in subjects)
+            {
+                var cell = worksheet.Cell(1, col++);
+                cell.Value = subject.SubjectName;
+                cell.Style.Alignment.WrapText = true;
+                cell.Style.Alignment.TextRotation = 90;
+                cell.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+                cell.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
+            }
+
+            var averageCell = worksheet.Cell(1, col++);
+            averageCell.Value = "Средняя";
+            averageCell.Style.Alignment.WrapText = true;
+            averageCell.Style.Alignment.TextRotation = 90;
+            averageCell.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+            averageCell.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
+
+            int row = 2;
+            int studentNumber = 1;
+            foreach (var student in students)
+            {
+                col = 1;
+                worksheet.Cell(row, col++).Value = studentNumber++;
+                worksheet.Cell(row, col++).Value = $"{student.LastName} {student.Name} {student.Surname}";
+
+                foreach (var subj in student.SubjectAverages)
+                {
+                    var cell = worksheet.Cell(row, col++);
+                    if (subj.AvgMark.HasValue)
+                    {
+                        cell.Value = subj.AvgMark.Value;
+                        cell.Style.NumberFormat.Format = "0.000";
+                    }
+                    else
+                    {
+                        cell.Value = "-";
+                    }
+                    cell.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+                    cell.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
+                }
+
+                var avgStudentCell = worksheet.Cell(row, col++);
+                if (student.StudentAverage.HasValue)
+                {
+                    avgStudentCell.Value = student.StudentAverage.Value;
+                    avgStudentCell.Style.NumberFormat.Format = "0.000";
+                }
+                else
+                {
+                    avgStudentCell.Value = "-";
+                }
+                avgStudentCell.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+                avgStudentCell.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
+
+                row++;
+            }
+
+            // Строка "Средняя по дисциплине"
+            col = 1;
+            worksheet.Cell(row, col++).Value = "";
+            worksheet.Cell(row, col++).Value = "Средняя по дисциплине";
+            worksheet.Cell(row, col - 1).Style.Font.Bold = true;
+
+            foreach (var subject in subjects)
+            {
+                var avg = subjectAverages.FirstOrDefault(sa => sa.SubjectId == subject.SubjectId);
+                var cell = worksheet.Cell(row, col++);
+                if (avg != null && avg.AvgMark.HasValue)
+                {
+                    cell.Value = avg.AvgMark.Value;
+                    cell.Style.NumberFormat.Format = "0.000";
+                }
+                else
+                {
+                    cell.Value = "-";
+                }
+                cell.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+                cell.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
+                cell.Style.Font.Bold = true;
+            }
+
+            var totalCell = worksheet.Cell(row, col++);
+            if (totalAverage.HasValue)
+            {
+                totalCell.Value = totalAverage.Value;
+                totalCell.Style.NumberFormat.Format = "0.000";
+            }
+            else
+            {
+                totalCell.Value = "-";
+            }
+            totalCell.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+            totalCell.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
+            totalCell.Style.Font.Bold = true;
+
+            // Форматирование
+            worksheet.Row(1).Style.Font.Bold = true;
+            worksheet.Row(1).Style.Fill.BackgroundColor = XLColor.Gray;
+            worksheet.Row(1).Height = 80;
+            worksheet.Row(row).Style.Fill.BackgroundColor = XLColor.LightGray;
+
+            worksheet.SheetView.FreezeRows(1);
+            worksheet.Columns().AdjustToContents();
+
+            var usedRange = worksheet.RangeUsed();
+            usedRange.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+            usedRange.Style.Border.InsideBorder = XLBorderStyleValues.Thin;
+
+            using var stream = new MemoryStream();
+            workbook.SaveAs(stream);
+            return stream.ToArray();
         }
 
         // Приватный метод генерации Excel
