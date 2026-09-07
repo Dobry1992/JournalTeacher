@@ -1174,7 +1174,7 @@ namespace Portal
             var group = await _context.Groups.FindAsync(id);
             if (group == null) return NotFound("Группа не найдена.");
 
-            // Типы, которые нужны из Marks (пример: Итоговая, Курсовая работа, Курсовой проект)
+            // Типы, которые нужны из Marks
             var typeIO = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Итоговая отметка");
             var typeKR = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Курсовая работа");
             var typeKP = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Курсовой проект");
@@ -1200,13 +1200,17 @@ namespace Portal
                 .AsNoTracking()
                 .ToListAsync();
 
-            if (students.Count == 0) return View(students);
+            if (students.Count == 0)
+            {
+                ViewBag.GroupName = group.Name;
+                ViewBag.GroupId = group.GroupID; // Добавляем даже если нет студентов
+                return View(students);
+            }
 
             var studentIds = students.Select(st => st.StudentID).ToList();
 
-            // ЕДИНАЯ выборка оценок из двух таблиц без навигаций
+            // ЕДИНАЯ выборка оценок из двух таблиц
             var allMarks = await (
-                // 1) Оценки из Marks — только нужные типы
                 from m in _context.Marks
                 where studentIds.Contains(m.StudentID) && validTypeIds.Contains(m.TypeOfExerciseID)
                 join sub in _context.Subjects on m.SubjectID equals sub.SubjectID into subg
@@ -1226,7 +1230,6 @@ namespace Portal
                     ShortTypeName = tp != null ? tp.ShortName : null
                 }
             )
-            // 2) Плюс оценки из StatementMarks (если надо — тоже можно отфильтровать по типам)
             .Concat(
                 from sm in _context.StatementMarks
                 where studentIds.Contains(sm.StudentID)
@@ -1250,16 +1253,12 @@ namespace Portal
 
             if (date_1.ToShortDateString() != "01.01.0001")
             {
-                allMarks = allMarks
-                    .Where(m => m.Date >= date_1)
-                    .ToList();
+                allMarks = allMarks.Where(m => m.Date >= date_1).ToList();
             }
 
             if (date_2.ToShortDateString() != "01.01.0001")
             {
-                allMarks = allMarks
-                    .Where(m => m.Date <= date_2)
-                    .ToList();
+                allMarks = allMarks.Where(m => m.Date <= date_2).ToList();
             }
 
             // Группируем по студенту и наполняем VM
@@ -1267,8 +1266,7 @@ namespace Portal
                 .GroupBy(x => x.StudentID)
                 .ToDictionary(
                     g => g.Key,
-                    g => g.OrderBy(x => x.SubjectID)
-                                .ThenBy(x => x.Date)
+                    g => g.OrderBy(x => x.SubjectID).ThenBy(x => x.Date)
                           .Select(x => new MarkGroupSummaryStatement
                           {
                               Value = x.Value,
@@ -1288,6 +1286,8 @@ namespace Portal
                     s.Marks = list;
 
             ViewBag.GroupName = group.Name;
+            ViewBag.GroupId = group.GroupID; // <-- ВАЖНО: добавляем ID группы
+
             return View(students);
         }
 
@@ -1363,6 +1363,234 @@ namespace Portal
         private bool GroupExists(int id)
         {
             return _context.Groups.Any(e => e.GroupID == id);
+        }
+
+        public async Task<IActionResult> ExportGroupSummaryStatement(int id, DateTime date_1, DateTime date_2)
+        {
+            var group = await _context.Groups.FindAsync(id);
+            if (group == null)
+                return NotFound("Группа не найдена.");
+
+            // Получаем те же данные, что и для GroupSummaryStatement
+            var typeIO = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Итоговая отметка");
+            var typeKR = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Курсовая работа");
+            var typeKP = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Курсовой проект");
+
+            var validTypeIds = new HashSet<int>(
+                new[] { typeIO?.TypeOfExerciseID, typeKR?.TypeOfExerciseID, typeKP?.TypeOfExerciseID }
+                .Where(x => x.HasValue).Select(x => x.Value)
+            );
+
+            var students = await _context.Students
+                .Where(s => s.GroupID == id && s.Status == true)
+                .OrderBy(s => s.LastName)
+                .Select(s => new GroupSummaryStatementViewModel
+                {
+                    StudentID = s.StudentID,
+                    GroupID = s.GroupID,
+                    StudentName = s.Name,
+                    StudentLastName = s.LastName,
+                    StudentSurname = s.Surname,
+                    Marks = new List<MarkGroupSummaryStatement>()
+                })
+                .AsNoTracking()
+                .ToListAsync();
+
+            if (!students.Any())
+                return NotFound("Студентов в группе нет.");
+
+            var studentIds = students.Select(st => st.StudentID).ToList();
+
+            var allMarks = await (
+                from m in _context.Marks
+                where studentIds.Contains(m.StudentID) && validTypeIds.Contains(m.TypeOfExerciseID)
+                join sub in _context.Subjects on m.SubjectID equals sub.SubjectID into subg
+                from sub in subg.DefaultIfEmpty()
+                join tp in _context.Types on m.TypeOfExerciseID equals tp.TypeOfExerciseID into tpg
+                from tp in tpg.DefaultIfEmpty()
+                select new
+                {
+                    m.StudentID,
+                    m.Date,
+                    m.Value,
+                    SubjectID = (int?)m.SubjectID,
+                    SubjectName = sub != null ? sub.Name : null,
+                    ShortSubjectName = sub != null ? sub.ShortName : null,
+                    TypeID = m.TypeOfExerciseID,
+                    TypeName = tp != null ? tp.Name : null,
+                    ShortTypeName = tp != null ? tp.ShortName : null
+                }
+            )
+            .Concat(
+                from sm in _context.StatementMarks
+                where studentIds.Contains(sm.StudentID)
+                join tp in _context.Types on sm.TypeOfExerciseID equals tp.TypeOfExerciseID into tpg2
+                from tp in tpg2.DefaultIfEmpty()
+                select new
+                {
+                    sm.StudentID,
+                    sm.Date,
+                    sm.Value,
+                    SubjectID = (int?)null,
+                    SubjectName = (string)null,
+                    ShortSubjectName = (string)null,
+                    TypeID = sm.TypeOfExerciseID,
+                    TypeName = tp != null ? tp.Name : null,
+                    ShortTypeName = tp != null ? tp.ShortName : null
+                }
+            )
+            .AsNoTracking()
+            .ToListAsync();
+
+            if (date_1.ToShortDateString() != "01.01.0001")
+            {
+                allMarks = allMarks.Where(m => m.Date >= date_1).ToList();
+            }
+
+            if (date_2.ToShortDateString() != "01.01.0001")
+            {
+                allMarks = allMarks.Where(m => m.Date <= date_2).ToList();
+            }
+
+            var marksByStudent = allMarks
+                .GroupBy(x => x.StudentID)
+                .ToDictionary(
+                    g => g.Key,
+                    g => g.OrderBy(x => x.SubjectID).ThenBy(x => x.Date)
+                          .Select(x => new MarkGroupSummaryStatement
+                          {
+                              Value = x.Value,
+                              Date = x.Date,
+                              SubjectID = x.SubjectID,
+                              SubjectName = x.SubjectName,
+                              ShortSubjectName = x.ShortSubjectName,
+                              TypeID = x.TypeID,
+                              TypeName = x.TypeName,
+                              ShortTypeName = x.ShortTypeName
+                          })
+                          .ToList()
+                );
+
+            foreach (var s in students)
+                if (marksByStudent.TryGetValue(s.StudentID, out var list))
+                    s.Marks = list;
+
+            // Генерируем Excel
+            var content = GenerateSummaryExcelFile(students, group, date_1, date_2);
+
+            return File(content,
+                        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                        $"Сводная_ведомость_{group.Name}_{DateTime.Now:dd.MM.yyyy}.xlsx");
+        }
+
+        // Метод для генерации Excel файла сводной ведомости
+        private byte[] GenerateSummaryExcelFile(List<GroupSummaryStatementViewModel> students, Group group, DateTime date_1, DateTime date_2)
+        {
+            using var workbook = new XLWorkbook();
+            var worksheet = workbook.Worksheets.Add("Сводная ведомость");
+
+            // Определяем колонки
+            var allColumns = students
+                .SelectMany(s => s.Marks ?? Enumerable.Empty<MarkGroupSummaryStatement>())
+                .Select(m => new
+                {
+                    SubjectID = m.SubjectID ?? -1,
+                    SubjectName = m.SubjectName ?? "",
+                    ShortSubjectName = m.ShortSubjectName,
+                    TypeID = m.TypeID,
+                    TypeName = m.TypeName ?? "",
+                    ShortTypeName = m.ShortTypeName,
+                    Date = m.Date.Date
+                })
+                .Distinct()
+                .OrderBy(c => c.SubjectID)
+                .ThenBy(c => c.Date)
+                .ToList();
+
+            // Заголовок
+            int row = 1;
+            int col = 1;
+
+            // Заголовок с названием группы
+            worksheet.Cell(row, col).Value = $"Сводная ведомость группы {group.Name}";
+            worksheet.Cell(row, col).Style.Font.Bold = true;
+            worksheet.Cell(row, col).Style.Font.FontSize = 14;
+            worksheet.Range(row, col, row, col + allColumns.Count + 1).Merge().Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+            row++;
+
+            // Информация о датах
+            if (date_1 != default(DateTime) || date_2 != default(DateTime))
+            {
+                string dateInfo = "";
+                if (date_1 != default(DateTime) && date_2 != default(DateTime))
+                    dateInfo = $"Период: {date_1:dd.MM.yyyy} - {date_2:dd.MM.yyyy}";
+                else if (date_1 != default(DateTime))
+                    dateInfo = $"С {date_1:dd.MM.yyyy}";
+                else if (date_2 != default(DateTime))
+                    dateInfo = $"По {date_2:dd.MM.yyyy}";
+
+                worksheet.Cell(row, col).Value = dateInfo;
+                worksheet.Cell(row, col).Style.Font.Italic = true;
+                worksheet.Range(row, col, row, col + allColumns.Count + 1).Merge().Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+                row++;
+            }
+
+            row++; // Пустая строка
+
+            // Заголовки колонок
+            col = 1;
+            worksheet.Cell(row, col++).Value = "#";
+            worksheet.Cell(row, col++).Value = "Ф.И.О.";
+
+            foreach (var colInfo in allColumns)
+            {
+                var cell = worksheet.Cell(row, col++);
+                cell.Value = $"{colInfo.Date:dd.MM.yyyy}\n{colInfo.ShortSubjectName ?? ""}\n{colInfo.ShortTypeName ?? ""}";
+                cell.Style.Alignment.WrapText = true;
+                cell.Style.Alignment.TextRotation = 90;
+                cell.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+                cell.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
+            }
+
+            // Строка заголовков
+            worksheet.Row(row).Style.Font.Bold = true;
+            worksheet.Row(row).Style.Fill.BackgroundColor = XLColor.Gray;
+            worksheet.Row(row).Height = 80;
+            row++;
+
+            // Данные студентов
+            int studentNumber = 1;
+            foreach (var student in students)
+            {
+                col = 1;
+                worksheet.Cell(row, col++).Value = studentNumber++;
+                worksheet.Cell(row, col++).Value = $"{student.StudentLastName} {student.StudentName} {student.StudentSurname}";
+
+                foreach (var colInfo in allColumns)
+                {
+                    var mark = student.Marks.FirstOrDefault(m =>
+                        m.TypeID == colInfo.TypeID &&
+                        m.Date.Date == colInfo.Date
+                    );
+                    worksheet.Cell(row, col++).Value = mark?.Value ?? "-";
+                }
+                row++;
+            }
+
+            // Форматирование
+            worksheet.Columns().AdjustToContents();
+
+            // Границы
+            var usedRange = worksheet.RangeUsed();
+            if (usedRange != null)
+            {
+                usedRange.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+                usedRange.Style.Border.InsideBorder = XLBorderStyleValues.Thin;
+            }
+
+            using var stream = new MemoryStream();
+            workbook.SaveAs(stream);
+            return stream.ToArray();
         }
     }
 }

@@ -4,13 +4,14 @@
 @{
     ViewData["Title"] = "Сводная ведомость";
     var groupName = ViewBag.GroupName as string ?? "Без названия";
+    var groupId = ViewBag.GroupId as int? ?? 0; // Получаем ID группы
 
-    // Единый список колонок: (SubjectID, SubjectName, TypeID, TypeName, Date.Date)
+    // Единый список колонок
     var allColumns = (Model ?? new List<GroupSummaryStatementViewModel>())
         .SelectMany(s => s.Marks ?? Enumerable.Empty<MarkGroupSummaryStatement>())
         .Select(m => new
         {
-            SubjectID = m.SubjectID ?? -1, // чтобы Distinct работал даже при null
+            SubjectID = m.SubjectID ?? -1,
             SubjectName = m.SubjectName ?? "",
             ShortSubjectName = m.ShortSubjectName,
             TypeID = m.TypeID,
@@ -25,6 +26,10 @@
 
     var hasData = Model != null && Model.Any();
     int n = 1;
+    
+    // Получаем текущие параметры для экспорта
+    var date_1 = Context.Request.Query["date_1"].ToString();
+    var date_2 = Context.Request.Query["date_2"].ToString();
 }
 
 @await Html.PartialAsync("_NavMenuJournal")
@@ -48,19 +53,35 @@ else
         <div class="card">
             <div class="card-body">
                 <h6 class="mb-3 text-center bg-gray-light headGroup p-2 rounded shadow">Сводная ведомость группы @ViewBag.GroupName</h6>
-                <form asp-action="GroupSummaryStatement" method="get" class="d-flex align-items-end gap-3 mb-3 flex-wrap">
-                    <div class="mr-2">
-                        <label for="date_1" class="form-label">Начальная дата:</label>
-                        <input class="form-control" type="date" name="date_1" id="date_1" />
+                
+                <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap">
+                    <form asp-action="GroupSummaryStatement" method="get" class="d-flex align-items-end gap-3 mb-3 flex-wrap">
+                        <input type="hidden" name="id" value="@groupId" />
+                        <div class="mr-2">
+                            <label for="date_1" class="form-label">Начальная дата:</label>
+                            <input class="form-control" type="date" name="date_1" id="date_1" value="@date_1" />
+                        </div>
+                        <div class="mr-2">
+                            <label for="date_2" class="form-label">Конечная дата:</label>
+                            <input class="form-control" type="date" name="date_2" id="date_2" value="@date_2" />
+                        </div>
+                        <div class="mr-2">
+                            <button type="submit" class="btn btn-primary">Поиск</button>
+                        </div>
+                    </form>
+                    
+                    <!-- Кнопка экспорта -->
+                    <div>
+                        <a asp-action="ExportGroupSummaryStatement" 
+                           asp-route-id="@groupId"
+                           asp-route-date_1="@date_1"
+                           asp-route-date_2="@date_2"
+                           class="btn btn-success">
+                            <i class="fas fa-file-excel"></i> Экспорт в Excel
+                        </a>
                     </div>
-                    <div class="mr-2">
-                        <label for="date_2" class="form-label">Конечная дата:</label>
-                        <input class="form-control" type="date" name="date_2" id="date_2" />
-                    </div>
-                    <div class="mr-2">
-                        <button type="submit" class="btn btn-primary">Поиск</button>
-                    </div>
-                </form>
+                </div>
+                
                 <div class="table-responsive" id="sd">
                     <table class="table table-bordered table-sm compact" id="marks">
                         <thead class="thead-dark">
