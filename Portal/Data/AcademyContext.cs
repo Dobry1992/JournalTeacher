@@ -39,6 +39,7 @@ namespace Portal.Data
         public DbSet<ElectiveLesson> ElectiveLessons { get; set; }
         public DbSet<ElectiveMark> ElectiveMarks { get; set; }
         public DbSet<El_Stud_Link> El_Stud_Links { get; set; }
+        public DbSet<SubgroupLink> SubgroupLinks { get; set; }
         public DbSet<UnsatisfactoryMark> UnsatisfactoryMarks { get; set; }
         public DbSet<CompletedSubject> CompletedSubjects { get; set; }
 
@@ -76,6 +77,7 @@ namespace Portal.Data
             modelBuilder.Entity<El_Stud_Link>().ToTable("El_Stud_Links");
             modelBuilder.Entity<UnsatisfactoryMark>().ToTable("UnsatisfactoryMarks");
             modelBuilder.Entity<CompletedSubject>().ToTable("CompletedSubjects");
+            modelBuilder.Entity<SubgroupLink>().ToTable("SubgroupLinks");
         }
     }
 }
