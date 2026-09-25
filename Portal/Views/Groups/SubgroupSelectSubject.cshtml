@@ -1,0 +1,102 @@
+﻿@model Portal.ViewModel.SubgroupSelectSubjectViewModel
+
+@{
+    ViewData["Title"] = "Выбор предмета для подгруппы";
+}
+
+@await Html.PartialAsync("_NavMenuJournal")
+
+<div>
+    <section class="content-header">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-sm-6">
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="content">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-12">
+
+                    <div class="card shadow-sm">
+                        <div class="card-header bg-primary text-white text-center">
+                            <h4 class="mb-0">
+                                <i class="fa fa-book"></i> Выберите предмет для создания подгруппы
+                            </h4>
+                            <small>Группа: "@Model.GroupName"</small>
+                        </div>
+                        <div class="card-body">
+                            @if (Model.Subjects != null && Model.Subjects.Any())
+                            {
+                                <div class="row">
+                                    @foreach (var subject in Model.Subjects)
+                                    {
+                                        <div class="col-lg-3 col-md-4 col-sm-6 mb-3">
+                                            <a asp-action="SubgroupCreate"
+                                               asp-route-groupId="@Model.GroupID"
+                                               asp-route-subjectId="@subject.SubjectID"
+                                               class="btn btn-outline-primary btn-block subject-tile">
+                                                <i class="fa fa-book fa-2x mb-2"></i>
+                                                <div class="subject-name">@subject.Name</div>
+                                                <div class="subject-short">@subject.ShortName</div>
+                                            </a>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="alert alert-warning text-center">
+                                    <i class="fa fa-exclamation-triangle"></i>
+                                    Нет доступных предметов для создания подгруппы
+                                </div>
+                            }
+
+                            <div class="text-center mt-4">
+                                <a asp-action="Index" class="btn btn-secondary">
+                                    <i class="fa fa-arrow-left"></i> Назад
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+
+<style>
+    .subject-tile {
+        padding: 20px;
+        height: 150px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        transition: all 0.3s ease;
+        border-width: 2px;
+    }
+
+    .subject-tile:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        background-color: #007bff;
+        color: white;
+    }
+
+    .subject-name {
+        font-weight: bold;
+        font-size: 14px;
+        text-align: center;
+        margin-bottom: 5px;
+    }
+
+    .subject-short {
+        font-size: 12px;
+        opacity: 0.8;
+    }
+</style>

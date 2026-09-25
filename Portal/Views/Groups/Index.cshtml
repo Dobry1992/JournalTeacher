@@ -53,6 +53,13 @@
                                                                     <a title="Информация" class="btn btn-info btn-sm" asp-controller="Groups" asp-action="Details" asp-route-id="@item.GroupID"><i class="fa fa-info"></i></a>
                                                                     <a title="Добавить слушателя/курсанта" class="btn btn-primary btn-sm" asp-controller="Students" asp-action="Create" asp-route-id="@item.GroupID"><i class="fa fa-people-group"></i></a>
                                                                     <a title="Удалить" class="btn btn-danger btn-sm" asp-controller="Groups" asp-action="Delete" asp-route-id="@item.GroupID"><i class="fa fa-remove"></i></a>
+                                                                    <a title="Создать подгруппу"
+                                                                       class="btn btn-success btn-sm"
+                                                                       asp-controller="Groups"
+                                                                       asp-action="SubgroupSelectSubject"
+                                                                       asp-route-id="@item.GroupID">
+                                                                        <i class="fa fa-users"></i> Создать подгруппу
+                                                                    </a>
                                                                 </div>
                                                             </td>
                                                         </tr>
@@ -70,6 +77,13 @@
                                                                     <a title="Информация" class="btn btn-info btn-sm" asp-controller="Groups" asp-action="Details" asp-route-id="@item.GroupID"><i class="fa fa-info"></i></a>
                                                                     <a title="Добавить слушателя/курсанта" class="btn btn-primary btn-sm" asp-controller="Students" asp-action="Create" asp-route-id="@item.GroupID"><i class="fa fa-people-group"></i></a>
                                                                     <a title="Удалить" class="btn btn-danger btn-sm" asp-controller="Groups" asp-action="Delete" asp-route-id="@item.GroupID"><i class="fa fa-remove"></i></a>
+                                                                    <a title="Создать подгруппу"
+                                                                       class="btn btn-success btn-sm"
+                                                                       asp-controller="Groups"
+                                                                       asp-action="SubgroupSelectSubject"
+                                                                       asp-route-id="@item.GroupID">
+                                                                        <i class="fa fa-users"></i> Создать подгруппу
+                                                                    </a>
                                                                 </div>
                                                             </td>
                                                         </tr>

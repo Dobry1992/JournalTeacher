@@ -31,6 +31,184 @@ namespace Portal
             _studentRating = studentRating;
         }
 
+
+        [Authorize(Roles = "SuperAdmin, ANB-UMCH")]
+        [HttpGet]
+        public async Task<IActionResult> SubgroupSelectSubject(int id)
+        {
+            var group = await _context.Groups
+                .FirstOrDefaultAsync(g => g.GroupID == id);
+
+            if (group == null)
+                return NotFound();
+
+            // Получаем все предметы, по которым есть журналы для этой группы
+            var subjectIds = await _context.Journals
+                .Where(j => j.GroupID == id)
+                .Select(j => j.SubjectID)
+                .Distinct()
+                .ToListAsync();
+
+            var subjects = await _context.Subjects
+                .Where(s => subjectIds.Contains(s.SubjectID) && !s.Arch)
+                .OrderBy(s => s.Name)
+                .ToListAsync();
+
+            var viewModel = new SubgroupSelectSubjectViewModel
+            {
+                GroupID = group.GroupID,
+                GroupName = group.Name,
+                Subjects = subjects
+            };
+
+            return View(viewModel);
+        }
+
+        [Authorize(Roles = "SuperAdmin, ANB-UMCH")]
+        [HttpGet]
+        public async Task<IActionResult> SubgroupCreate(int groupId, int subjectId)
+        {
+            var group = await _context.Groups
+                .FirstOrDefaultAsync(g => g.GroupID == groupId);
+
+            var subject = await _context.Subjects
+                .FirstOrDefaultAsync(s => s.SubjectID == subjectId);
+
+            if (group == null || subject == null)
+                return NotFound();
+
+            // Получаем ID студентов, которые уже есть в подгруппах по этому предмету
+            var existingStudentIds = await _context.SubgroupLinks
+                .Where(sl => sl.GroupID == groupId && sl.SubjectID == subjectId)
+                .Select(sl => sl.StudentID)
+                .Distinct()
+                .ToListAsync();
+
+            // Получаем свободных студентов (тех, кто еще не в подгруппе по этому предмету)
+            var availableStudents = await _context.Students
+                .Where(s => s.GroupID == groupId
+                         && s.Status
+                         && !existingStudentIds.Contains(s.StudentID))
+                .OrderBy(s => s.Surname)
+                .ThenBy(s => s.Name)
+                .ToListAsync();
+
+            var viewModel = new SubgroupCreateViewModel
+            {
+                GroupID = group.GroupID,
+                GroupName = group.Name,
+                SubjectID = subject.SubjectID,
+                SubjectName = subject.Name,
+                SubgroupName = string.Empty,
+                AvailableStudents = availableStudents
+            };
+
+            return View(viewModel);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Authorize(Roles = "SuperAdmin, ANB-UMCH")]
+        public async Task<IActionResult> SubgroupCreate(SubgroupCreateViewModel model)
+        {
+            // Валидация
+            if (model.SelectedStudentIDs == null || !model.SelectedStudentIDs.Any())
+                ModelState.AddModelError("SelectedStudentIDs", "Необходимо выбрать хотя бы одного студента");
+
+            if (!ModelState.IsValid)
+            {
+                // Перезагружаем данные
+                var subject = await _context.Subjects
+                    .FirstOrDefaultAsync(s => s.SubjectID == model.SubjectID);
+
+                var existingStudentIds = await _context.SubgroupLinks
+                    .Where(sl => sl.GroupID == model.GroupID && sl.SubjectID == model.SubjectID)
+                    .Select(sl => sl.StudentID)
+                    .Distinct()
+                    .ToListAsync();
+
+                var availableStudents = await _context.Students
+                    .Where(s => s.GroupID == model.GroupID
+                             && s.Status
+                             && !existingStudentIds.Contains(s.StudentID))
+                    .OrderBy(s => s.Surname)
+                    .ThenBy(s => s.Name)
+                    .ToListAsync();
+
+                model.GroupName = (await _context.Groups.FindAsync(model.GroupID))?.Name;
+                model.SubjectName = subject?.Name;
+                model.AvailableStudents = availableStudents;
+
+                return View(model);
+            }
+
+            // Проверка на дубликаты: есть ли уже подгруппа с таким же набором студентов по этому предмету
+            var sortedSelectedIds = model.SelectedStudentIDs.OrderBy(id => id).ToList();
+
+            // Получаем все существующие подгруппы по этому предмету
+            var existingSubgroups = await _context.SubgroupLinks
+                .Where(sl => sl.GroupID == model.GroupID && sl.SubjectID == model.SubjectID)
+                .GroupBy(sl => sl.Name)
+                .Select(g => new
+                {
+                    Name = g.Key,
+                    StudentIds = g.Select(sl => sl.StudentID).OrderBy(id => id).ToList()
+                })
+                .ToListAsync();
+
+            // Проверяем, есть ли подгруппа с таким же набором студентов
+            var duplicateSubgroup = existingSubgroups
+                .FirstOrDefault(sg => sg.StudentIds.SequenceEqual(sortedSelectedIds));
+
+            if (duplicateSubgroup != null)
+            {
+                ModelState.AddModelError("", $"Подгруппа \"{duplicateSubgroup.Name}\" уже содержит выбранных студентов по предмету \"{model.SubjectName}\"");
+
+                // Перезагружаем данные
+                var subject = await _context.Subjects
+                    .FirstOrDefaultAsync(s => s.SubjectID == model.SubjectID);
+
+                var existingStudentIds = await _context.SubgroupLinks
+                    .Where(sl => sl.GroupID == model.GroupID && sl.SubjectID == model.SubjectID)
+                    .Select(sl => sl.StudentID)
+                    .Distinct()
+                    .ToListAsync();
+
+                var availableStudents = await _context.Students
+                    .Where(s => s.GroupID == model.GroupID
+                             && s.Status
+                             && !existingStudentIds.Contains(s.StudentID))
+                    .OrderBy(s => s.Surname)
+                    .ThenBy(s => s.Name)
+                    .ToListAsync();
+
+                model.GroupName = (await _context.Groups.FindAsync(model.GroupID))?.Name;
+                model.SubjectName = subject?.Name;
+                model.AvailableStudents = availableStudents;
+
+                return View(model);
+            }
+
+            // Создаем записи SubgroupLink
+            foreach (var studentId in model.SelectedStudentIDs)
+            {
+                var subgroupLink = new SubgroupLink
+                {
+                    GroupID = model.GroupID,
+                    SubjectID = model.SubjectID,
+                    StudentID = studentId,
+                    Name = model.SubgroupName
+                };
+                _context.SubgroupLinks.Add(subgroupLink);
+            }
+
+            await _context.SaveChangesAsync();
+
+            TempData["SuccessMessage"] = $"Подгруппа \"{model.SubgroupName}\" успешно создана. Добавлено студентов: {model.SelectedStudentIDs.Count}";
+
+            return RedirectToAction("Index");
+        }
+
         public async Task<IActionResult> ChooseGroup(int SubjectID)
         {
             // Загружаем все группы для предмета одним запросом
