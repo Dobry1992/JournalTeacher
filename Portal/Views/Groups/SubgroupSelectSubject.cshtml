@@ -2,101 +2,92 @@
 
 @{
     ViewData["Title"] = "Выбор предмета для подгруппы";
+    string[] colors = { "primary", "success", "info", "warning", "danger",
+                        "gradient-navy", "gradient-olive", "gradient-lime",
+                        "gradient-teal", "gradient-yellow", "indigo" };
+    int i = 0;
+    var departments = ViewBag.Departments as List<Portal.Models.Department>
+                      ?? new List<Portal.Models.Department>();
 }
 
 @await Html.PartialAsync("_NavMenuJournal")
 
-<div>
-    <section class="content-header">
-        <div class="container-fluid">
-            <div class="row">
-                <div class="col-sm-6">
-                </div>
+<section class="content-header">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-sm-6">
+                <h4 class="mb-0">
+                    <i class="fa fa-book"></i> Выберите предмет для создания подгруппы
+                </h4>
+                <small class="text-muted">Группа: "@Model.GroupName"</small>
             </div>
         </div>
-    </section>
+    </div>
+</section>
 
+@if (Model.Subjects == null || !Model.Subjects.Any())
+{
     <section class="content">
         <div class="container-fluid">
-            <div class="row">
-                <div class="col-12">
-
-                    <div class="card shadow-sm">
-                        <div class="card-header bg-primary text-white text-center">
-                            <h4 class="mb-0">
-                                <i class="fa fa-book"></i> Выберите предмет для создания подгруппы
-                            </h4>
-                            <small>Группа: "@Model.GroupName"</small>
-                        </div>
-                        <div class="card-body">
-                            @if (Model.Subjects != null && Model.Subjects.Any())
-                            {
-                                <div class="row">
-                                    @foreach (var subject in Model.Subjects)
-                                    {
-                                        <div class="col-lg-3 col-md-4 col-sm-6 mb-3">
-                                            <a asp-action="SubgroupCreate"
-                                               asp-route-groupId="@Model.GroupID"
-                                               asp-route-subjectId="@subject.SubjectID"
-                                               class="btn btn-outline-primary btn-block subject-tile">
-                                                <i class="fa fa-book fa-2x mb-2"></i>
-                                                <div class="subject-name">@subject.Name</div>
-                                                <div class="subject-short">@subject.ShortName</div>
-                                            </a>
-                                        </div>
-                                    }
-                                </div>
-                            }
-                            else
-                            {
-                                <div class="alert alert-warning text-center">
-                                    <i class="fa fa-exclamation-triangle"></i>
-                                    Нет доступных предметов для создания подгруппы
-                                </div>
-                            }
-
-                            <div class="text-center mt-4">
-                                <a asp-action="Index" class="btn btn-secondary">
-                                    <i class="fa fa-arrow-left"></i> Назад
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-
-                </div>
+            <div class="alert alert-info text-center">
+                <h5>Нет доступных предметов</h5>
+                <p>Для данной группы не найдено журналов по предметам.</p>
+            </div>
+            <div class="text-center mt-4">
+                <a asp-action="DetailsGroup" asp-route-id="@Model.GroupID" class="btn btn-secondary">
+                    <i class="fa fa-arrow-left"></i> Назад к группе
+                </a>
             </div>
         </div>
     </section>
-</div>
+}
+else
+{
+    @foreach (var department in departments)
+    {
+        if (department.Arch == true) { continue; }
 
-<style>
-    .subject-tile {
-        padding: 20px;
-        height: 150px;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-        transition: all 0.3s ease;
-        border-width: 2px;
+        var deptSubjects = Model.Subjects
+            .Where(s => s.DepartmentID == department.DepartmentID)
+            .ToList();
+
+        if (!deptSubjects.Any()) { continue; }
+
+        if (i == colors.Length) i = 0;
+
+        <section class="content">
+            <div class="container-fluid">
+                <h4 class="mb-3 text-center bg-@colors[i] headGroup p-2 rounded">
+                    @Html.DisplayFor(dep => department.Name)
+                </h4>
+                <div class="d-flex flex-row flex-wrap">
+                    @foreach (var subject in deptSubjects)
+                    {
+                        <a asp-action="SubgroupCreate"
+                           asp-route-groupId="@Model.GroupID"
+                           asp-route-subjectId="@subject.SubjectID"
+                           class="groups d-block p-4 mr-3 mb-3 text-decoration-none rounded shadow-lg bg-@colors[i]"
+                           title="Создать подгруппу по предмету «@subject.Name»">
+                            <h6 class="text-center text-white">
+                                @subject.Name
+                            </h6>
+                            @if (!string.IsNullOrWhiteSpace(subject.ShortName))
+                            {
+                                <small class="text-center text-white d-block mt-2">
+                                    @subject.ShortName
+                                </small>
+                            }
+                        </a>
+                    }
+                </div>
+            </div>
+        </section>
+        i++;
     }
 
-    .subject-tile:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-        background-color: #007bff;
-        color: white;
-    }
-
-    .subject-name {
-        font-weight: bold;
-        font-size: 14px;
-        text-align: center;
-        margin-bottom: 5px;
-    }
-
-    .subject-short {
-        font-size: 12px;
-        opacity: 0.8;
-    }
-</style>
+    <div class="text-center mt-4 mb-4">
+        <a asp-action="Details" asp-route-id="@Model.GroupID" class="btn btn-secondary">
+            <i class="fa fa-arrow-left"></i> Назад к группе
+        </a>
+    </div>
+}

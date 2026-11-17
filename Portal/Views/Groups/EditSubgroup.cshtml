@@ -1,0 +1,111 @@
+﻿@model Portal.ViewModel.SubgroupEditViewModel
+
+@{
+    ViewData["Title"] = "Редактирование подгруппы";
+}
+
+@await Html.PartialAsync("_NavMenuJournal")
+
+<section class="content-header">
+    <div class="container-fluid">
+        <h4>Редактирование подгруппы</h4>
+    </div>
+</section>
+
+<section class="content">
+    <div class="container-fluid">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">
+                    Группа: @Model.GroupName &nbsp;|&nbsp; Предмет: @Model.SubjectName
+                </h5>
+            </div>
+            <form asp-action="EditSubgroup" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" asp-for="GroupID" />
+                <input type="hidden" asp-for="SubjectID" />
+                <input type="hidden" asp-for="CurrentName" />
+                <input type="hidden" asp-for="GroupName" />
+                <input type="hidden" asp-for="SubjectName" />
+
+                <div class="card-body">
+                    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+                    <div class="form-group">
+                        <label asp-for="NewName">Название подгруппы</label>
+                        <input asp-for="NewName" class="form-control" />
+                        <span asp-validation-for="NewName" class="text-danger"></span>
+                    </div>
+
+                    <hr />
+                    <h5>Студенты подгруппы</h5>
+                    <span asp-validation-for="SelectedStudentIDs" class="text-danger d-block mb-2"></span>
+
+                    @if (Model.CurrentStudents.Any())
+                    {
+                        <h6 class="text-muted mt-3">Текущие студенты подгруппы:</h6>
+                        <div class="row">
+                            @foreach (var student in Model.CurrentStudents)
+                            {
+                                var isChecked = Model.SelectedStudentIDs.Contains(student.StudentID);
+                                <div class="col-md-4 mb-2">
+                                    <div class="custom-control custom-checkbox">
+                                        <input type="checkbox"
+                                               class="custom-control-input"
+                                               id="cur_@student.StudentID"
+                                               name="SelectedStudentIDs"
+                                               value="@student.StudentID"
+                                               @(isChecked ? "checked" : "") />
+                                        <label class="custom-control-label" for="cur_@student.StudentID">
+                                            @student.LastName @student.Name @student.Surname
+                                        </label>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+
+                    @if (Model.AvailableStudents.Any())
+                    {
+                        <h6 class="text-muted mt-3">Доступные студенты (ещё не в подгруппе):</h6>
+                        <div class="row">
+                            @foreach (var student in Model.AvailableStudents)
+                            {
+                                <div class="col-md-4 mb-2">
+                                    <div class="custom-control custom-checkbox">
+                                        <input type="checkbox"
+                                               class="custom-control-input"
+                                               id="av_@student.StudentID"
+                                               name="SelectedStudentIDs"
+                                               value="@student.StudentID" />
+                                        <label class="custom-control-label" for="av_@student.StudentID">
+                                            @student.LastName @student.Name @student.Surname
+                                        </label>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+
+                    @if (!Model.CurrentStudents.Any() && !Model.AvailableStudents.Any())
+                    {
+                        <div class="alert alert-warning">Нет доступных студентов.</div>
+                    }
+                </div>
+
+                <div class="card-footer">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fa fa-save"></i> Сохранить
+                    </button>
+                    <a asp-action="DetailsGroup" asp-route-id="@Model.GroupID" class="btn btn-secondary">
+                        <i class="fa fa-arrow-left"></i> Отмена
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</section>
+
+@section Scripts {
+    @{ await Html.RenderPartialAsync("_ValidationScriptsPartial"); }
+}

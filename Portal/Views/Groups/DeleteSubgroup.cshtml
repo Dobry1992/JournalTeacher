@@ -1,0 +1,59 @@
+﻿@model Portal.ViewModel.SubgroupDeleteViewModel
+
+@{
+    ViewData["Title"] = "Удаление подгруппы";
+}
+
+@await Html.PartialAsync("_NavMenuJournal")
+
+<section class="content-header">
+    <div class="container-fluid">
+        <h4>Удаление подгруппы</h4>
+    </div>
+</section>
+
+<section class="content">
+    <div class="container-fluid">
+        <div class="card border-danger">
+            <div class="card-header bg-danger text-white">
+                <h5 class="mb-0">
+                    <i class="fa fa-exclamation-triangle"></i>
+                    Вы уверены, что хотите удалить подгруппу?
+                </h5>
+            </div>
+            <div class="card-body">
+                <p>
+                    <strong>Группа:</strong> @Model.GroupName<br />
+                    <strong>Предмет:</strong> @Model.SubjectName<br />
+                    <strong>Подгруппа:</strong> @Model.SubgroupName<br />
+                    <strong>Студентов:</strong> @Model.Students.Count
+                </p>
+
+                @if (Model.Students.Any())
+                {
+                    <h6>Студенты, которые будут исключены из подгруппы:</h6>
+                    <ul>
+                        @foreach (var student in Model.Students)
+                        {
+                            <li>@student.LastName @student.Name @student.Surname</li>
+                        }
+                    </ul>
+                }
+            </div>
+            <div class="card-footer">
+                <form asp-action="DeleteSubgroup" method="post" class="d-inline">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="groupId" value="@Model.GroupID" />
+                    <input type="hidden" name="subjectId" value="@Model.SubjectID" />
+                    <input type="hidden" name="name" value="@Model.SubgroupName" />
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fa fa-trash"></i> Удалить
+                    </button>
+                </form>
+                <a asp-action="DetailsGroup" asp-route-id="@Model.GroupID" class="btn btn-secondary">
+                    <i class="fa fa-arrow-left"></i> Отмена
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
