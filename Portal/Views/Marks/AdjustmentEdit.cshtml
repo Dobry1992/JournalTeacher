@@ -43,6 +43,7 @@
                                                 <input hidden asp-for="InstituteID" />
                                                 <input hidden asp-for="HistoryOfMark" />
                                                 <input hidden asp-for="ChangeCounter" />
+                                                <input type="hidden" name="subgroup" value="@ViewBag.Subgroup" />
                                                 <div class="form-group">
                                                     <label asp-for="Value" class="control-label">Отметка</label>
                                                     <select asp-for="Value" class="form-control">
@@ -83,11 +84,11 @@
                                                 </div>
                                                 <div class="form-group">
                                                     <input type="submit" value="Выставить отметку" class="btn btn-primary" />
-                                                    <a class="btn btn-outline-primary" asp-controller="Journals" asp-action="AdjustedJournal" asp-route-GroupID="@ViewBag.GroupID" asp-route-SubjectID="@ViewBag.SubjectID">Назад</a>
+                                                    <a class="btn btn-outline-primary" asp-controller="Journals" asp-action="AdjustedJournal"
+                                                       asp-route-GroupID="@ViewBag.GroupID" asp-route-SubjectID="@ViewBag.SubjectID"
+                                                       asp-route-subgroup="@ViewBag.Subgroup">Назад</a>
                                                 </div>
                                             </form>
-
-                                            
                                         </div>
                                     </div>
                                 </div>
@@ -143,6 +144,7 @@ else
                                                 <input hidden asp-for="InstituteID" />
                                                 <input hidden asp-for="HistoryOfMark" />
                                                 <input hidden asp-for="ChangeCounter" />
+                                                <input type="hidden" name="subgroup" value="@ViewBag.Subgroup" />
                                                 <div class="form-group">
                                                     <label asp-for="Value" class="control-label">Отметка</label>
                                                     <select asp-for="Value" class="form-control">
@@ -178,7 +180,9 @@ else
                                                 </div>
                                                 <div class="form-group">
                                                     <input type="submit" value="Выставить отметку" class="btn btn-primary" />
-                                                    <a class="btn btn-outline-primary" asp-controller="Journals" asp-action="AdjustedJournal" asp-route-GroupID="@ViewBag.GroupID" asp-route-SubjectID="@ViewBag.SubjectID">Назад</a>
+                                                    <a class="btn btn-outline-primary" asp-controller="Journals" asp-action="AdjustedJournal"
+                                                       asp-route-GroupID="@ViewBag.GroupID" asp-route-SubjectID="@ViewBag.SubjectID"
+                                                       asp-route-subgroup="@ViewBag.Subgroup">Назад</a>
                                                 </div>
                                             </form>
                                         </div>
@@ -201,51 +205,46 @@ else
 
 @section Scripts {
     <script>
-                                                (function(){
-                                                    var form = document.getElementById('markFormAdjustment');
-                                                    if(!form) return;
-                                                    var select = form.querySelector('select[name$=".Value"], select[name$="Value"], select[id$="Value"], select[id="Value"]');
-                                                    var comment = form.querySelector('textarea[name$=".Comment"], textarea[name$="Comment"], textarea[id$="Comment"], textarea[id$="_Comment"]');
-                                                    var commentErr = form.querySelector('span[data-valmsg-for$=".Comment"], span[data-valmsg-for="Comment"], span[asp-validation-for="Comment"]');
-                                                    var requiredVals = ['1','2','3','НЗ'];
+        (function(){
+            var form = document.getElementById('markFormAdjustment');
+            if(!form) return;
+            var select = form.querySelector('select[name$=".Value"], select[name$="Value"], select[id$="Value"], select[id="Value"]');
+            var comment = form.querySelector('textarea[name$=".Comment"], textarea[name$="Comment"], textarea[id$="Comment"], textarea[id$="_Comment"]');
+            var commentErr = form.querySelector('span[data-valmsg-for$=".Comment"], span[data-valmsg-for="Comment"], span[asp-validation-for="Comment"]');
+            var requiredVals = ['1','2','3','НЗ'];
 
-                                                    function getValue(el){
-                                                        return el ? (el.value || '').trim() : '';
-                                                    }
+            function getValue(el){ return el ? (el.value || '').trim() : ''; }
 
-                                                    function updateRequired(){
-                                                        var val = getValue(select);
-                                                        if(requiredVals.indexOf(val) !== -1){
-                                                            if(comment) comment.setAttribute('required','required');
-                                                        } else {
-                                                            if(comment) comment.removeAttribute('required');
-                                                            if(commentErr) commentErr.textContent = '';
-                                                        }
-                                                    }
-
-                                                    if(select){
-                                                        select.addEventListener('change', updateRequired);
-                                                    }
-
-        form.addEventListener('submit', function(e){
-            updateRequired();
-            if(comment && comment.hasAttribute('required') && !getValue(comment)){
-                e.preventDefault();
-                var message = 'Поле "Замечание преподавателя" обязательно для заполнения.';
-                if(commentErr) commentErr.textContent = message;
-                try{ comment.setCustomValidity(message); comment.reportValidity(); } catch(ex){}
-                comment.focus();
-                return false;
-            } else if(comment){
-                try{ comment.setCustomValidity(''); } catch(ex){}
+            function updateRequired(){
+                var val = getValue(select);
+                if(requiredVals.indexOf(val) !== -1){
+                    if(comment) comment.setAttribute('required','required');
+                } else {
+                    if(comment) comment.removeAttribute('required');
+                    if(commentErr) commentErr.textContent = '';
+                }
             }
-        });
 
-        // init
-        updateRequired();
-        if(comment){
-            comment.addEventListener('input', function(){ try{ comment.setCustomValidity(''); } catch(e){} if(commentErr) commentErr.textContent = ''; });
-        }
-                                                })();
-                                            </script>
+            if(select){ select.addEventListener('change', updateRequired); }
+
+            form.addEventListener('submit', function(e){
+                updateRequired();
+                if(comment && comment.hasAttribute('required') && !getValue(comment)){
+                    e.preventDefault();
+                    var message = 'Поле "Замечание преподавателя" обязательно для заполнения.';
+                    if(commentErr) commentErr.textContent = message;
+                    try{ comment.setCustomValidity(message); comment.reportValidity(); } catch(ex){}
+                    comment.focus();
+                    return false;
+                } else if(comment){
+                    try{ comment.setCustomValidity(''); } catch(ex){}
+                }
+            });
+
+            updateRequired();
+            if(comment){
+                comment.addEventListener('input', function(){ try{ comment.setCustomValidity(''); } catch(e){} if(commentErr) commentErr.textContent = ''; });
+            }
+        })();
+    </script>
 }

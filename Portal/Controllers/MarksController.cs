@@ -46,7 +46,11 @@ namespace Portal.Controllers
             return View(await marks.ToListAsync());
         }
 
-        public async Task<IActionResult> Edit(int? MarkID, int? GroupID, int? SubjectID)
+        // ============================================================
+        // EDIT (обычный журнал)
+        // ============================================================
+
+        public async Task<IActionResult> Edit(int? MarkID, int? GroupID, int? SubjectID, string subgroup = null)
         {
             if (MarkID == null)
                 return NotFound();
@@ -62,19 +66,28 @@ namespace Portal.Controllers
             ViewBag.TeachersNoPC = _context.TeacherNoPCs.OrderBy(t => t.LastName).AsNoTracking();
             ViewBag.GroupID = GroupID;
             ViewBag.SubjectID = SubjectID;
+            ViewBag.Subgroup = subgroup;
 
             return View(mark);
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int MarkID, int? GroupID, int? SubjectID, [Bind("MarkID,Value,Date,Comment,SignatureOfTeacher,HistoryOfMark,SubjectID,GroupID,LessonID,TypeOfExerciseID,DepartmentID,SpecialityID,ThemeID,StudentID,FlagX,FlagF,InstituteID,ChangeCounter")] Mark mark)
+        public async Task<IActionResult> Edit(int MarkID, int? GroupID, int? SubjectID,
+            [Bind("MarkID,Value,Date,Comment,SignatureOfTeacher,HistoryOfMark,SubjectID,GroupID,LessonID,TypeOfExerciseID,DepartmentID,SpecialityID,ThemeID,StudentID,FlagX,FlagF,InstituteID,ChangeCounter")] Mark mark,
+            string subgroup = null)
         {
+            if (string.IsNullOrEmpty(subgroup))
+                subgroup = null;
+
             if (MarkID != mark.MarkID)
                 return NotFound();
 
             if (!ModelState.IsValid)
+            {
+                RestoreEditViewBag(GroupID, SubjectID, subgroup);
                 return View(mark);
+            }
 
             string teacher = _userNameService.GetDisplayName();
             bool isWriter = User.IsInRole("ICDA-writer") || User.IsInRole("K-8Writer");
@@ -162,7 +175,7 @@ namespace Portal.Controllers
 
                         if (lessonExam == null || lessonZ == null || lessonIOExam == null || lessonIOZ == null)
                         {
-                            return RedirectToAction("Journal", "Journals", new { GroupID, SubjectID });
+                            return RedirectToAction("Journal", "Journals", new { GroupID, SubjectID, subgroup });
                         }
 
                         var markExam = await _context.Marks.FirstOrDefaultAsync(m =>
@@ -184,7 +197,7 @@ namespace Portal.Controllers
 
                         if (markExam == null || markZ == null || markIOExam == null || markIOZ == null)
                         {
-                            return RedirectToAction("Journal", "Journals", new { GroupID, SubjectID });
+                            return RedirectToAction("Journal", "Journals", new { GroupID, SubjectID, subgroup });
                         }
 
                         var simpleMarks = await _context.Marks
@@ -201,7 +214,6 @@ namespace Portal.Controllers
 
                         foreach (var m in simpleMarks)
                         {
-                            // Пропускаем отметку "З" для контрольных мероприятий при расчете среднего
                             if (m.TypeOfExerciseID == typeKontrol.TypeOfExerciseID && m.Value == "З")
                                 continue;
 
@@ -244,7 +256,7 @@ namespace Portal.Controllers
                             m.StudentID == mark.StudentID);
 
                         if (markIA == null || markIO == null)
-                            return RedirectToAction("Journal", "Journals", new { GroupID, SubjectID });
+                            return RedirectToAction("Journal", "Journals", new { GroupID, SubjectID, subgroup });
 
                         var marks = await _context.Marks
                             .Where(m => m.FlagF == mark.FlagF &&
@@ -259,7 +271,6 @@ namespace Portal.Controllers
 
                         foreach (var m in marks)
                         {
-                            // Пропускаем отметку "З" для контрольных мероприятий при расчете среднего
                             if (m.TypeOfExerciseID == typeKontrol.TypeOfExerciseID && m.Value == "З")
                                 continue;
 
@@ -311,22 +322,18 @@ namespace Portal.Controllers
                             }
                         }
 
-                        // Проверка условий для "Недопуск"
                         bool hasLowControlMark = doubleControlMarks.Any(x => x <= 3);
                         bool noControlMarks = !doubleControlMarks.Any();
                         bool lowAverage = doubleMarks.Any() && doubleMarks.Average() < 4;
 
-                        // Проверяем, есть ли только положительные отметки "З" в контрольных
                         var controlMarksWithZ = marks
                             .Where(m => m.TypeOfExerciseID == typeKontrol.TypeOfExerciseID && m.Value == "З")
                             .ToList();
 
-                        // Если есть только "З" в контрольных, считаем что это положительно
                         bool hasOnlyZInControl = controlMarksWithZ.Any() && !doubleControlMarks.Any();
 
                         if (lowAverage || hasLowControlMark || noControlMarks)
                         {
-                            // Если есть только "З" в контрольных - не ставим "Недопуск"
                             if (!hasOnlyZInControl)
                             {
                                 markIA.Value = "Недопуск";
@@ -369,10 +376,14 @@ namespace Portal.Controllers
 
             await HandleUnsatisfactoryMarkAsync(mark);
 
-            return RedirectToAction("Journal", "Journals", new { GroupID, SubjectID });
+            return RedirectToAction("Journal", "Journals", new { GroupID, SubjectID, subgroup });
         }
 
-        public async Task<IActionResult> AdjustmentEdit(int? MarkID, int? GroupID, int? SubjectID)
+        // ============================================================
+        // ADJUSTMENT EDIT (журнал УМЧ)
+        // ============================================================
+
+        public async Task<IActionResult> AdjustmentEdit(int? MarkID, int? GroupID, int? SubjectID, string subgroup = null)
         {
             if (MarkID == null)
                 return NotFound();
@@ -388,19 +399,28 @@ namespace Portal.Controllers
             ViewBag.TeachersNoPC = _context.TeacherNoPCs.OrderBy(t => t.LastName).AsNoTracking();
             ViewBag.GroupID = GroupID;
             ViewBag.SubjectID = SubjectID;
+            ViewBag.Subgroup = subgroup;
 
             return View(mark);
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> AdjustmentEdit(int MarkID, int? GroupID, int? SubjectID, [Bind("MarkID,Value,Date,Comment,SignatureOfTeacher,HistoryOfMark,SubjectID,GroupID,LessonID,TypeOfExerciseID,DepartmentID,SpecialityID,ThemeID,StudentID,FlagX,FlagF,InstituteID,ChangeCounter")] Mark mark)
+        public async Task<IActionResult> AdjustmentEdit(int MarkID, int? GroupID, int? SubjectID,
+            [Bind("MarkID,Value,Date,Comment,SignatureOfTeacher,HistoryOfMark,SubjectID,GroupID,LessonID,TypeOfExerciseID,DepartmentID,SpecialityID,ThemeID,StudentID,FlagX,FlagF,InstituteID,ChangeCounter")] Mark mark,
+            string subgroup = null)
         {
+            if (string.IsNullOrEmpty(subgroup))
+                subgroup = null;
+
             if (MarkID != mark.MarkID)
                 return NotFound();
 
             if (!ModelState.IsValid)
+            {
+                RestoreEditViewBag(GroupID, SubjectID, subgroup);
                 return View(mark);
+            }
 
             string teacher = "";
             if (User.IsInRole("SuperAdmin"))
@@ -494,7 +514,7 @@ namespace Portal.Controllers
 
                         if (lessonExam == null || lessonZ == null || lessonIOExam == null || lessonIOZ == null)
                         {
-                            return RedirectToAction("Journal", "Journals", new { GroupID, SubjectID });
+                            return RedirectToAction("AdjustedJournal", "Journals", new { GroupID, SubjectID, subgroup });
                         }
 
                         var markExam = await _context.Marks.FirstOrDefaultAsync(m =>
@@ -516,7 +536,7 @@ namespace Portal.Controllers
 
                         if (markExam == null || markZ == null || markIOExam == null || markIOZ == null)
                         {
-                            return RedirectToAction("Journal", "Journals", new { GroupID, SubjectID });
+                            return RedirectToAction("AdjustedJournal", "Journals", new { GroupID, SubjectID, subgroup });
                         }
 
                         var simpleMarks = await _context.Marks
@@ -536,7 +556,6 @@ namespace Portal.Controllers
 
                         foreach (var m in simpleMarks)
                         {
-                            // Пропускаем отметку "З" для контрольных мероприятий при расчете среднего
                             if (m.TypeOfExerciseID == typeKontrol.TypeOfExerciseID && m.Value == "З")
                                 continue;
 
@@ -694,7 +713,7 @@ namespace Portal.Controllers
                             m.StudentID == mark.StudentID);
 
                         if (markIA == null || markIO == null)
-                            return RedirectToAction("AdjustmentJournal", "Journals", new { GroupID, SubjectID });
+                            return RedirectToAction("AdjustedJournal", "Journals", new { GroupID, SubjectID, subgroup });
 
                         var marks = await _context.Marks
                             .Where(m => m.FlagF == mark.FlagF &&
@@ -709,7 +728,6 @@ namespace Portal.Controllers
 
                         foreach (var m in marks)
                         {
-                            // Пропускаем отметку "З" для контрольных мероприятий при расчете среднего
                             if (m.TypeOfExerciseID == typeKontrol.TypeOfExerciseID && m.Value == "З")
                                 continue;
 
@@ -772,7 +790,6 @@ namespace Portal.Controllers
 
                         string markValue = mark.Value;
 
-                        // Проверяем, есть ли только положительные отметки "З" в контрольных
                         var controlMarksWithZ = marks
                             .Where(m => m.TypeOfExerciseID == typeKontrol.TypeOfExerciseID && m.Value == "З")
                             .ToList();
@@ -781,7 +798,6 @@ namespace Portal.Controllers
 
                         if (lowAverage || hasLowControlMark || noControlMarks || controlMarks.Count != doubleControlMarks.Count)
                         {
-                            // Если есть только "З" в контрольных - не ставим "Недопуск"
                             if (!hasOnlyZInControl)
                             {
                                 markIA.Value = "Недопуск";
@@ -833,7 +849,21 @@ namespace Portal.Controllers
 
             await HandleUnsatisfactoryMarkAsync(mark);
 
-            return RedirectToAction("AdjustedJournal", "Journals", new { GroupID, SubjectID });
+            return RedirectToAction("AdjustedJournal", "Journals", new { GroupID, SubjectID, subgroup });
+        }
+
+        // ============================================================
+        // ВСПОМОГАТЕЛЬНОЕ
+        // ============================================================
+
+        private void RestoreEditViewBag(int? groupId, int? subjectId, string subgroup)
+        {
+            ViewBag.UserName = _userNameService.GetDisplayName();
+            ViewBag.Teachers = _context.Teachers.OrderBy(t => t.FamilyName).AsNoTracking();
+            ViewBag.TeachersNoPC = _context.TeacherNoPCs.OrderBy(t => t.LastName).AsNoTracking();
+            ViewBag.GroupID = groupId;
+            ViewBag.SubjectID = subjectId;
+            ViewBag.Subgroup = subgroup;
         }
 
         private bool TryParseMarkValue(string value, out double number)
@@ -851,7 +881,7 @@ namespace Portal.Controllers
         }
 
         private static readonly HashSet<string> UnsatisfactoryValues =
-         new() { "1", "2", "3", "НЗ" };
+            new() { "1", "2", "3", "НЗ" };
 
         private async Task HandleUnsatisfactoryMarkAsync(Mark mark)
         {
@@ -877,8 +907,6 @@ namespace Portal.Controllers
 
         private void ProcessExistingUnsatisfactoryMark(UnsatisfactoryMark unsatisfactoryMark, Mark mark)
         {
-            // Если отметка неудовлетворительная - обновляем только дату
-            // Если исправлена - записываем исправление
             if (IsUnsatisfactoryValue(mark.Value))
             {
                 unsatisfactoryMark.UnsatisfactoryValue = mark.Value;
