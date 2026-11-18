@@ -13,5 +13,11 @@ namespace Portal.ViewModel
         public Group Group { get; set; }
         public Department Department { get; set; }
         public bool IsActive { get; set; }
+
+        // ====== Подгруппы ======
+        public string Subgroup { get; set; }                       // null = все студенты
+        public bool HasSubgroups { get; set; }                     // есть ли подгруппы по предмету
+        public List<string> SubgroupNames { get; set; } = new();   // имена подгрупп для кнопок переключения
+        public string ReturnAction { get; set; }                   // "Journal" | "AdjustedJournal"
     }
 }

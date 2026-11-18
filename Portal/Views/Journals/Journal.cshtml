@@ -44,48 +44,88 @@ else if (User.IsInRole("SuperAdmin") || User.IsInRole("ANB-UMCH") || User.IsInRo
                     предмет: @Model.Subject.Name
                 </h6>
 
+                @if (Model.HasSubgroups)
+                {
+                    <div class="d-flex align-items-center flex-wrap mb-2">
+                        <span class="badge badge-primary p-2 mr-2" style="font-size:0.9em;">
+                            <i class="fa fa-users"></i>
+                            Подгруппа: @(string.IsNullOrEmpty(Model.Subgroup) ? "все" : Model.Subgroup)
+                        </span>
+
+                        @foreach (var sgName in Model.SubgroupNames)
+                        {
+                            <a asp-action="@Model.ReturnAction"
+                               asp-route-GroupID="@Model.Group.GroupID"
+                               asp-route-SubjectID="@Model.Subject.SubjectID"
+                               asp-route-subgroup="@sgName"
+                               class="btn btn-sm mr-1 mb-1 @(sgName == Model.Subgroup ? "btn-primary" : "btn-outline-primary")">
+                                @sgName
+                            </a>
+                        }
+
+                        @if (!string.IsNullOrEmpty(Model.Subgroup))
+                        {
+                            <a asp-action="@Model.ReturnAction"
+                               asp-route-GroupID="@Model.Group.GroupID"
+                               asp-route-SubjectID="@Model.Subject.SubjectID"
+                               class="btn btn-sm btn-outline-secondary mr-1 mb-1"
+                               title="Вернуться к выбору подгруппы">
+                                <i class="fa fa-arrow-left"></i> К выбору
+                            </a>
+                        }
+                    </div>
+                }
+
                 <div class="mb-3 d-flex flex-wrap gap-2">
                     <a class="btn btn-dark mr-2 btn-sm" asp-controller="Lessons" asp-action="Create"
-                       asp-route-GroupID="@Model.Group.GroupID" asp-route-SubjectID="@Model.Subject.SubjectID">
+                       asp-route-GroupID="@Model.Group.GroupID"
+                       asp-route-SubjectID="@Model.Subject.SubjectID"
+                       asp-route-subgroup="@Model.Subgroup">
                         Занятие
                     </a>
                     <a class="btn btn-danger mr-2 btn-sm" asp-controller="Lessons" asp-action="CreateF"
-                       asp-route-GroupID="@Model.Group.GroupID" asp-route-SubjectID="@Model.Subject.SubjectID">
+                       asp-route-GroupID="@Model.Group.GroupID"
+                       asp-route-SubjectID="@Model.Subject.SubjectID"
+                       asp-route-subgroup="@Model.Subgroup">
                         Экзамен/Зачёт
                     </a>
                     <a class="btn btn-primary mr-2 btn-sm" asp-controller="Lessons" asp-action="CreateK"
-                       asp-route-GroupID="@Model.Group.GroupID" asp-route-SubjectID="@Model.Subject.SubjectID">
+                       asp-route-GroupID="@Model.Group.GroupID"
+                       asp-route-SubjectID="@Model.Subject.SubjectID"
+                       asp-route-subgroup="@Model.Subgroup">
                         Курсовой проект
                     </a>
                     <a class="btn btn-outline-warning mr-2 btn-sm" asp-action="Final"
-                       asp-route-GroupID="@Model.Group.GroupID" asp-route-SubjectID="@Model.Subject.SubjectID">
+                       asp-route-GroupID="@Model.Group.GroupID"
+                       asp-route-SubjectID="@Model.Subject.SubjectID"
+                       asp-route-subgroup="@Model.Subgroup">
                         Итоги обучения
                     </a>
                     <button class="btn btn-outline-danger mr-2 btn-sm" data-toggle="modal" data-target="#modal-content">
                         Экзаменационная ведомость
                     </button>
-                   @if(Model.IsActive)
-{
-    <a class="btn btn-success mr-2 btn-sm" 
-       asp-controller="CompletedSubjects" 
-       asp-action="Create"
-       asp-route-GroupID="@Model.Group.GroupID" 
-       asp-route-SubjectID="@Model.Subject.SubjectID"
-       asp-route-returnUrl="@Context.Request.Path@Context.Request.QueryString">
-        Завершить предмет
-    </a>
-}
-else
-{
-    <a class="btn btn-success mr-2 btn-sm" 
-       asp-controller="CompletedSubjects" 
-       asp-action="Delete"
-       asp-route-GroupID="@Model.Group.GroupID" 
-       asp-route-SubjectID="@Model.Subject.SubjectID"
-       asp-route-returnUrl="@Context.Request.Path@Context.Request.QueryString">
-        Продолжить предмет
-    </a>
-}
+                    @if (Model.IsActive)
+                    {
+                        <a class="btn btn-success mr-2 btn-sm"
+                           asp-controller="CompletedSubjects"
+                           asp-action="Create"
+                           asp-route-GroupID="@Model.Group.GroupID"
+                           asp-route-SubjectID="@Model.Subject.SubjectID"
+                           asp-route-returnUrl="@Context.Request.Path@Context.Request.QueryString">
+                            Завершить предмет
+                        </a>
+                    }
+                    else
+                    {
+                        <a class="btn btn-success mr-2 btn-sm"
+                           asp-controller="CompletedSubjects"
+                           asp-action="Delete"
+                           asp-route-GroupID="@Model.Group.GroupID"
+                           asp-route-SubjectID="@Model.Subject.SubjectID"
+                           asp-route-returnUrl="@Context.Request.Path@Context.Request.QueryString">
+                            Продолжить предмет
+                        </a>
+                    }
                     <button id="collapseToggleBtn" class="btn btn-outline-secondary ml-auto btn-sm">
                         Скрыть занятия и отметки
                     </button>
@@ -107,6 +147,7 @@ else
                                                asp-route-id="@lesson.Lesson.LessonID"
                                                asp-route-GroupID="@Model.Group.GroupID"
                                                asp-route-SubjectID="@Model.Subject.SubjectID"
+                                               asp-route-subgroup="@Model.Subgroup"
                                                data-toggle="tooltip"
                                                data-html="true"
                                                title="Подпись: @lesson.Lesson.Signature<br>@lesson.Lesson.TypeOfExercise.Name">
@@ -164,6 +205,7 @@ else
                                                    asp-route-MarkID="@mark.Mark.MarkID"
                                                    asp-route-SubjectID="@Model.Subject.SubjectID"
                                                    asp-route-GroupID="@Model.Group.GroupID"
+                                                   asp-route-subgroup="@Model.Subgroup"
                                                    data-toggle="tooltip"
                                                    data-html="true"
                                                    title="Подпись: @mark.Mark.SignatureOfTeacher<br>История:<br>@mark.Mark.HistoryOfMark">
@@ -293,29 +335,22 @@ else
             });
 
             const btn = document.getElementById("collapseToggleBtn");
-            // Determine table and header columns; hide entire columns whose header has collapse id
             const table = document.querySelector('#sd table');
             const headers = table ? Array.from(table.querySelectorAll('thead tr:first-child th')) : [];
-            // use DOM cellIndex to account for colspans and ensure correct column mapping
             const collapseIndices = headers
                 .map(th => (th.id && th.id.startsWith('collapse')) ? th.cellIndex : -1)
                 .filter(i => i >= 0)
                 .sort((a,b)=>a-b);
 
-            // Determine which CO headers belong to previous contiguous collapse ranges.
-            // Strategy: compress collapseIndices into contiguous ranges [start..end]. For each range, if there is a header
-            // immediately to the right at cellIndex = end+1 and its text is CO/СО, mark that CO to hide. This avoids hiding
-            // COs that are not directly associated with a collapsed group.
             const hideIndicesSet = new Set(collapseIndices);
             if (collapseIndices.length) {
-                // build ranges
                 const ranges = [];
                 let rangeStart = collapseIndices[0];
                 let prev = collapseIndices[0];
                 for (let i = 1; i < collapseIndices.length; i++) {
                     const cur = collapseIndices[i];
                     if (cur === prev + 1) {
-                        prev = cur; // extend range
+                        prev = cur;
                     } else {
                         ranges.push([rangeStart, prev]);
                         rangeStart = cur; prev = cur;
@@ -323,7 +358,6 @@ else
                 }
                 ranges.push([rangeStart, prev]);
 
-                // for each range, check header at end+1
                 ranges.forEach(r => {
                     const end = r[1];
                     const candidateIndex = end + 1;
@@ -350,11 +384,7 @@ else
 
             function toggleCells() {
                 if (!table) return;
-                // hide/show columns determined by hideIndices (collapse columns + corresponding CO columns)
-                // use computed array hideIndicesArr if available, otherwise fallback to hideIndices
-                const targets = typeof hideIndicesArr !== 'undefined' ? hideIndicesArr : hideIndices;
-                targets.forEach(idx => setColumnDisplay(idx, hidden ? 'none' : ''));
-                // also hide any individual cell that has collapse id (defensive)
+                hideIndicesArr.forEach(idx => setColumnDisplay(idx, hidden ? 'none' : ''));
                 Array.from(table.querySelectorAll('[id^="collapse"]')).forEach(c => { c.style.display = hidden ? 'none' : ''; });
                 btn.textContent = hidden
                     ? "Показать занятия и отметки"

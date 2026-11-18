@@ -23,16 +23,16 @@ namespace Portal
     {
         private readonly AcademyContext _context;
         private readonly IWebHostEnvironment _env;
-        private readonly ILogger<JournalsController> _logger; // Добавляем логгер
+        private readonly ILogger<JournalsController> _logger;
 
         public JournalsController(
             AcademyContext context,
             IWebHostEnvironment env,
-            ILogger<JournalsController> logger) // Добавляем в конструктор
+            ILogger<JournalsController> logger)
         {
             _context = context;
             _env = env;
-            _logger = logger; // Инициализируем
+            _logger = logger;
         }
 
         [Authorize(Roles = "SuperAdmin, ANB-UMCH")]
@@ -159,62 +159,77 @@ namespace Portal
             return View(lessons);
         }
 
-        public async Task<IActionResult> Journal(int GroupID, int SubjectID)
+        // ============================================================
+        // ЖУРНАЛ (с поддержкой подгрупп)
+        // ============================================================
+
+        public async Task<IActionResult> Journal(int GroupID, int SubjectID, string subgroup = null)
         {
-            return await PrepareJournalView(GroupID, SubjectID, "Journal");
-        }
-
-        public async Task<IActionResult> Controls(int GroupID, int SubjectID)
-        {
-            var group = await _context.Groups.FindAsync(GroupID);
-            var subject = await _context.Subjects.FindAsync(SubjectID);
-            var controlType = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Контрольное мероприятие");
-
-            if (group == null || subject == null)
-                return NotFound();
-
-            var department = await _context.Departments.FindAsync(subject.DepartmentID);
-
-            var lessons = await _context.Lessons
-                .Where(l => l.Theme.SubjectID == SubjectID && l.GroupID == GroupID && l.TypeOfExerciseID == controlType.TypeOfExerciseID)
-                .Include(l => l.TypeOfExercise)
-                .Include(l => l.Theme)
-                .OrderBy(l => l.Date)
-                .AsNoTracking()
-                .ToListAsync();
-
-            var students = await _context.Students
-                .Where(s => s.GroupID == GroupID && s.Status == true)
-                .OrderBy(s => s.LastName)
-                .AsNoTracking()
-                .ToListAsync();
-
-            var marks = await _context.Marks
-                .Where(m => m.SubjectID == SubjectID && m.GroupID == GroupID && m.TypeOfExerciseID == controlType.TypeOfExerciseID)
-                .OrderBy(m => m.Date)
-                .AsNoTracking()
-                .ToListAsync();
-
-            var controlViewModel = new ControlsViewModel
-            {
-                Marks = marks,
-                Lessons = lessons,
-                Students = students,
-                Department = department,
-                Subject = subject,
-                Group = group
-            };
-
-            return View(controlViewModel);
+            return await PrepareJournalViewWithSubgroup(GroupID, SubjectID, "Journal", subgroup);
         }
 
         [Authorize(Roles = "SuperAdmin,ANB-UMCH")]
-        public async Task<IActionResult> AdjustedJournal(int GroupID, int SubjectID)
+        public async Task<IActionResult> AdjustedJournal(int GroupID, int SubjectID, string subgroup = null)
         {
             var academicYears = await GetAcademicYearsForSubjectAndGroup(GroupID, SubjectID);
             ViewBag.AcademicYears = academicYears;
 
-            return await PrepareJournalView(GroupID, SubjectID, "AdjustedJournal");
+            return await PrepareJournalViewWithSubgroup(GroupID, SubjectID, "AdjustedJournal", subgroup);
+        }
+
+        // ============================================================
+        // ВЫБОР ПОДГРУППЫ / ПОДГОТОВКА ЖУРНАЛА
+        // ============================================================
+
+        /// <summary>
+        /// Решает: показать страницу выбора подгруппы или сразу журнал.
+        /// subgroup == "__all__" — принудительно «все студенты».
+        /// </summary>
+        private async Task<IActionResult> PrepareJournalViewWithSubgroup(
+            int GroupID, int SubjectID, string viewName, string subgroup)
+        {
+            // Escape-hatch «показать всех»
+            if (subgroup == "__all__")
+                return await PrepareJournalView(GroupID, SubjectID, viewName, null);
+
+            var subgroupNames = await _context.SubgroupLinks
+                .Where(sl => sl.GroupID == GroupID && sl.SubjectID == SubjectID)
+                .Select(sl => sl.Name)
+                .Distinct()
+                .ToListAsync();
+
+            // Подгруппы есть, но конкретная не выбрана → страница выбора
+            if (subgroupNames.Any() && string.IsNullOrEmpty(subgroup))
+            {
+                var group = await _context.Groups.FindAsync(GroupID);
+                var subject = await _context.Subjects.FindAsync(SubjectID);
+
+                if (group == null || subject == null)
+                    return NotFound();
+
+                var counts = await _context.SubgroupLinks
+                    .Where(sl => sl.GroupID == GroupID && sl.SubjectID == SubjectID)
+                    .GroupBy(sl => sl.Name)
+                    .Select(g => new { Name = g.Key, Count = g.Count() })
+                    .ToListAsync();
+
+                var model = new SubgroupSelectionViewModel
+                {
+                    GroupID = GroupID,
+                    SubjectID = SubjectID,
+                    GroupName = group.Name,
+                    SubjectName = subject.Name,
+                    ReturnAction = viewName,
+                    Subgroups = counts
+                        .OrderBy(c => c.Name)
+                        .Select(c => new SubgroupOption { Name = c.Name, StudentCount = c.Count })
+                        .ToList()
+                };
+
+                return View("SelectSubgroup", model);
+            }
+
+            return await PrepareJournalView(GroupID, SubjectID, viewName, subgroup);
         }
 
         private List<JournalMarks> BuildJournalMarks(List<Mark> marks, Dictionary<string, int> types)
@@ -226,6 +241,11 @@ namespace Portal
             var tenthOfCurrentMonth = new DateTime(today.Year, today.Month, 9);
 
             int semester = GetSemester(today);
+
+            var allowedTypes = _context.Types
+                .Where(t => t.Name == "Экзамен" || t.Name == "Зачёт" || t.Name == "Дифференцированный зачёт")
+                .Select(t => t.TypeOfExerciseID)
+                .ToList();
 
             foreach (var mark in marks)
             {
@@ -255,11 +275,6 @@ namespace Portal
                 var markMonth = new DateTime(mark.Date.Year, mark.Date.Month, 1);
                 bool isInAllowedDateRange = markMonth == currentMonth || (markMonth == previousMonth && today <= tenthOfCurrentMonth);
 
-                var allowedTypes = _context.Types
-                    .Where(t => t.Name == "Экзамен" || t.Name == "Зачёт" || t.Name == "Дифференцированный зачёт")
-                    .Select(t => t.TypeOfExerciseID)
-                    .ToList();
-
                 bool isEditAllowedByRules = true;
 
                 if (mark.FlagF != 0 && !allowedTypes.Contains(mark.TypeOfExerciseID))
@@ -276,7 +291,6 @@ namespace Portal
                 }
 
                 jm.IsEdit = isInAllowedDateRange && isEditAllowedByRules;
-
 
                 if (IsType(mark.TypeOfExerciseID, types, "Экзамен", "Зачёт", "Дифференцированный зачёт"))
                 {
@@ -384,7 +398,8 @@ namespace Portal
             return false;
         }
 
-        private async Task<IActionResult> PrepareJournalView(int GroupID, int SubjectID, string viewName)
+        private async Task<IActionResult> PrepareJournalView(
+            int GroupID, int SubjectID, string viewName, string subgroup = null)
         {
             var group = await _context.Groups.FindAsync(GroupID);
             var subject = await _context.Subjects.FindAsync(SubjectID);
@@ -427,14 +442,41 @@ namespace Portal
                 .AsNoTracking()
                 .ToListAsync();
 
-            var students = await _context.Students
-                .Where(s =>
-                    s.GroupID == GroupID &&
-                    s.Status == true
-                )
+            // ============================================================
+            // ФИЛЬТРАЦИЯ СТУДЕНТОВ ПО ПОДГРУППЕ
+            // ============================================================
+            var subgroupNames = await _context.SubgroupLinks
+                .Where(sl => sl.GroupID == GroupID && sl.SubjectID == SubjectID)
+                .Select(sl => sl.Name)
+                .Distinct()
+                .ToListAsync();
+
+            bool hasSubgroups = subgroupNames.Any();
+
+            // Если subgroup задан, но такого нет — игнорируем фильтр
+            if (!string.IsNullOrEmpty(subgroup) && !subgroupNames.Contains(subgroup))
+                subgroup = null;
+
+            var studentsQuery = _context.Students
+                .Where(s => s.GroupID == GroupID && s.Status == true);
+
+            if (!string.IsNullOrEmpty(subgroup))
+            {
+                var subgroupStudentIds = await _context.SubgroupLinks
+                    .Where(sl => sl.GroupID == GroupID
+                              && sl.SubjectID == SubjectID
+                              && sl.Name == subgroup)
+                    .Select(sl => sl.StudentID)
+                    .ToListAsync();
+
+                studentsQuery = studentsQuery.Where(s => subgroupStudentIds.Contains(s.StudentID));
+            }
+
+            var students = await studentsQuery
                 .OrderBy(s => s.LastName)
                 .AsNoTracking()
                 .ToListAsync();
+            // ============================================================
 
             var marks = await _context.Marks
                 .Where(m =>
@@ -506,7 +548,6 @@ namespace Portal
                     IsEdit = false
                 };
 
-                // determine collapse status for stat (average) lesson using same rules as for normal lessons
                 var todayLocal = DateTime.Today;
                 int semesterNow = GetSemester(todayLocal);
                 int semesterOfStat = GetSemester(statlesson.Date);
@@ -619,6 +660,11 @@ namespace Portal
                 Group = group,
                 StatementLessons = statementLessons,
                 IsActive = isActive,
+
+                Subgroup = subgroup,
+                HasSubgroups = hasSubgroups,
+                SubgroupNames = subgroupNames.OrderBy(n => n).ToList(),
+                ReturnAction = viewName
             };
 
             return View(viewName, journalViewModel);
@@ -753,14 +799,14 @@ namespace Portal
                 typeZ?.TypeOfExerciseID,
                 typeDZ?.TypeOfExerciseID
             }
-            .OfType<int>() // Автоматически фильтрует null и преобразует в int
+            .OfType<int>()
             .ToList();
 
             var lessons = await _context.Lessons
                .Where(l => l.GroupID == GroupID
                            && l.Theme.SubjectID == SubjectID
-                           && l.Date >= d1  // Дата урока >= d1
-                           && l.Date <= d2  // Дата урока <= d2
+                           && l.Date >= d1
+                           && l.Date <= d2
                            && !excludedTypeIds.Contains(l.TypeOfExerciseID))
                .Include(l => l.Theme)
                .Include(l => l.TypeOfExercise)
@@ -783,26 +829,18 @@ namespace Portal
 
             using (var package = new ExcelPackage(new FileInfo(templatePath)))
             {
-                // Конфигурация на основе шаблона
-                int maxStudentsPerPage = 25; // 25 строк для студентов (строки 6-30)
-                int studentStartRow = 6;     // строка с первым студентом
+                int maxStudentsPerPage = 25;
+                int studentStartRow = 6;
+                int studentNumberColumn = 1;
+                int studentNameColumn = 2;
+                int maxLessonsOddPage = 6;
+                int oddPageStartColumn = 7;
+                int maxLessonsEvenPage = 12;
+                int evenPageStartColumn = 2;
 
-                // Колонки для № и ФИО
-                int studentNumberColumn = 1; // колонка A для №
-                int studentNameColumn = 2;   // колонка B для ФИО
-
-                // Количество занятий на странице и начальные колонки
-                int maxLessonsOddPage = 6;    // нечетная страница (лист 1,3,5...)
-                int oddPageStartColumn = 7;   // колонка G (7) для нечетных страниц
-
-                int maxLessonsEvenPage = 12;  // четная страница (лист 2,4,6...)
-                int evenPageStartColumn = 2;  // колонка B (2) для четных страниц
-
-                // Получаем шаблоны страниц из файла
-                var oddTemplate = package.Workbook.Worksheets[0];  // первый лист (нечетный)
+                var oddTemplate = package.Workbook.Worksheets[0];
                 oddTemplate.Name = "Страница 1";
 
-                // Создаем четный шаблон если его нет
                 ExcelWorksheet evenTemplate;
                 if (package.Workbook.Worksheets.Count > 1)
                 {
@@ -814,14 +852,13 @@ namespace Portal
                     evenTemplate = package.Workbook.Worksheets.Add("Страница 2", oddTemplate);
                 }
 
-                // РАСПРЕДЕЛЯЕМ ЗАНЯТИЯ ПО СТРАНИЦАМ
                 List<int> lessonsPerPage = new List<int>();
                 int lessonIndex = 0;
-                int pageNumber = 1; // начинаем с страницы 1
+                int pageNumber = 1;
 
                 while (lessonIndex < lessons.Count)
                 {
-                    bool isOddPage = (pageNumber % 2 == 1); // нечетная: 1,3,5...
+                    bool isOddPage = (pageNumber % 2 == 1);
                     int maxLessonsOnPage = isOddPage ? maxLessonsOddPage : maxLessonsEvenPage;
 
                     int lessonsThisPage = Math.Min(maxLessonsOnPage, lessons.Count - lessonIndex);
@@ -831,49 +868,40 @@ namespace Portal
                     pageNumber++;
                 }
 
-                int totalPages = lessonsPerPage.Count; // общее количество страниц для занятий
+                int totalPages = lessonsPerPage.Count;
 
-                // Создаем дополнительные страницы если нужно (начиная со страницы 3)
                 for (int i = 3; i <= totalPages; i++)
                 {
                     string sheetName = $"Страница {i}";
 
-                    // Определяем тип страницы
-                    bool pageIsOdd = (i % 2 == 1); // нечетная: 1,3,5...
+                    bool pageIsOdd = (i % 2 == 1);
                     var template = pageIsOdd ? oddTemplate : evenTemplate;
 
-                    // Удаляем лист если уже существует с таким именем
                     if (package.Workbook.Worksheets.Any(ws => ws.Name == sheetName))
                     {
                         package.Workbook.Worksheets.Delete(sheetName);
                     }
 
-                    // Создаем новый лист из соответствующего шаблона
                     package.Workbook.Worksheets.Add(sheetName, template);
                 }
 
-                // ЗАПОЛНЯЕМ ВСЕ СТРАНИЦЫ
-                lessonIndex = 0; // сбрасываем индекс занятий
+                lessonIndex = 0;
 
                 for (int currentPage = 1; currentPage <= totalPages; currentPage++)
                 {
-                    var sheet = package.Workbook.Worksheets[currentPage - 1]; // -1 т.к. индексация с 0
+                    var sheet = package.Workbook.Worksheets[currentPage - 1];
 
-                    bool currentPageIsOdd = (currentPage % 2 == 1); // нечетная страница
+                    bool currentPageIsOdd = (currentPage % 2 == 1);
 
-                    // Сколько занятий на этой странице
                     int pageLessonIndex = currentPage - 1;
                     int lessonsThisPage = lessonsPerPage[pageLessonIndex];
 
-                    // Определяем начальную колонку для занятий
                     int startColumn = currentPageIsOdd ? oddPageStartColumn : evenPageStartColumn;
 
-                    // ЗАГОЛОВОК ДИСЦИПЛИНЫ - РАЗНЫЕ ЯЧЕЙКИ
                     string title = subject.ShortName ?? subject.Name;
 
                     if (currentPageIsOdd)
                     {
-                        // Нечетная страница - ячейка F2
                         var titleCell = sheet.Cells["F2"];
                         titleCell.Value = title;
                         titleCell.Style.Font.Name = "Times New Roman";
@@ -882,7 +910,6 @@ namespace Portal
                     }
                     else
                     {
-                        // Четная страница - ячейка G2 (колонка 7)
                         var titleCell = sheet.Cells["G2"];
                         titleCell.Value = title;
                         titleCell.Style.Font.Name = "Times New Roman";
@@ -890,7 +917,6 @@ namespace Portal
                         titleCell.Style.HorizontalAlignment = ExcelHorizontalAlignment.Center;
                     }
 
-                    // ЗАПОЛНЯЕМ ЗАГОЛОВКИ ЗАНЯТИЙ НА ЭТОЙ СТРАНИЦЕ
                     for (int i = 0; i < lessonsThisPage; i++)
                     {
                         int lessonIdx = lessonIndex + i;
@@ -899,43 +925,29 @@ namespace Portal
                         var lesson = lessons[lessonIdx];
                         int column = startColumn + i;
 
-                        // Заполняем нижнюю ячейку (строка 5) - дата, тема, вид
                         var infoCell = sheet.Cells[5, column];
                         infoCell.Value = FormatLessonInfo(lesson);
 
-                        // ПОВОРАЧИВАЕМ ТЕКСТ НА 90 ГРАДУСОВ
                         infoCell.Style.TextRotation = 90;
                         infoCell.Style.WrapText = true;
                         infoCell.Style.VerticalAlignment = ExcelVerticalAlignment.Center;
                         infoCell.Style.HorizontalAlignment = ExcelHorizontalAlignment.Center;
-
-                        // ШРИФТ Times New Roman 8
                         infoCell.Style.Font.Name = "Times New Roman";
                         infoCell.Style.Font.Size = 8;
                     }
 
-                    // ЗАПОЛНЯЕМ СТУДЕНТОВ И ОЦЕНКИ НА ЭТОЙ СТРАНИЦЕ
-                    // На КАЖДОЙ странице заполняем ВСЕХ студентов (1-25)
                     for (int studentIdx = 0; studentIdx < Math.Min(students.Count, maxStudentsPerPage); studentIdx++)
                     {
                         var student = students[studentIdx];
                         int row = studentStartRow + studentIdx;
 
-                        // НЕ ТРОГАЕМ НУМЕРАЦИЮ СТУДЕНТОВ! Она уже есть в шаблоне
-
-                        // ФИО (колонка B) - заполняем на ВСЕХ страницах ПОЛНОЕ ФИО
                         var nameCell = sheet.Cells[row, studentNameColumn];
                         nameCell.Value = FormatStudentNameFull(student);
-
-                        // ВЫРАВНИВАЕМ ФАМИЛИИ ПО ЛЕВОМУ КРАЮ
                         nameCell.Style.HorizontalAlignment = ExcelHorizontalAlignment.Left;
                         nameCell.Style.VerticalAlignment = ExcelVerticalAlignment.Center;
-
-                        // ШРИФТ Times New Roman 10
                         nameCell.Style.Font.Name = "Times New Roman";
                         nameCell.Style.Font.Size = 10;
 
-                        // ОЦЕНКИ за занятия на этой странице
                         for (int lessonIdx = 0; lessonIdx < lessonsThisPage; lessonIdx++)
                         {
                             int lessonIdxGlobal = lessonIndex + lessonIdx;
@@ -944,43 +956,32 @@ namespace Portal
                             var lesson = lessons[lessonIdxGlobal];
                             int column = startColumn + lessonIdx;
 
-                            // Ищем оценку
                             var mark = marks.FirstOrDefault(m =>
                                 m.StudentID == student.StudentID &&
                                 m.LessonID == lesson.LessonID);
 
-                            // Заполняем оценку
                             var markCell = sheet.Cells[row, column];
                             markCell.Value = mark?.Value ?? "";
-
-                            // ВЫРАВНИВАЕМ ОТМЕТКИ ПО ЦЕНТРУ ЯЧЕЙКИ
                             markCell.Style.HorizontalAlignment = ExcelHorizontalAlignment.Center;
                             markCell.Style.VerticalAlignment = ExcelVerticalAlignment.Center;
-
-                            // ШРИФТ Times New Roman 10 для оценок
                             markCell.Style.Font.Name = "Times New Roman";
                             markCell.Style.Font.Size = 10;
                         }
                     }
 
-                    // Переходим к следующей порции занятий
                     lessonIndex += lessonsThisPage;
                 }
 
-                // ЕСЛИ СТУДЕНТОВ БОЛЬШЕ 25 - СОЗДАЕМ ДОПОЛНИТЕЛЬНЫЕ СТРАНИЦЫ
                 if (students.Count > maxStudentsPerPage)
                 {
                     int totalStudentPages = (int)Math.Ceiling((double)students.Count / maxStudentsPerPage);
 
-                    // Для каждой дополнительной порции студентов (начиная со 2-й)
                     for (int studentPage = 2; studentPage <= totalStudentPages; studentPage++)
                     {
                         int studentOffset = (studentPage - 1) * maxStudentsPerPage;
                         int studentsThisPage = Math.Min(maxStudentsPerPage, students.Count - studentOffset);
 
-                        // Создаем новый блок страниц для этих студентов
-                        // Нужно повторить ВСЕ страницы с занятиями для этих студентов
-                        int currentLessonIndex = 0; // начинаем занятия сначала
+                        int currentLessonIndex = 0;
 
                         for (int lessonPage = 0; lessonPage < totalPages; lessonPage++)
                         {
@@ -988,24 +989,16 @@ namespace Portal
                             int lessonsThisPage = lessonsPerPage[lessonPage];
                             bool pageIsOdd = (newPageNumber % 2 == 1);
 
-                            // Определяем начальную колонку для занятий
                             int startColumn = pageIsOdd ? oddPageStartColumn : evenPageStartColumn;
-
-                            // Выбираем шаблон
                             var template = pageIsOdd ? oddTemplate : evenTemplate;
-
-                            // Имя новой страницы
                             string newSheetName = $"Страница {newPageNumber}";
 
-                            // Создаем новую страницу
                             var newSheet = package.Workbook.Worksheets.Add(newSheetName, template);
 
-                            // ЗАГОЛОВОК ДИСЦИПЛИНЫ
                             string title = subject.ShortName ?? subject.Name;
 
                             if (pageIsOdd)
                             {
-                                // Нечетная страница - ячейка F2
                                 var titleCell = newSheet.Cells["F2"];
                                 titleCell.Value = title;
                                 titleCell.Style.Font.Name = "Times New Roman";
@@ -1014,7 +1007,6 @@ namespace Portal
                             }
                             else
                             {
-                                // Четная страница - ячейка G2 (колонка 7)
                                 var titleCell = newSheet.Cells["G2"];
                                 titleCell.Value = title;
                                 titleCell.Style.Font.Name = "Times New Roman";
@@ -1022,7 +1014,6 @@ namespace Portal
                                 titleCell.Style.HorizontalAlignment = ExcelHorizontalAlignment.Center;
                             }
 
-                            // ЗАПОЛНЯЕМ ЗАГОЛОВКИ ЗАНЯТИЙ
                             for (int i = 0; i < lessonsThisPage; i++)
                             {
                                 int lessonIdx = currentLessonIndex + i;
@@ -1033,19 +1024,14 @@ namespace Portal
 
                                 var infoCell = newSheet.Cells[5, column];
                                 infoCell.Value = FormatLessonInfo(lesson);
-
-                                // ПОВОРАЧИВАЕМ ТЕКСТ НА 90 ГРАДУСОВ
                                 infoCell.Style.TextRotation = 90;
                                 infoCell.Style.WrapText = true;
                                 infoCell.Style.VerticalAlignment = ExcelVerticalAlignment.Center;
                                 infoCell.Style.HorizontalAlignment = ExcelHorizontalAlignment.Center;
-
-                                // ШРИФТ Times New Roman 8
                                 infoCell.Style.Font.Name = "Times New Roman";
                                 infoCell.Style.Font.Size = 8;
                             }
 
-                            // ЗАПОЛНЯЕМ СТУДЕНТОВ (текущая порция)
                             for (int i = 0; i < studentsThisPage; i++)
                             {
                                 int studentIdx = studentOffset + i;
@@ -1054,21 +1040,13 @@ namespace Portal
                                 var student = students[studentIdx];
                                 int row = studentStartRow + i;
 
-                                // НЕ ТРОГАЕМ КОЛОНКУ A - нумерация уже есть в шаблоне
-
-                                // ФИО - ПОЛНОЕ ФИО
                                 var nameCell = newSheet.Cells[row, studentNameColumn];
                                 nameCell.Value = FormatStudentNameFull(student);
-
-                                // ВЫРАВНИВАЕМ ФАМИЛИИ ПО ЛЕВОМУ КРАЮ
                                 nameCell.Style.HorizontalAlignment = ExcelHorizontalAlignment.Left;
                                 nameCell.Style.VerticalAlignment = ExcelVerticalAlignment.Center;
-
-                                // ШРИФТ Times New Roman 10
                                 nameCell.Style.Font.Name = "Times New Roman";
                                 nameCell.Style.Font.Size = 10;
 
-                                // ОЦЕНКИ
                                 for (int j = 0; j < lessonsThisPage; j++)
                                 {
                                     int lessonIdx = currentLessonIndex + j;
@@ -1083,12 +1061,8 @@ namespace Portal
 
                                     var markCell = newSheet.Cells[row, column];
                                     markCell.Value = mark?.Value ?? "";
-
-                                    // ВЫРАВНИВАЕМ ОТМЕТКИ ПО ЦЕНТРУ ЯЧЕЙКИ
                                     markCell.Style.HorizontalAlignment = ExcelHorizontalAlignment.Center;
                                     markCell.Style.VerticalAlignment = ExcelVerticalAlignment.Center;
-
-                                    // ШРИФТ Times New Roman 10 для оценок
                                     markCell.Style.Font.Name = "Times New Roman";
                                     markCell.Style.Font.Size = 10;
                                 }
@@ -1112,14 +1086,12 @@ namespace Portal
             }
         }
 
-        // Вспомогательные методы
         private string FormatLessonInfo(Lesson lesson)
         {
             string date = lesson.Date.ToString("dd.MM.yyyy");
             string theme = lesson.Theme?.ShortName ?? lesson.Theme?.Name ?? "Тема";
             string type = lesson.TypeOfExercise?.ShortName ?? "Вид";
 
-            // Форматирование для вертикального отображения
             if (theme.Length > 15) theme = theme.Substring(0, 12) + "..";
 
             return $"{date}\n{theme}\n{type}";
@@ -1133,14 +1105,11 @@ namespace Portal
             if (string.IsNullOrEmpty(student.Surname))
                 return $"{student.LastName} {student.Name}";
 
-            // ПОЛНОЕ ФИО без сокращений
             return $"{student.LastName} {student.Name} {student.Surname}";
         }
 
-        //Учебные года
         private async Task<List<AcademicYearInfo>> GetAcademicYearsForSubjectAndGroup(int groupID, int subjectID)
         {
-            // Получаем даты уроков для конкретной группы и предмета
             var lessonDates = await _context.Lessons
                 .Where(l => l.GroupID == groupID && l.Theme.SubjectID == subjectID)
                 .Select(l => l.Date)
@@ -1160,13 +1129,9 @@ namespace Portal
         {
             var academicYears = new List<AcademicYearInfo>();
 
-            // Определяем первый учебный год
             int startYear = fromDate.Month >= 9 ? fromDate.Year : fromDate.Year - 1;
-
-            // Определяем последний учебный год
             int endYear = toDate.Month >= 9 ? toDate.Year : toDate.Year - 1;
 
-            // Генерируем учебные годы
             for (int year = startYear; year <= endYear; year++)
             {
                 var academicYear = new AcademicYearInfo

@@ -1,0 +1,57 @@
+﻿@model Portal.ViewModel.SubgroupSelectionViewModel
+
+@{
+    ViewData["Title"] = "Выбор подгруппы";
+    string[] colors = { "primary", "success", "info", "warning", "danger", "gradient-navy", "gradient-olive", "gradient-lime", "gradient-teal", "gradient-yellow", "indigo" };
+    int i = 0;
+}
+
+@await Html.PartialAsync("_NavMenuJournal")
+
+<section class="content-header">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-sm-6">
+            </div>
+        </div>
+    </div>
+</section>
+
+@if (!Model.Subgroups.Any())
+{
+    <div class="alert alert-info text-center">
+        <h5>Нет подгрупп</h5>
+        <p>По данному предмету для группы подгруппы не созданы.</p>
+    </div>
+}
+else
+{
+    <section class="content">
+        <div class="container-fluid">
+            <h4 class="mb-3 text-center bg-primary headGroup p-2 rounded">
+                Группа: @Model.GroupName&nbsp;|&nbsp;Предмет: @Model.SubjectName
+            </h4>
+            <div class="d-flex flex-row flex-wrap">
+                @foreach (var sg in Model.Subgroups)
+                {
+                    if (i == colors.Length) i = 0;
+
+                    <a asp-action="@Model.ReturnAction"
+                       asp-route-GroupID="@Model.GroupID"
+                       asp-route-SubjectID="@Model.SubjectID"
+                       asp-route-subgroup="@sg.Name"
+                       class="groups d-block p-4 mr-3 mb-3 text-decoration-none rounded shadow-lg bg-@colors[i]"
+                       title="Открыть журнал подгруппы «@sg.Name»">
+                        <h6 class="text-center text-white">
+                            @sg.Name
+                        </h6>
+                        <div class="text-center text-white small mt-2" style="opacity:.85;">
+                            @sg.StudentCount студ.
+                        </div>
+                    </a>
+                    i++;
+                }
+            </div>
+        </div>
+    </section>
+}
