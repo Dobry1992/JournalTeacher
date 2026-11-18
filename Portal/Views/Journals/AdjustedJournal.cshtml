@@ -42,8 +42,14 @@ else
             <div class="card-body">
                 <h6 class="text-center mb-4 bg-warning p-2 rounded">
                     Группа: @Model.Group.Name<br />
-                    @if(Model.HasSubgroups) 
-                        @Model.Subgroup;
+                   @if(Model.HasSubgroups) 
+                    {
+                         @Model.Subgroup;
+                    }
+                    else
+                    {
+                        @Model.Subject.Name;
+                    }   
                 </h6>
 
                 <div class="mb-3 d-flex flex-wrap gap-2">

@@ -35,14 +35,25 @@ namespace Portal
             _logger = logger;
         }
 
+        // ============================================================
+        // СПИСОК ЖУРНАЛОВ
+        // ============================================================
+
         [Authorize(Roles = "SuperAdmin, ANB-UMCH")]
         public async Task<IActionResult> Index()
         {
-            var journals = _context.Journals
+            var journals = await _context.Journals
                 .Include(j => j.Group)
-                .Include(j => j.Subject);
-            return View(await journals.ToListAsync());
+                .Include(j => j.Subject)
+                .AsNoTracking()
+                .ToListAsync();
+
+            return View(journals);
         }
+
+        // ============================================================
+        // ИТОГИ ОБУЧЕНИЯ
+        // ============================================================
 
         public async Task<IActionResult> Final(int GroupID, int SubjectID)
         {
@@ -52,30 +63,38 @@ namespace Portal
 
             TypeOfExercise typeKR = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Курсовая работа");
             TypeOfExercise typeKP = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Курсовой проект");
+
+            int? typeKRId = typeKR?.TypeOfExerciseID;
+            int? typeKPId = typeKP?.TypeOfExerciseID;
+
             List<ResultStudent> resultsStudent = new();
             foreach (var student in students)
             {
                 ResultStudent resultStudent = new();
                 List<double> marks = new();
+
                 var simpleMarks = _context.Marks
                     .Where(m =>
                         m.FlagF == 0 &&
                         m.GroupID == GroupID &&
                         m.SubjectID == SubjectID &&
                         m.StudentID == student.StudentID &&
-                        m.TypeOfExerciseID != typeKR.TypeOfExerciseID &&
-                        m.TypeOfExerciseID != typeKP.TypeOfExerciseID
+                        m.TypeOfExerciseID != typeKRId &&
+                        m.TypeOfExerciseID != typeKPId
                     )
                     .AsNoTracking();
+
                 foreach (var mark in simpleMarks)
                 {
                     if (double.TryParse(mark.Value, out double m))
-                    {
                         marks.Add(m);
-                    }
                 }
+
                 resultStudent.Student = student;
-                resultStudent.Value = Math.Round(marks.Sum() / marks.Count, 3, MidpointRounding.AwayFromZero);
+                resultStudent.Value = marks.Any()
+                    ? Math.Round(marks.Sum() / marks.Count, 3, MidpointRounding.AwayFromZero)
+                    : 0;
+
                 resultsStudent.Add(resultStudent);
             }
 
@@ -83,6 +102,10 @@ namespace Portal
             ViewBag.SubjectID = SubjectID;
             return View(resultsStudent.OrderBy(s => s.Student.LastName));
         }
+
+        // ============================================================
+        // ВЕДОМОСТЬ (диплом/гос.экзамен/практики)
+        // ============================================================
 
         public async Task<IActionResult> Statement(int GroupID)
         {
@@ -94,23 +117,46 @@ namespace Portal
             var typeDP = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Дипломный проект");
             var typeMR = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Магистерская работа");
 
+            if (typeDR == null || typeGE == null || typeS == null || typePP == null
+                || typeUP == null || typeDP == null || typeMR == null)
+            {
+                return NotFound("В справочнике типов занятий отсутствуют необходимые типы " +
+                                "(Дипломная работа / Государственный экзамен / Стажировка / " +
+                                "Производственная практика / Учебная практика / " +
+                                "Дипломный проект / Магистерская работа)");
+            }
+
             var group = await _context.Groups.FindAsync(GroupID);
+            if (group == null)
+                return NotFound("Группа не найдена");
+
             var inst = await _context.Institutes.FindAsync(group.InstituteID);
 
-            var lessons = _context.StatementLessons.Where(l => l.GroupID == GroupID && (l.TypeOfExerciseID == typeDR.TypeOfExerciseID || l.TypeOfExerciseID == typeGE.TypeOfExerciseID
-                || l.TypeOfExerciseID == typeS.TypeOfExerciseID || l.TypeOfExerciseID == typePP.TypeOfExerciseID || l.TypeOfExerciseID == typeUP.TypeOfExerciseID
-                || l.TypeOfExerciseID == typeDP.TypeOfExerciseID || l.TypeOfExerciseID == typeMR.TypeOfExerciseID))
-                .OrderBy(l => l.Date);
+            var statementTypeIds = new HashSet<int>
+            {
+                typeDR.TypeOfExerciseID,
+                typeGE.TypeOfExerciseID,
+                typeS.TypeOfExerciseID,
+                typePP.TypeOfExerciseID,
+                typeUP.TypeOfExerciseID,
+                typeDP.TypeOfExerciseID,
+                typeMR.TypeOfExerciseID
+            };
+
+            var lessons = _context.StatementLessons
+                .Where(l => l.GroupID == GroupID && statementTypeIds.Contains(l.TypeOfExerciseID))
+                .OrderBy(l => l.Date)
+                .AsNoTracking();
 
             var students = _context.Students
-               .Where(s => s.GroupID == GroupID && s.Status == true)
-               .OrderBy(s => s.LastName);
+                .Where(s => s.GroupID == GroupID && s.Status == true)
+                .OrderBy(s => s.LastName)
+                .AsNoTracking();
 
             var marks = _context.StatementMarks
-                .Where(m => m.GroupID == GroupID && (m.TypeOfExerciseID == typeDR.TypeOfExerciseID || m.TypeOfExerciseID == typeGE.TypeOfExerciseID
-                    || m.TypeOfExerciseID == typeS.TypeOfExerciseID || m.TypeOfExerciseID == typePP.TypeOfExerciseID || m.TypeOfExerciseID == typeUP.TypeOfExerciseID
-                    || m.TypeOfExerciseID == typeDP.TypeOfExerciseID || m.TypeOfExerciseID == typeMR.TypeOfExerciseID))
-                .OrderBy(m => m.Date);
+                .Where(m => m.GroupID == GroupID && statementTypeIds.Contains(m.TypeOfExerciseID))
+                .OrderBy(m => m.Date)
+                .AsNoTracking();
 
             ViewBag.Group = group;
             ViewBag.Marks = marks;
@@ -128,27 +174,40 @@ namespace Portal
             return View(await lessons.ToListAsync());
         }
 
+        // ============================================================
+        // ЖУРНАЛ ЭЛЕКТИВА
+        // ============================================================
+
         public async Task<IActionResult> ElectiveJournal(int electiveID)
         {
             var elective = await _context.Electives.FindAsync(electiveID);
-            var links = await _context.El_Stud_Links.Where(l => l.ElectiveID == electiveID).ToListAsync();
-            List<Student> students = new();
-            foreach (var link in links)
-            {
-                Student student = _context.Students.Find(link.StudentID);
-                students.Add(student);
-            }
+            if (elective == null)
+                return NotFound();
+
+            var links = await _context.El_Stud_Links
+                .Where(l => l.ElectiveID == electiveID)
+                .AsNoTracking()
+                .ToListAsync();
+
+            var studentIds = links.Select(l => l.StudentID).Distinct().ToList();
+
+            var students = await _context.Students
+                .Where(s => studentIds.Contains(s.StudentID))
+                .AsNoTracking()
+                .ToListAsync();
 
             var lessons = await _context.ElectiveLessons
                 .Where(l => l.Theme.ElectiveID == electiveID)
                 .Include(l => l.Theme)
                 .Include(l => l.Type)
                 .OrderBy(l => l.Date)
+                .AsNoTracking()
                 .ToListAsync();
 
             var marks = await _context.ElectiveMarks
                 .Where(m => m.ElectiveLesson.Theme.ElectiveID == electiveID)
                 .OrderBy(m => m.Date)
+                .AsNoTracking()
                 .ToListAsync();
 
             ViewBag.Elective = elective;
@@ -178,6 +237,74 @@ namespace Portal
         }
 
         // ============================================================
+        // КОНТРОЛЬНЫЕ ЗАНЯТИЯ
+        // ============================================================
+
+        public async Task<IActionResult> Controls(int GroupID, int SubjectID, string subgroup = null)
+        {
+            var group = await _context.Groups.FindAsync(GroupID);
+            var subject = await _context.Subjects.FindAsync(SubjectID);
+            var controlType = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Контрольное мероприятие");
+
+            if (group == null || subject == null || controlType == null)
+                return NotFound();
+
+            var department = await _context.Departments.FindAsync(subject.DepartmentID);
+
+            var lessons = await _context.Lessons
+                .Where(l => l.Theme.SubjectID == SubjectID
+                         && l.GroupID == GroupID
+                         && l.TypeOfExerciseID == controlType.TypeOfExerciseID)
+                .Include(l => l.TypeOfExercise)
+                .Include(l => l.Theme)
+                .OrderBy(l => l.Date)
+                .AsNoTracking()
+                .ToListAsync();
+
+            // фильтрация студентов по подгруппе
+            var studentsQuery = _context.Students
+                .Where(s => s.GroupID == GroupID && s.Status == true);
+
+            if (!string.IsNullOrEmpty(subgroup) && subgroup != "__all__")
+            {
+                var subgroupStudentIds = await _context.SubgroupLinks
+                    .Where(sl => sl.GroupID == GroupID
+                              && sl.SubjectID == SubjectID
+                              && sl.Name == subgroup)
+                    .Select(sl => sl.StudentID)
+                    .ToListAsync();
+
+                if (subgroupStudentIds.Any())
+                    studentsQuery = studentsQuery.Where(s => subgroupStudentIds.Contains(s.StudentID));
+            }
+
+            var students = await studentsQuery
+                .OrderBy(s => s.LastName)
+                .AsNoTracking()
+                .ToListAsync();
+
+            var marks = await _context.Marks
+                .Where(m => m.SubjectID == SubjectID
+                         && m.GroupID == GroupID
+                         && m.TypeOfExerciseID == controlType.TypeOfExerciseID)
+                .OrderBy(m => m.Date)
+                .AsNoTracking()
+                .ToListAsync();
+
+            var controlViewModel = new ControlsViewModel
+            {
+                Marks = marks,
+                Lessons = lessons,
+                Students = students,
+                Department = department,
+                Subject = subject,
+                Group = group
+            };
+
+            return View(controlViewModel);
+        }
+
+        // ============================================================
         // ВЫБОР ПОДГРУППЫ / ПОДГОТОВКА ЖУРНАЛА
         // ============================================================
 
@@ -188,7 +315,6 @@ namespace Portal
         private async Task<IActionResult> PrepareJournalViewWithSubgroup(
             int GroupID, int SubjectID, string viewName, string subgroup)
         {
-            // Escape-hatch «показать всех»
             if (subgroup == "__all__")
                 return await PrepareJournalView(GroupID, SubjectID, viewName, null);
 
@@ -198,7 +324,6 @@ namespace Portal
                 .Distinct()
                 .ToListAsync();
 
-            // Подгруппы есть, но конкретная не выбрана → страница выбора
             if (subgroupNames.Any() && string.IsNullOrEmpty(subgroup))
             {
                 var group = await _context.Groups.FindAsync(GroupID);
@@ -242,6 +367,7 @@ namespace Portal
 
             int semester = GetSemester(today);
 
+            // Вынесено из цикла — раньше запрос выполнялся для каждой отметки
             var allowedTypes = _context.Types
                 .Where(t => t.Name == "Экзамен" || t.Name == "Зачёт" || t.Name == "Дифференцированный зачёт")
                 .Select(t => t.TypeOfExerciseID)
@@ -273,7 +399,8 @@ namespace Portal
                 }
 
                 var markMonth = new DateTime(mark.Date.Year, mark.Date.Month, 1);
-                bool isInAllowedDateRange = markMonth == currentMonth || (markMonth == previousMonth && today <= tenthOfCurrentMonth);
+                bool isInAllowedDateRange = markMonth == currentMonth
+                    || (markMonth == previousMonth && today <= tenthOfCurrentMonth);
 
                 bool isEditAllowedByRules = true;
 
@@ -361,7 +488,8 @@ namespace Portal
                 }
 
                 var lessonMonth = new DateTime(lesson.Date.Year, lesson.Date.Month, 1);
-                jl.IsEdit = lessonMonth == currentMonth || (lessonMonth == previousMonth && today <= tenthOfCurrentMonth);
+                jl.IsEdit = lessonMonth == currentMonth
+                    || (lessonMonth == previousMonth && today <= tenthOfCurrentMonth);
 
                 if (lesson.FlagF != 0)
                 {
@@ -403,15 +531,18 @@ namespace Portal
         {
             var group = await _context.Groups.FindAsync(GroupID);
             var subject = await _context.Subjects.FindAsync(SubjectID);
-            bool isActive = true;
-            var completedSubject = await _context.CompletedSubjects.FirstOrDefaultAsync(cs => cs.GroupID == GroupID && cs.SubjectID == SubjectID);
-
-            if (completedSubject != null) isActive = false;
 
             if (group == null || subject == null)
                 return NotFound();
 
             var department = await _context.Departments.FindAsync(subject.DepartmentID);
+            if (department == null)
+                return NotFound("Кафедра предмета не найдена");
+
+            bool isActive = true;
+            var completedSubject = await _context.CompletedSubjects
+                .FirstOrDefaultAsync(cs => cs.GroupID == GroupID && cs.SubjectID == SubjectID);
+            if (completedSubject != null) isActive = false;
 
             var journals = await _context.Journals
                 .Where(j => j.GroupID == GroupID && j.SubjectID == SubjectID)
@@ -428,14 +559,38 @@ namespace Portal
                 return View(viewName);
             }
 
+            // ============================================================
+            // РАННЯЯ ПРОВЕРКА ДОСТУПА
+            // (чтобы не грузить отметки/студентов для неавторизованных)
+            // ============================================================
+            bool hasAccess = User.IsInRole("SuperAdmin")
+                || User.IsInRole("ANB-UMCH")
+                || User.IsInRole("ANB-HEAD")
+                || (!string.IsNullOrEmpty(department.Role) && User.IsInRole(department.Role));
+
+            if (!hasAccess)
+            {
+                return View(viewName, new JournalViewModel
+                {
+                    Group = group,
+                    Subject = subject,
+                    Department = department,
+                    Students = new List<Student>(),
+                    JournalMarks = new List<JournalMarks>(),
+                    JournalLessons = new List<JournalLessons>(),
+                    StatementLessons = new List<Lesson>(),
+                    IsActive = isActive,
+                    HasSubgroups = false,
+                    SubgroupNames = new List<string>(),
+                    ReturnAction = viewName
+                });
+            }
+
             var types = await _context.Types.ToListAsync();
             var typesDict = types.ToDictionary(t => t.Name, t => t.TypeOfExerciseID);
 
             var lessons = await _context.Lessons
-                .Where(l =>
-                    l.Theme.SubjectID == SubjectID &&
-                    l.GroupID == GroupID
-                )
+                .Where(l => l.Theme.SubjectID == SubjectID && l.GroupID == GroupID)
                 .OrderBy(l => l.Date)
                 .Include(l => l.TypeOfExercise)
                 .Include(l => l.Theme)
@@ -453,7 +608,6 @@ namespace Portal
 
             bool hasSubgroups = subgroupNames.Any();
 
-            // Если subgroup задан, но такого нет — игнорируем фильтр
             if (!string.IsNullOrEmpty(subgroup) && !subgroupNames.Contains(subgroup))
                 subgroup = null;
 
@@ -476,16 +630,17 @@ namespace Portal
                 .OrderBy(s => s.LastName)
                 .AsNoTracking()
                 .ToListAsync();
-            // ============================================================
+
+            var studentIdsInJournal = students.Select(s => s.StudentID).ToList();
 
             var marks = await _context.Marks
-                .Where(m =>
-                    m.SubjectID == SubjectID &&
-                    m.GroupID == GroupID
-                )
+                .Where(m => m.SubjectID == SubjectID
+                         && m.GroupID == GroupID
+                         && studentIdsInJournal.Contains(m.StudentID))
                 .OrderBy(m => m.Date)
                 .AsNoTracking()
                 .ToListAsync();
+            // ============================================================
 
             var statementLessons = lessons
                 .Where(l => IsType(l.TypeOfExerciseID, typesDict, "Экзамен", "Дифференцированный зачёт", "Зачёт"))
@@ -496,15 +651,15 @@ namespace Portal
             var journalLessons = BuildJournalLessons(lessons, typesDict);
 
             var simpleLessons = lessons
-                .Where(l =>
-                    !IsType(l.TypeOfExerciseID, typesDict, "Экзамен", "Дифференцированный зачёт", "Зачёт", "Итоговая отметка", "Курсовой проект", "Курсовая работа")
-                )
+                .Where(l => !IsType(l.TypeOfExerciseID, typesDict,
+                    "Экзамен", "Дифференцированный зачёт", "Зачёт",
+                    "Итоговая отметка", "Курсовой проект", "Курсовая работа"))
                 .ToList();
 
             List<Mark> simpleMarks = marks
-                .Where(m =>
-                    !IsType(m.TypeOfExerciseID, typesDict, "Экзамен", "Дифференцированный зачёт", "Зачёт", "Итоговая отметка", "Курсовой проект", "Курсовая работа")
-                )
+                .Where(m => !IsType(m.TypeOfExerciseID, typesDict,
+                    "Экзамен", "Дифференцированный зачёт", "Зачёт",
+                    "Итоговая отметка", "Курсовой проект", "Курсовая работа"))
                 .ToList();
 
             Dictionary<int, List<Lesson>> lessonsByFlag = simpleLessons
@@ -516,133 +671,119 @@ namespace Portal
 
             List<JournalLessons> statLessons = new();
             List<JournalMarks> statMarks = new();
+
             Theme theme = await _context.Themes
-                .FirstOrDefaultAsync(t =>
-                    t.Name == "Контрольное занятие" &&
-                    t.SubjectID == subject.SubjectID
-                );
+                .FirstOrDefaultAsync(t => t.Name == "Контрольное занятие" && t.SubjectID == subject.SubjectID);
+
             TypeOfExercise type = await _context.Types
-                .FirstOrDefaultAsync(t =>
-                    t.Name == "Контрольное мероприятие"
-                );
+                .FirstOrDefaultAsync(t => t.Name == "Контрольное мероприятие");
 
-            foreach (var l in lessonsByFlag)
+            // Если нет темы «Контрольное занятие» или типа «Контрольное мероприятие» —
+            // не строим блок средних, журнал продолжает работать
+            if (theme != null && type != null)
             {
-                List<Lesson> keySimpleLessons = l.Value;
-                Lesson statlesson = new()
+                foreach (var l in lessonsByFlag)
                 {
-                    FlagF = l.Key,
-                    SubjectID = SubjectID,
-                    GroupID = GroupID,
-                    Group = group,
-                    ThemeID = theme.ThemeID,
-                    Theme = theme,
-                    TypeOfExercise = type,
-                    TypeOfExerciseID = type.TypeOfExerciseID,
-                    Date = keySimpleLessons[^1].Date.AddHours(1)
-                };
+                    List<Lesson> keySimpleLessons = l.Value;
 
-                JournalLessons journalLesson = new()
-                {
-                    Lesson = statlesson,
-                    IsEdit = false
-                };
+                    Lesson statlesson = new()
+                    {
+                        FlagF = l.Key,
+                        SubjectID = SubjectID,
+                        GroupID = GroupID,
+                        Group = group,
+                        ThemeID = theme.ThemeID,
+                        Theme = theme,
+                        TypeOfExercise = type,
+                        TypeOfExerciseID = type.TypeOfExerciseID,
+                        Date = keySimpleLessons[^1].Date.AddHours(1)
+                    };
 
-                var todayLocal = DateTime.Today;
-                int semesterNow = GetSemester(todayLocal);
-                int semesterOfStat = GetSemester(statlesson.Date);
-                if (semesterOfStat != semesterNow)
-                {
-                    journalLesson.CollapseId = "collapse";
-                }
-                else
-                {
-                    if (todayLocal.Year != statlesson.Date.Year)
+                    JournalLessons journalLesson = new()
+                    {
+                        Lesson = statlesson,
+                        IsEdit = false
+                    };
+
+                    var todayLocal = DateTime.Today;
+                    int semesterNow = GetSemester(todayLocal);
+                    int semesterOfStat = GetSemester(statlesson.Date);
+
+                    if (semesterOfStat != semesterNow)
                     {
                         journalLesson.CollapseId = "collapse";
                     }
                     else
                     {
-                        journalLesson.CollapseId = "";
+                        journalLesson.CollapseId = todayLocal.Year != statlesson.Date.Year
+                            ? "collapse"
+                            : "";
                     }
-                }
 
-                statLessons.Add(journalLesson);
+                    statLessons.Add(journalLesson);
 
-                foreach (var student in students)
-                {
-                    List<Mark> statSimpleMarks = simpleMarks
-                        .Where(m =>
-                            m.StudentID == student.StudentID &&
-                            m.FlagF == l.Key
-                        )
-                        .ToList();
-
-                    List<double> doubleMark = new();
-                    foreach (var mark in statSimpleMarks)
+                    foreach (var student in students)
                     {
-                        if (double.TryParse(mark.Value, out double number))
+                        List<Mark> statSimpleMarks = simpleMarks
+                            .Where(m => m.StudentID == student.StudentID && m.FlagF == l.Key)
+                            .ToList();
+
+                        List<double> doubleMark = new();
+                        foreach (var mark in statSimpleMarks)
                         {
-                            doubleMark.Add(number);
+                            if (double.TryParse(mark.Value, out double number))
+                                doubleMark.Add(number);
                         }
-                    }
 
-                    if (!doubleMark.Any())
-                    {
-                        Mark statMark = new()
+                        if (!doubleMark.Any())
                         {
-                            ChangeCounter = 3,
-                            Date = statlesson.Date,
-                            FlagF = l.Key,
-                            GroupID = GroupID,
-                            Student = student,
-                            Theme = theme,
-                            ThemeID = theme.ThemeID,
-                            StudentID = student.StudentID,
-                            TypeOfExerciseID = type.TypeOfExerciseID,
-                            SubjectID = SubjectID,
-                            DepartmentID = department.DepartmentID,
-                            InstituteID = group.InstituteID,
-                            SpecialityID = group.SpecialityID,
-                            Value = ""
-                        };
+                            Mark statMark = new()
+                            {
+                                ChangeCounter = 3,
+                                Date = statlesson.Date,
+                                FlagF = l.Key,
+                                GroupID = GroupID,
+                                Student = student,
+                                Theme = theme,
+                                ThemeID = theme.ThemeID,
+                                StudentID = student.StudentID,
+                                TypeOfExerciseID = type.TypeOfExerciseID,
+                                SubjectID = SubjectID,
+                                DepartmentID = department.DepartmentID,
+                                InstituteID = group.InstituteID,
+                                SpecialityID = group.SpecialityID,
+                                Value = ""
+                            };
 
-                        JournalMarks journalMark = new()
+                            statMarks.Add(new JournalMarks { IsEdit = false, Mark = statMark });
+                        }
+                        else
                         {
-                            IsEdit = false,
-                            Mark = statMark
-                        };
+                            Mark statMark = new()
+                            {
+                                ChangeCounter = 3,
+                                Date = statlesson.Date,
+                                FlagF = l.Key,
+                                GroupID = GroupID,
+                                Student = student,
+                                Theme = theme,
+                                ThemeID = theme.ThemeID,
+                                StudentID = student.StudentID,
+                                TypeOfExerciseID = type.TypeOfExerciseID,
+                                SubjectID = SubjectID,
+                                DepartmentID = department.DepartmentID,
+                                InstituteID = group.InstituteID,
+                                SpecialityID = group.SpecialityID,
+                                Value = Math.Round(doubleMark.Average(), 3, MidpointRounding.AwayFromZero).ToString()
+                            };
 
-                        statMarks.Add(journalMark);
-                    }
-                    else
-                    {
-                        Mark statMark = new()
-                        {
-                            ChangeCounter = 3,
-                            Date = statlesson.Date,
-                            FlagF = l.Key,
-                            GroupID = GroupID,
-                            Student = student,
-                            Theme = theme,
-                            ThemeID = theme.ThemeID,
-                            StudentID = student.StudentID,
-                            TypeOfExerciseID = type.TypeOfExerciseID,
-                            SubjectID = SubjectID,
-                            DepartmentID = department.DepartmentID,
-                            InstituteID = group.InstituteID,
-                            SpecialityID = group.SpecialityID,
-                            Value = Math.Round(doubleMark.Average(), 3, MidpointRounding.AwayFromZero).ToString()
-                        };
-
-                        JournalMarks journalMark = new()
-                        {
-                            IsEdit = false,
-                            Mark = statMark,
-                            Property = "statMark"
-                        };
-
-                        statMarks.Add(journalMark);
+                            statMarks.Add(new JournalMarks
+                            {
+                                IsEdit = false,
+                                Mark = statMark,
+                                Property = "statMark"
+                            });
+                        }
                     }
                 }
             }
@@ -660,7 +801,6 @@ namespace Portal
                 Group = group,
                 StatementLessons = statementLessons,
                 IsActive = isActive,
-
                 Subgroup = subgroup,
                 HasSubgroups = hasSubgroups,
                 SubgroupNames = subgroupNames.OrderBy(n => n).ToList(),
@@ -670,18 +810,25 @@ namespace Portal
             return View(viewName, journalViewModel);
         }
 
+        // ============================================================
+        // CRUD ЖУРНАЛА
+        // ============================================================
+
         [Authorize(Roles = "SuperAdmin, ANB-UMCH")]
         public IActionResult Create(int GroupID, int SubjectID)
         {
-            ViewData["GroupID"] = new SelectList(_context.Groups.Where(g => g.GroupID == GroupID), "GroupID", "Name");
-            ViewData["SubjectID"] = new SelectList(_context.Subjects.Where(s => s.SubjectID == SubjectID), "SubjectID", "Name");
+            ViewData["GroupID"] = new SelectList(
+                _context.Groups.Where(g => g.GroupID == GroupID), "GroupID", "Name");
+            ViewData["SubjectID"] = new SelectList(
+                _context.Subjects.Where(s => s.SubjectID == SubjectID), "SubjectID", "Name");
             return View();
         }
 
         [Authorize(Roles = "SuperAdmin, ANB-UMCH")]
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(int GroupID, int SubjectID, [Bind("JournalID,Comment,GroupID,SubjectID,Date")] Journal journal)
+        public async Task<IActionResult> Create(int GroupID, int SubjectID,
+            [Bind("JournalID,Comment,GroupID,SubjectID,Date")] Journal journal)
         {
             if (ModelState.IsValid)
             {
@@ -690,8 +837,11 @@ namespace Portal
                 await _context.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
             }
-            ViewData["GroupID"] = new SelectList(_context.Groups.Where(g => g.GroupID == GroupID), "GroupID", "Name", journal.GroupID);
-            ViewData["SubjectID"] = new SelectList(_context.Subjects.Where(s => s.SubjectID == SubjectID), "SubjectID", "Name", journal.SubjectID);
+
+            ViewData["GroupID"] = new SelectList(
+                _context.Groups.Where(g => g.GroupID == GroupID), "GroupID", "Name", journal.GroupID);
+            ViewData["SubjectID"] = new SelectList(
+                _context.Subjects.Where(s => s.SubjectID == SubjectID), "SubjectID", "Name", journal.SubjectID);
             return View(journal);
         }
 
@@ -706,7 +856,8 @@ namespace Portal
         [Authorize(Roles = "SuperAdmin, ANB-UMCH")]
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> CreateJournal([Bind("JournalID,Comment,GroupID,SubjectID,Date")] Journal journal)
+        public async Task<IActionResult> CreateJournal(
+            [Bind("JournalID,Comment,GroupID,SubjectID,Date")] Journal journal)
         {
             if (ModelState.IsValid)
             {
@@ -715,6 +866,7 @@ namespace Portal
                 await _context.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
             }
+
             ViewData["GroupID"] = new SelectList(_context.Groups, "GroupID", "Name", journal.GroupID);
             ViewData["SubjectID"] = new SelectList(_context.Subjects, "SubjectID", "Name", journal.SubjectID);
             return View(journal);
@@ -724,18 +876,15 @@ namespace Portal
         public async Task<IActionResult> Delete(int? id)
         {
             if (id == null)
-            {
                 return NotFound();
-            }
 
             var journal = await _context.Journals
                 .Include(j => j.Group)
                 .Include(j => j.Subject)
                 .FirstOrDefaultAsync(m => m.JournalID == id);
+
             if (journal == null)
-            {
                 return NotFound();
-            }
 
             return View(journal);
         }
@@ -746,6 +895,9 @@ namespace Portal
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
             var journal = await _context.Journals.FindAsync(id);
+            if (journal == null)
+                return NotFound();
+
             _context.Journals.Remove(journal);
             await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
@@ -770,7 +922,12 @@ namespace Portal
             return 0;
         }
 
-        public async Task<IActionResult> ExportToExcel(int GroupID, int SubjectID, DateTime d1, DateTime d2)
+        // ============================================================
+        // ЭКСПОРТ В EXCEL
+        // ============================================================
+
+        public async Task<IActionResult> ExportToExcel(
+            int GroupID, int SubjectID, DateTime d1, DateTime d2, string subgroup = null)
         {
             var group = await _context.Groups.FindAsync(GroupID);
             var subject = await _context.Subjects.FindAsync(SubjectID);
@@ -778,9 +935,28 @@ namespace Portal
             if (group == null || subject == null)
                 return NotFound();
 
-            var students = await _context.Students
-                .Where(s => s.GroupID == GroupID && s.Status == true)
+            // ============================================================
+            // ФИЛЬТРАЦИЯ СТУДЕНТОВ ПО ПОДГРУППЕ
+            // ============================================================
+            var studentsQuery = _context.Students
+                .Where(s => s.GroupID == GroupID && s.Status == true);
+
+            if (!string.IsNullOrEmpty(subgroup) && subgroup != "__all__")
+            {
+                var subgroupStudentIds = await _context.SubgroupLinks
+                    .Where(sl => sl.GroupID == GroupID
+                              && sl.SubjectID == SubjectID
+                              && sl.Name == subgroup)
+                    .Select(sl => sl.StudentID)
+                    .ToListAsync();
+
+                if (subgroupStudentIds.Any())
+                    studentsQuery = studentsQuery.Where(s => subgroupStudentIds.Contains(s.StudentID));
+            }
+
+            var students = await studentsQuery
                 .OrderBy(s => s.LastName)
+                .AsNoTracking()
                 .ToListAsync();
 
             var typeEKZ = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Экзамен");
@@ -803,23 +979,27 @@ namespace Portal
             .ToList();
 
             var lessons = await _context.Lessons
-               .Where(l => l.GroupID == GroupID
-                           && l.Theme.SubjectID == SubjectID
-                           && l.Date >= d1
-                           && l.Date <= d2
-                           && !excludedTypeIds.Contains(l.TypeOfExerciseID))
-               .Include(l => l.Theme)
-               .Include(l => l.TypeOfExercise)
-               .OrderBy(l => l.Date)
-               .ToListAsync();
+                .Where(l => l.GroupID == GroupID
+                         && l.Theme.SubjectID == SubjectID
+                         && l.Date >= d1
+                         && l.Date <= d2
+                         && !excludedTypeIds.Contains(l.TypeOfExerciseID))
+                .Include(l => l.Theme)
+                .Include(l => l.TypeOfExercise)
+                .OrderBy(l => l.Date)
+                .AsNoTracking()
+                .ToListAsync();
+
+            var studentIdsForMarks = students.Select(s => s.StudentID).ToList();
 
             var marks = await _context.Marks
-                .Where(m => m.GroupID == GroupID &&
-                    m.SubjectID == SubjectID &&
-                    !excludedTypeIds.Contains(m.TypeOfExerciseID) &&
-                    m.Date >= d1 &&
-                    m.Date <= d2
-                )
+                .Where(m => m.GroupID == GroupID
+                         && m.SubjectID == SubjectID
+                         && !excludedTypeIds.Contains(m.TypeOfExerciseID)
+                         && m.Date >= d1
+                         && m.Date <= d2
+                         && studentIdsForMarks.Contains(m.StudentID))
+                .AsNoTracking()
                 .ToListAsync();
 
             string templatePath = Path.Combine(_env.WebRootPath, "template", "journal_template.xlsx");
@@ -831,7 +1011,6 @@ namespace Portal
             {
                 int maxStudentsPerPage = 25;
                 int studentStartRow = 6;
-                int studentNumberColumn = 1;
                 int studentNameColumn = 2;
                 int maxLessonsOddPage = 6;
                 int oddPageStartColumn = 7;
@@ -852,6 +1031,7 @@ namespace Portal
                     evenTemplate = package.Workbook.Worksheets.Add("Страница 2", oddTemplate);
                 }
 
+                // Распределяем занятия по страницам
                 List<int> lessonsPerPage = new List<int>();
                 int lessonIndex = 0;
                 int pageNumber = 1;
@@ -860,10 +1040,8 @@ namespace Portal
                 {
                     bool isOddPage = (pageNumber % 2 == 1);
                     int maxLessonsOnPage = isOddPage ? maxLessonsOddPage : maxLessonsEvenPage;
-
                     int lessonsThisPage = Math.Min(maxLessonsOnPage, lessons.Count - lessonIndex);
                     lessonsPerPage.Add(lessonsThisPage);
-
                     lessonIndex += lessonsThisPage;
                     pageNumber++;
                 }
@@ -873,14 +1051,11 @@ namespace Portal
                 for (int i = 3; i <= totalPages; i++)
                 {
                     string sheetName = $"Страница {i}";
-
                     bool pageIsOdd = (i % 2 == 1);
                     var template = pageIsOdd ? oddTemplate : evenTemplate;
 
                     if (package.Workbook.Worksheets.Any(ws => ws.Name == sheetName))
-                    {
                         package.Workbook.Worksheets.Delete(sheetName);
-                    }
 
                     package.Workbook.Worksheets.Add(sheetName, template);
                 }
@@ -890,32 +1065,18 @@ namespace Portal
                 for (int currentPage = 1; currentPage <= totalPages; currentPage++)
                 {
                     var sheet = package.Workbook.Worksheets[currentPage - 1];
-
                     bool currentPageIsOdd = (currentPage % 2 == 1);
-
-                    int pageLessonIndex = currentPage - 1;
-                    int lessonsThisPage = lessonsPerPage[pageLessonIndex];
-
+                    int lessonsThisPage = lessonsPerPage[currentPage - 1];
                     int startColumn = currentPageIsOdd ? oddPageStartColumn : evenPageStartColumn;
 
                     string title = subject.ShortName ?? subject.Name;
+                    string titleCellAddr = currentPageIsOdd ? "F2" : "G2";
 
-                    if (currentPageIsOdd)
-                    {
-                        var titleCell = sheet.Cells["F2"];
-                        titleCell.Value = title;
-                        titleCell.Style.Font.Name = "Times New Roman";
-                        titleCell.Style.Font.Size = 10;
-                        titleCell.Style.HorizontalAlignment = ExcelHorizontalAlignment.Center;
-                    }
-                    else
-                    {
-                        var titleCell = sheet.Cells["G2"];
-                        titleCell.Value = title;
-                        titleCell.Style.Font.Name = "Times New Roman";
-                        titleCell.Style.Font.Size = 10;
-                        titleCell.Style.HorizontalAlignment = ExcelHorizontalAlignment.Center;
-                    }
+                    var titleCell = sheet.Cells[titleCellAddr];
+                    titleCell.Value = title;
+                    titleCell.Style.Font.Name = "Times New Roman";
+                    titleCell.Style.Font.Size = 10;
+                    titleCell.Style.HorizontalAlignment = ExcelHorizontalAlignment.Center;
 
                     for (int i = 0; i < lessonsThisPage; i++)
                     {
@@ -927,7 +1088,6 @@ namespace Portal
 
                         var infoCell = sheet.Cells[5, column];
                         infoCell.Value = FormatLessonInfo(lesson);
-
                         infoCell.Style.TextRotation = 90;
                         infoCell.Style.WrapText = true;
                         infoCell.Style.VerticalAlignment = ExcelVerticalAlignment.Center;
@@ -980,7 +1140,6 @@ namespace Portal
                     {
                         int studentOffset = (studentPage - 1) * maxStudentsPerPage;
                         int studentsThisPage = Math.Min(maxStudentsPerPage, students.Count - studentOffset);
-
                         int currentLessonIndex = 0;
 
                         for (int lessonPage = 0; lessonPage < totalPages; lessonPage++)
@@ -996,23 +1155,13 @@ namespace Portal
                             var newSheet = package.Workbook.Worksheets.Add(newSheetName, template);
 
                             string title = subject.ShortName ?? subject.Name;
+                            string titleCellAddr = pageIsOdd ? "F2" : "G2";
 
-                            if (pageIsOdd)
-                            {
-                                var titleCell = newSheet.Cells["F2"];
-                                titleCell.Value = title;
-                                titleCell.Style.Font.Name = "Times New Roman";
-                                titleCell.Style.Font.Size = 10;
-                                titleCell.Style.HorizontalAlignment = ExcelHorizontalAlignment.Center;
-                            }
-                            else
-                            {
-                                var titleCell = newSheet.Cells["G2"];
-                                titleCell.Value = title;
-                                titleCell.Style.Font.Name = "Times New Roman";
-                                titleCell.Style.Font.Size = 10;
-                                titleCell.Style.HorizontalAlignment = ExcelHorizontalAlignment.Center;
-                            }
+                            var titleCell = newSheet.Cells[titleCellAddr];
+                            titleCell.Value = title;
+                            titleCell.Style.Font.Name = "Times New Roman";
+                            titleCell.Style.Font.Size = 10;
+                            titleCell.Style.HorizontalAlignment = ExcelHorizontalAlignment.Center;
 
                             for (int i = 0; i < lessonsThisPage; i++)
                             {
@@ -1078,7 +1227,12 @@ namespace Portal
                     package.SaveAs(memoryStream);
                     memoryStream.Position = 0;
 
-                    var fileName = $"Журнал_{group.Name}_{subject.Name}_{DateTime.Now:yyyyMMddHHmmss}.xlsx";
+                    var subgroupSuffix = string.IsNullOrEmpty(subgroup) || subgroup == "__all__"
+                        ? ""
+                        : $"_{subgroup}";
+
+                    var fileName = $"Журнал_{group.Name}{subgroupSuffix}_{subject.Name}_{DateTime.Now:yyyyMMddHHmmss}.xlsx";
+
                     return File(memoryStream.ToArray(),
                         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                         fileName);
@@ -1086,13 +1240,18 @@ namespace Portal
             }
         }
 
+        // ============================================================
+        // ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ
+        // ============================================================
+
         private string FormatLessonInfo(Lesson lesson)
         {
             string date = lesson.Date.ToString("dd.MM.yyyy");
             string theme = lesson.Theme?.ShortName ?? lesson.Theme?.Name ?? "Тема";
             string type = lesson.TypeOfExercise?.ShortName ?? "Вид";
 
-            if (theme.Length > 15) theme = theme.Substring(0, 12) + "..";
+            if (theme.Length > 15)
+                theme = theme.Substring(0, 12) + "..";
 
             return $"{date}\n{theme}\n{type}";
         }
@@ -1134,14 +1293,12 @@ namespace Portal
 
             for (int year = startYear; year <= endYear; year++)
             {
-                var academicYear = new AcademicYearInfo
+                academicYears.Add(new AcademicYearInfo
                 {
                     StartDate = new DateTime(year, 9, 1),
                     EndDate = new DateTime(year + 1, 7, 31),
                     Name = $"{year}/{year + 1}"
-                };
-
-                academicYears.Add(academicYear);
+                });
             }
 
             return academicYears.OrderByDescending(ay => ay.StartDate).ToList();
