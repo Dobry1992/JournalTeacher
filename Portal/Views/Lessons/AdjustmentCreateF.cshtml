@@ -29,6 +29,7 @@
                                             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
                                             <input asp-for="GroupID" hidden />
                                             <input asp-for="SubjectID" hidden />
+                                            <input type="hidden" name="subgroup" value="@ViewBag.Subgroup" />
                                             <div class="form-group" hidden>
                                                 <label asp-for="ThemeID" class="control-label">Тема занятия:</label>
                                                 <select asp-for="ThemeID" class="form-control" asp-items="ViewBag.ThemeID"></select>
@@ -49,7 +50,9 @@
                                             </div>
                                             <div class="form-group">
                                                 <input type="submit" value="Создать" class="btn btn-primary" />
-                                                <a class="btn btn-outline-primary" asp-controller="Journals" asp-action="AdjustedJournal" asp-route-GroupID="@ViewBag.GroupID" asp-route-SubjectID="@ViewBag.SubjectID">Назад</a>
+                                                <a class="btn btn-outline-primary" asp-controller="Journals" asp-action="AdjustedJournal"
+   asp-route-GroupID="@ViewBag.GroupID" asp-route-SubjectID="@ViewBag.SubjectID"
+   asp-route-subgroup="@ViewBag.Subgroup">Назад</a>
                                             </div>
                                         </form>
                                     </div>

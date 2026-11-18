@@ -31,7 +31,10 @@
                                                 Чтобы провести контрольное занятие необходимо иметь
                                                 от двух и более текущих отметок, которые еще не учитывались при предыдущих контрольных занятиях.
                                             </p>
-                                            <a class="btn btn-primary text-white" asp-route-SubjectID="@ViewBag.SubjectID" asp-route-GroupID="@ViewBag.GroupID" asp-controller="Journals" asp-action="Journal">Назад</a>
+                                            <a asp-controller="Journals" asp-action="Journal"
+   asp-route-GroupID="@ViewBag.GroupID"
+   asp-route-SubjectID="@ViewBag.SubjectID"
+   asp-route-subgroup="@ViewBag.Subgroup">Назад</a>
                                         </div>
                                     </div>
                                 </div>

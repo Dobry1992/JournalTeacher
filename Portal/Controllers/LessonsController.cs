@@ -49,37 +49,27 @@ namespace Portal
 
             if (date_1.ToShortDateString() != "01.01.0001")
             {
-                lessons = lessons
-                    .Where(l => l.Date >= date_1)
-                    .ToList();
+                lessons = lessons.Where(l => l.Date >= date_1).ToList();
             }
 
             if (date_2.ToShortDateString() != "01.01.0001")
             {
-                lessons = lessons
-                    .Where(l => l.Date <= date_2)
-                    .ToList();
+                lessons = lessons.Where(l => l.Date <= date_2).ToList();
             }
 
             if (groupId != 0)
             {
-                lessons = lessons
-                    .Where(l => l.GroupID == groupId)
-                    .ToList();
+                lessons = lessons.Where(l => l.GroupID == groupId).ToList();
             }
 
             if (subjectId != 0)
             {
-                lessons = lessons
-                   .Where(l => l.SubjectID == subjectId)
-                   .ToList();
+                lessons = lessons.Where(l => l.SubjectID == subjectId).ToList();
             }
 
             if (teacher != null && teacher != "")
             {
-                lessons = lessons
-                  .Where(l => l.Signature == teacher)
-                  .ToList();
+                lessons = lessons.Where(l => l.Signature == teacher).ToList();
             }
 
             var teachersMarks = _context.Marks.Where(m => m.SignatureOfTeacher != null);
@@ -100,8 +90,12 @@ namespace Portal
             return View(lessons);
         }
 
+        // ============================================================
+        // ADJUSTMENT CREATE F (Экзамен/Зачёт)
+        // ============================================================
+
         [Authorize(Roles = "SuperAdmin,ANB-UMCH")]
-        public IActionResult AdjustmentCreateF(int? GroupID, int? SubjectID)
+        public IActionResult AdjustmentCreateF(int? GroupID, int? SubjectID, string subgroup = null)
         {
             string teacher = _userNameService.GetDisplayName();
 
@@ -121,6 +115,7 @@ namespace Portal
             ViewBag.TeachersNoPC = _context.TeacherNoPCs.OrderBy(t => t.LastName).AsNoTracking();
             ViewBag.GroupID = GroupID;
             ViewBag.SubjectID = SubjectID;
+            ViewBag.Subgroup = subgroup;
 
             return View();
         }
@@ -128,7 +123,9 @@ namespace Portal
         [Authorize(Roles = "SuperAdmin,ANB-UMCH")]
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> AdjustmentCreateF(int GroupID, int SubjectID, [Bind("LessonID,Date,Comment,FlagF,ThemeID,TypeOfExerciseID,GroupID,SubjectID,Signature")] Lesson lessonF)
+        public async Task<IActionResult> AdjustmentCreateF(int GroupID, int SubjectID,
+            [Bind("LessonID,Date,Comment,FlagF,ThemeID,TypeOfExerciseID,GroupID,SubjectID,Signature")] Lesson lessonF,
+            string subgroup = null)
         {
             string teacher = _userNameService.GetDisplayName();
             var subject = await _context.Subjects.FindAsync(SubjectID);
@@ -142,6 +139,7 @@ namespace Portal
                 ViewBag.TeachersNoPC = _context.TeacherNoPCs.OrderBy(t => t.LastName).AsNoTracking();
                 ViewBag.GroupID = GroupID;
                 ViewBag.SubjectID = SubjectID;
+                ViewBag.Subgroup = subgroup;
                 ViewData["ThemeID"] = new SelectList(
                     _context.Themes.Where(t => t.SubjectID == SubjectID && t.Name == "Контрольное занятие"),
                     "ThemeID", "Name");
@@ -184,7 +182,7 @@ namespace Portal
 
                 if (!zLessons.Any())
                 {
-                    return RedirectToAction("ErrorF", "Lessons", new { GroupID, SubjectID });
+                    return RedirectToAction("ErrorF", "Lessons", new { GroupID, SubjectID, subgroup });
                 }
                 else
                 {
@@ -199,7 +197,7 @@ namespace Portal
                         var EKZlesson = EKZlessons.FirstOrDefault(l => l.FlagF == lessonZ.FlagF);
                         if (EKZlesson != null)
                         {
-                            return RedirectToAction("ErrorF", "Lessons", new { GroupID, SubjectID });
+                            return RedirectToAction("ErrorF", "Lessons", new { GroupID, SubjectID, subgroup });
                         }
                     }
 
@@ -214,7 +212,7 @@ namespace Portal
 
                     if (lessonZ == null || lessonF.TypeOfExerciseID != typeEKZ.TypeOfExerciseID)
                     {
-                        return RedirectToAction("ErrorF", "Lessons", new { GroupID, SubjectID });
+                        return RedirectToAction("ErrorF", "Lessons", new { GroupID, SubjectID, subgroup });
                     }
                     else if (lessonF.TypeOfExerciseID == typeEKZ.TypeOfExerciseID && lessonZ != null)
                     {
@@ -342,7 +340,7 @@ namespace Portal
                     }
                     await _context.SaveChangesAsync();
 
-                    return RedirectToAction("AdjustedJournal", "Journals", new { GroupID, SubjectID });
+                    return RedirectToAction("AdjustedJournal", "Journals", new { GroupID, SubjectID, subgroup });
                 }
             }
 
@@ -406,7 +404,6 @@ namespace Portal
                 {
                     if (mark.StudentID == student.StudentID && mark.Value == "З" && mark.TypeOfExerciseID == controlTypeId)
                     {
-                        // Пропускаем "З" для контрольных мероприятий
                         continue;
                     }
 
@@ -426,7 +423,6 @@ namespace Portal
                     }
                 }
 
-                // Проверяем наличие только "З" в контрольных
                 var controlMarksWithZ = previousMarks
                     .Where(m => m.StudentID == student.StudentID &&
                                 m.TypeOfExerciseID == controlTypeId &&
@@ -514,10 +510,14 @@ namespace Portal
 
             await _context.SaveChangesAsync();
 
-            return RedirectToAction("AdjustedJournal", "Journals", new { GroupID, SubjectID });
+            return RedirectToAction("AdjustedJournal", "Journals", new { GroupID, SubjectID, subgroup });
         }
 
-        public IActionResult CreateF(int? GroupID, int? SubjectID)
+        // ============================================================
+        // CREATE F (Экзамен/Зачёт)
+        // ============================================================
+
+        public IActionResult CreateF(int? GroupID, int? SubjectID, string subgroup = null)
         {
             string teacher = _userNameService.GetDisplayName();
 
@@ -537,13 +537,16 @@ namespace Portal
             ViewBag.TeachersNoPC = _context.TeacherNoPCs.OrderBy(t => t.LastName).AsNoTracking();
             ViewBag.GroupID = GroupID;
             ViewBag.SubjectID = SubjectID;
+            ViewBag.Subgroup = subgroup;
 
             return View();
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> CreateF(int GroupID, int SubjectID, [Bind("LessonID,Date,Comment,FlagF,ThemeID,TypeOfExerciseID,GroupID,SubjectID,Signature")] Lesson lessonF)
+        public async Task<IActionResult> CreateF(int GroupID, int SubjectID,
+            [Bind("LessonID,Date,Comment,FlagF,ThemeID,TypeOfExerciseID,GroupID,SubjectID,Signature")] Lesson lessonF,
+            string subgroup = null)
         {
             string teacher = _userNameService.GetDisplayName();
             var subject = await _context.Subjects.FindAsync(SubjectID);
@@ -562,6 +565,7 @@ namespace Portal
                 ViewBag.TeachersNoPC = _context.TeacherNoPCs.OrderBy(t => t.LastName).AsNoTracking();
                 ViewBag.GroupID = GroupID;
                 ViewBag.SubjectID = SubjectID;
+                ViewBag.Subgroup = subgroup;
                 ViewData["ThemeID"] = new SelectList(
                     _context.Themes.Where(t => t.SubjectID == SubjectID && t.Name == "Контрольное занятие"),
                     "ThemeID", "Name");
@@ -606,7 +610,7 @@ namespace Portal
 
                 if (!zLessons.Any())
                 {
-                    return RedirectToAction("ErrorF", "Lessons", new { GroupID, SubjectID });
+                    return RedirectToAction("ErrorF", "Lessons", new { GroupID, SubjectID, subgroup });
                 }
                 else
                 {
@@ -621,7 +625,7 @@ namespace Portal
                         var EKZlesson = EKZlessons.FirstOrDefault(l => l.FlagF == lessonZ.FlagF);
                         if (EKZlesson != null)
                         {
-                            return RedirectToAction("ErrorF", "Lessons", new { GroupID, SubjectID });
+                            return RedirectToAction("ErrorF", "Lessons", new { GroupID, SubjectID, subgroup });
                         }
                     }
 
@@ -636,7 +640,7 @@ namespace Portal
 
                     if (lessonZ == null || lessonF.TypeOfExerciseID != typeEKZ.TypeOfExerciseID)
                     {
-                        return RedirectToAction("ErrorF", "Lessons", new { GroupID, SubjectID });
+                        return RedirectToAction("ErrorF", "Lessons", new { GroupID, SubjectID, subgroup });
                     }
                     else if (lessonF.TypeOfExerciseID == typeEKZ.TypeOfExerciseID && lessonZ != null)
                     {
@@ -764,7 +768,7 @@ namespace Portal
                     }
                     await _context.SaveChangesAsync();
 
-                    return RedirectToAction("Journal", "Journals", new { GroupID, SubjectID });
+                    return RedirectToAction("Journal", "Journals", new { GroupID, SubjectID, subgroup });
                 }
             }
 
@@ -829,7 +833,6 @@ namespace Portal
                 {
                     if (mark.StudentID == student.StudentID && mark.Value == "З" && mark.TypeOfExerciseID == controlTypeId)
                     {
-                        // Пропускаем "З" для контрольных мероприятий
                         continue;
                     }
 
@@ -849,7 +852,6 @@ namespace Portal
                     }
                 }
 
-                // Проверяем наличие только "З" в контрольных
                 var controlMarksWithZ = previousMarks
                     .Where(m => m.StudentID == student.StudentID &&
                                 m.TypeOfExerciseID == controlTypeId &&
@@ -937,11 +939,15 @@ namespace Portal
 
             await _context.SaveChangesAsync();
 
-            return RedirectToAction("Journal", "Journals", new { GroupID, SubjectID });
+            return RedirectToAction("Journal", "Journals", new { GroupID, SubjectID, subgroup });
         }
 
+        // ============================================================
+        // ADJUSTMENT CREATE (обычное занятие)
+        // ============================================================
+
         [Authorize(Roles = "SuperAdmin,ANB-UMCH")]
-        public IActionResult AdjustmentCreate(int? GroupID, int? SubjectID)
+        public IActionResult AdjustmentCreate(int? GroupID, int? SubjectID, string subgroup = null)
         {
             string teacher = _userNameService.GetDisplayName();
 
@@ -968,6 +974,7 @@ namespace Portal
             ViewBag.TeachersNoPC = _context.TeacherNoPCs.OrderBy(t => t.LastName).AsNoTracking();
             ViewBag.GroupID = GroupID;
             ViewBag.SubjectID = SubjectID;
+            ViewBag.Subgroup = subgroup;
 
             return View();
         }
@@ -975,7 +982,9 @@ namespace Portal
         [Authorize(Roles = "SuperAdmin,ANB-UMCH")]
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> AdjustmentCreate(int GroupID, int SubjectID, [Bind("LessonID,Date,Comment,FlagF,ThemeID,TypeOfExerciseID,GroupID,SubjectID,Signature")] Lesson lesson)
+        public async Task<IActionResult> AdjustmentCreate(int GroupID, int SubjectID,
+            [Bind("LessonID,Date,Comment,FlagF,ThemeID,TypeOfExerciseID,GroupID,SubjectID,Signature")] Lesson lesson,
+            string subgroup = null)
         {
             string teacher = _userNameService.GetDisplayName();
 
@@ -1004,6 +1013,7 @@ namespace Portal
                 ViewBag.TeachersNoPC = _context.TeacherNoPCs.OrderBy(t => t.LastName).AsNoTracking();
                 ViewBag.GroupID = GroupID;
                 ViewBag.SubjectID = SubjectID;
+                ViewBag.Subgroup = subgroup;
                 return View(lesson);
             }
 
@@ -1099,10 +1109,14 @@ namespace Portal
 
             await _context.SaveChangesAsync();
 
-            return RedirectToAction("AdjustedJournal", "Journals", new { GroupID, SubjectID });
+            return RedirectToAction("AdjustedJournal", "Journals", new { GroupID, SubjectID, subgroup });
         }
 
-        public IActionResult Create(int? GroupID, int? SubjectID)
+        // ============================================================
+        // CREATE (обычное занятие)
+        // ============================================================
+
+        public IActionResult Create(int? GroupID, int? SubjectID, string subgroup = null)
         {
             string teacher = _userNameService.GetDisplayName();
 
@@ -1129,13 +1143,16 @@ namespace Portal
             ViewBag.TeachersNoPC = _context.TeacherNoPCs.OrderBy(t => t.LastName).AsNoTracking();
             ViewBag.GroupID = GroupID;
             ViewBag.SubjectID = SubjectID;
+            ViewBag.Subgroup = subgroup;
 
             return View();
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(int GroupID, int SubjectID, [Bind("LessonID,Date,Comment,FlagF,ThemeID,TypeOfExerciseID,GroupID,SubjectID,Signature")] Lesson lesson)
+        public async Task<IActionResult> Create(int GroupID, int SubjectID,
+            [Bind("LessonID,Date,Comment,FlagF,ThemeID,TypeOfExerciseID,GroupID,SubjectID,Signature")] Lesson lesson,
+            string subgroup = null)
         {
             string teacher = _userNameService.GetDisplayName();
 
@@ -1187,6 +1204,7 @@ namespace Portal
                 ViewBag.TeachersNoPC = _context.TeacherNoPCs.OrderBy(t => t.LastName).AsNoTracking();
                 ViewBag.GroupID = GroupID;
                 ViewBag.SubjectID = SubjectID;
+                ViewBag.Subgroup = subgroup;
                 return View(lesson);
             }
 
@@ -1226,12 +1244,15 @@ namespace Portal
 
             await _context.SaveChangesAsync();
 
-            return RedirectToAction("Journal", "Journals", new { GroupID, SubjectID });
+            return RedirectToAction("Journal", "Journals", new { GroupID, SubjectID, subgroup });
         }
 
-        public IActionResult CreateK(int? GroupID, int? SubjectID)
-        {
+        // ============================================================
+        // CREATE K (курсовой проект)
+        // ============================================================
 
+        public IActionResult CreateK(int? GroupID, int? SubjectID, string subgroup = null)
+        {
             string teacher = _userNameService.GetDisplayName();
 
             ViewData["ThemeID"] = new SelectList(_context.Themes.Where(t => t.SubjectID == SubjectID && t.Name == "Контрольное занятие"), "ThemeID", "Name");
@@ -1243,12 +1264,15 @@ namespace Portal
             ViewBag.Teachers = teachers;
             ViewBag.GroupID = GroupID;
             ViewBag.SubjectID = SubjectID;
+            ViewBag.Subgroup = subgroup;
             return View();
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> CreateK(int GroupID, int SubjectID, [Bind("LessonID,Date,Comment,FlagX,FlagF,ThemeID,TypeOfExerciseID,GroupID,SubjectID,Signature")] Lesson lessonK)
+        public async Task<IActionResult> CreateK(int GroupID, int SubjectID,
+            [Bind("LessonID,Date,Comment,FlagX,FlagF,ThemeID,TypeOfExerciseID,GroupID,SubjectID,Signature")] Lesson lessonK,
+            string subgroup = null)
         {
             string teacher = _userNameService.GetDisplayName();
 
@@ -1274,6 +1298,7 @@ namespace Portal
                 ViewBag.Teachers = teachers;
                 ViewBag.GroupID = GroupID;
                 ViewBag.SubjectID = SubjectID;
+                ViewBag.Subgroup = subgroup;
 
                 return View(lessonK);
             }
@@ -1314,13 +1339,16 @@ namespace Portal
 
             await _context.SaveChangesAsync();
 
-            return RedirectToAction("Journal", "Journals", new { GroupID, SubjectID });
+            return RedirectToAction("Journal", "Journals", new { GroupID, SubjectID, subgroup });
         }
 
-        [Authorize(Roles = "SuperAdmin,ANB-UMCH")]
-        public IActionResult AdjustmentCreateK(int? GroupID, int? SubjectID)
-        {
+        // ============================================================
+        // ADJUSTMENT CREATE K
+        // ============================================================
 
+        [Authorize(Roles = "SuperAdmin,ANB-UMCH")]
+        public IActionResult AdjustmentCreateK(int? GroupID, int? SubjectID, string subgroup = null)
+        {
             string teacher = _userNameService.GetDisplayName();
 
             ViewData["ThemeID"] = new SelectList(_context.Themes.Where(t => t.SubjectID == SubjectID && t.Name == "Контрольное занятие"), "ThemeID", "Name");
@@ -1332,13 +1360,16 @@ namespace Portal
             ViewBag.Teachers = teachers;
             ViewBag.GroupID = GroupID;
             ViewBag.SubjectID = SubjectID;
+            ViewBag.Subgroup = subgroup;
             return View();
         }
 
         [Authorize(Roles = "SuperAdmin,ANB-UMCH")]
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> AdjustmentCreateK(int GroupID, int SubjectID, [Bind("LessonID,Date,Comment,FlagX,FlagF,ThemeID,TypeOfExerciseID,GroupID,SubjectID,Signature")] Lesson lessonK)
+        public async Task<IActionResult> AdjustmentCreateK(int GroupID, int SubjectID,
+            [Bind("LessonID,Date,Comment,FlagX,FlagF,ThemeID,TypeOfExerciseID,GroupID,SubjectID,Signature")] Lesson lessonK,
+            string subgroup = null)
         {
             string teacher = _userNameService.GetDisplayName();
 
@@ -1359,6 +1390,7 @@ namespace Portal
                 ViewBag.Teachers = teachers;
                 ViewBag.GroupID = GroupID;
                 ViewBag.SubjectID = SubjectID;
+                ViewBag.Subgroup = subgroup;
 
                 return View(lessonK);
             }
@@ -1396,10 +1428,14 @@ namespace Portal
 
             await _context.SaveChangesAsync();
 
-            return RedirectToAction("AdjustedJournal", "Journals", new { GroupID, SubjectID });
+            return RedirectToAction("AdjustedJournal", "Journals", new { GroupID, SubjectID, subgroup });
         }
 
-        public async Task<IActionResult> Delete(int? id, int? GroupID, int? SubjectID)
+        // ============================================================
+        // DELETE (обычное занятие)
+        // ============================================================
+
+        public async Task<IActionResult> Delete(int? id, int? GroupID, int? SubjectID, string subgroup = null)
         {
             if (id == null)
             {
@@ -1418,14 +1454,15 @@ namespace Portal
             }
             ViewBag.GroupID = GroupID;
             ViewBag.SubjectID = SubjectID;
+            ViewBag.Subgroup = subgroup;
             return View(lesson);
         }
 
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> DeleteConfirmed(int id, int GroupID, int SubjectID)
+        public async Task<IActionResult> DeleteConfirmed(int id, int GroupID, int SubjectID, string subgroup = null)
         {
-            string teacher = _userNameService.GetDisplayName(); ;
+            string teacher = _userNameService.GetDisplayName();
 
             var lesson = await _context.Lessons.FindAsync(id);
             var marks = _context.Marks.Where(m => m.LessonID == id);
@@ -1447,10 +1484,14 @@ namespace Portal
             _context.Events.Update(e);
             await _context.SaveChangesAsync();
 
-            return RedirectToAction("Journal", "Journals", new { GroupID, SubjectID });
+            return RedirectToAction("Journal", "Journals", new { GroupID, SubjectID, subgroup });
         }
 
-        public async Task<IActionResult> DeleteF(int? id, int? GroupID, int? SubjectID)
+        // ============================================================
+        // DELETE F (экзамен/зачёт)
+        // ============================================================
+
+        public async Task<IActionResult> DeleteF(int? id, int? GroupID, int? SubjectID, string subgroup = null)
         {
             if (id == null)
             {
@@ -1469,14 +1510,15 @@ namespace Portal
             }
             ViewBag.GroupID = GroupID;
             ViewBag.SubjectID = SubjectID;
+            ViewBag.Subgroup = subgroup;
             return View(lesson);
         }
 
         [HttpPost, ActionName("DeleteF")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> DeleteFConfirmed(int id, int GroupID, int SubjectID)
+        public async Task<IActionResult> DeleteFConfirmed(int id, int GroupID, int SubjectID, string subgroup = null)
         {
-            string teacher = _userNameService.GetDisplayName(); ;
+            string teacher = _userNameService.GetDisplayName();
 
             var typeOfExerciseIO = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Итоговая отметка");
 
@@ -1524,11 +1566,15 @@ namespace Portal
             e.Log = "Удалено занятие от: " + lesson.Date.ToShortDateString() + ", предмет: " + subject.Name + " , тема: " + theme.Name + ", тип: " + type.Name + ", группа: " + group.Name;
             _context.Events.Update(e);
             await _context.SaveChangesAsync();
-            return RedirectToAction("Journal", "Journals", new { GroupID, SubjectID });
+            return RedirectToAction("Journal", "Journals", new { GroupID, SubjectID, subgroup });
         }
 
+        // ============================================================
+        // ADJUSTMENT DELETE
+        // ============================================================
+
         [Authorize(Roles = "SuperAdmin,ANB-UMCH")]
-        public async Task<IActionResult> AdjustmentDelete(int? id, int? GroupID, int? SubjectID)
+        public async Task<IActionResult> AdjustmentDelete(int? id, int? GroupID, int? SubjectID, string subgroup = null)
         {
             if (id == null)
             {
@@ -1547,13 +1593,14 @@ namespace Portal
             }
             ViewBag.GroupID = GroupID;
             ViewBag.SubjectID = SubjectID;
+            ViewBag.Subgroup = subgroup;
             return View(lesson);
         }
 
         [Authorize(Roles = "SuperAdmin,ANB-UMCH")]
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> AdjustmentDelete(int id, int GroupID, int SubjectID)
+        public async Task<IActionResult> AdjustmentDelete(int id, int GroupID, int SubjectID, string subgroup = null)
         {
             string teacher = _userNameService.GetDisplayName();
             var lesson = await _context.Lessons.FindAsync(id);
@@ -1607,7 +1654,7 @@ namespace Portal
 
                         await _context.SaveChangesAsync();
 
-                        return RedirectToAction("AdjustedJournal", "Journals", new { GroupID, SubjectID });
+                        return RedirectToAction("AdjustedJournal", "Journals", new { GroupID, SubjectID, subgroup });
                     }
                     else if (lesson.LessonID == lessonZ.LessonID || lesson.LessonID == lessonIoZ.LessonID)
                     {
@@ -1665,7 +1712,7 @@ namespace Portal
 
                         await _context.SaveChangesAsync();
 
-                        return RedirectToAction("AdjustedJournal", "Journals", new { GroupID, SubjectID });
+                        return RedirectToAction("AdjustedJournal", "Journals", new { GroupID, SubjectID, subgroup });
                     }
                     else
                     {
@@ -1742,7 +1789,6 @@ namespace Portal
 
                             foreach (var mark in simpleMarks)
                             {
-                                // Пропускаем отметку "З" для контрольных мероприятий
                                 if (mark.TypeOfExerciseID == controlType.TypeOfExerciseID && mark.Value == "З")
                                     continue;
 
@@ -1765,7 +1811,6 @@ namespace Portal
                                     }
                                 }
 
-                                // Проверяем наличие только "З" в контрольных
                                 var controlMarksWithZ = controlMarks
                                     .Where(m => m.Value == "З")
                                     .ToList();
@@ -1823,7 +1868,7 @@ namespace Portal
                             }
                         }
 
-                        return RedirectToAction("AdjustedJournal", "Journals", new { GroupID, SubjectID });
+                        return RedirectToAction("AdjustedJournal", "Journals", new { GroupID, SubjectID, subgroup });
                     }
                 }
             }
@@ -1877,8 +1922,12 @@ namespace Portal
             _context.Events.Add(e);
             await _context.SaveChangesAsync();
 
-            return RedirectToAction("AdjustedJournal", "Journals", new { GroupID, SubjectID });
+            return RedirectToAction("AdjustedJournal", "Journals", new { GroupID, SubjectID, subgroup });
         }
+
+        // ============================================================
+        // ВСПОМОГАТЕЛЬНОЕ
+        // ============================================================
 
         private static class TypeNames
         {
@@ -1938,7 +1987,6 @@ namespace Portal
 
                 foreach (var mark in simpleMarks)
                 {
-                    // Пропускаем отметку "З" для контрольных мероприятий
                     if (mark.TypeOfExerciseID == controlType?.TypeOfExerciseID && mark.Value == "З")
                         continue;
 
@@ -1953,7 +2001,6 @@ namespace Portal
                         controlMarks.Add(mark);
                 }
 
-                // Проверяем наличие только "З" в контрольных
                 var controlMarksWithZ = simpleMarks
                     .Where(m => m.TypeOfExerciseID == controlType?.TypeOfExerciseID && m.Value == "З")
                     .ToList();
@@ -2002,17 +2049,19 @@ namespace Portal
             await _context.SaveChangesAsync();
         }
 
-        public IActionResult Error(int GroupID, int SubjectID)
+        public IActionResult Error(int GroupID, int SubjectID, string subgroup = null)
         {
             ViewBag.SubjectID = SubjectID;
             ViewBag.GroupID = GroupID;
+            ViewBag.Subgroup = subgroup;
             return View();
         }
 
-        public IActionResult ErrorF(int GroupID, int SubjectID)
+        public IActionResult ErrorF(int GroupID, int SubjectID, string subgroup = null)
         {
             ViewBag.SubjectID = SubjectID;
             ViewBag.GroupID = GroupID;
+            ViewBag.Subgroup = subgroup;
             return View();
         }
 

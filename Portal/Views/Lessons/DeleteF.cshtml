@@ -58,8 +58,11 @@
                                             <input type="hidden" asp-for="LessonID" />
                                             <input type="hidden" asp-for="SubjectID" />
                                             <input type="hidden" asp-for="GroupID" />
+                                            <input type="hidden" name="subgroup" value="@ViewBag.Subgroup" />
                                             <input type="submit" value="Удалить" class="btn btn-danger" />
-                                            <a class="btn btn-primary" asp-controller="Journals" asp-action="Journal" asp-route-GroupID="@ViewBag.GroupID" asp-route-SubjectID="@ViewBag.SubjectID">Назад</a>
+                                           <a class="btn btn-primary" asp-controller="Journals" asp-action="Journal"
+   asp-route-GroupID="@ViewBag.GroupID" asp-route-SubjectID="@ViewBag.SubjectID"
+   asp-route-subgroup="@ViewBag.Subgroup">Назад</a>
                                         </form>
                                     </div>
                                 </div>
