@@ -730,6 +730,270 @@ namespace Portal.Controllers
             return RedirectToAction(nameof(Index));
         }
 
+        [Authorize(Roles = "SuperAdmin, ANB-UMCH")]
+        public async Task<IActionResult> Transfer(int? id)
+        {
+            if (id == null)
+            {
+                return NotFound();
+            }
+
+            var student = await _context.Students
+                .Include(s => s.Group)
+                .FirstOrDefaultAsync(s => s.StudentID == id);
+
+            if (student == null)
+            {
+                return NotFound();
+            }
+
+            return View(await BuildTransferViewModelAsync(student, 0));
+        }
+
+        [Authorize(Roles = "SuperAdmin, ANB-UMCH")]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Transfer(int id, TransferStudentViewModel model)
+        {
+            if (id != model.StudentID)
+            {
+                return NotFound();
+            }
+
+            var student = await _context.Students
+                .Include(s => s.Group)
+                .FirstOrDefaultAsync(s => s.StudentID == id);
+
+            if (student == null)
+            {
+                return NotFound();
+            }
+
+            int oldGroupID = student.GroupID;
+            var newGroup = await _context.Groups.FirstOrDefaultAsync(g => g.GroupID == model.NewGroupID);
+
+            if (newGroup == null)
+            {
+                ModelState.AddModelError(nameof(model.NewGroupID), "Группа перевода не найдена");
+            }
+            else if (newGroup.GroupID == oldGroupID)
+            {
+                ModelState.AddModelError(nameof(model.NewGroupID), "Курсант уже обучается в выбранной группе");
+            }
+
+            if (ModelState.IsValid)
+            {
+                try
+                {
+                    // Перевод выполняется несколькими SaveChanges, поэтому весь перевод
+                    // оборачивается в транзакцию — иначе при ошибке остаётся сирота в Transfers.
+                    // При включённом EnableRetryOnFailure транзакцию нужно открывать через стратегию выполнения
+                    var strategy = _context.Database.CreateExecutionStrategy();
+                    await strategy.ExecuteAsync(async () =>
+                    {
+                        using var transaction = await _context.Database.BeginTransactionAsync();
+                        await TransferStudentAsync(student, newGroup, oldGroupID, model.Comment);
+                        await transaction.CommitAsync();
+                    });
+                }
+                catch (RetryLimitExceededException)
+                {
+                    ModelState.AddModelError("", "Возникла ошибка обратитесь к администратору.");
+                }
+                catch (DbUpdateException)
+                {
+                    ModelState.AddModelError("", "Не удалось выполнить перевод. Изменения не сохранены, обратитесь к администратору.");
+                }
+            }
+
+            if (!ModelState.IsValid)
+            {
+                return View(await BuildTransferViewModelAsync(student, model.NewGroupID));
+            }
+
+            TempData["SuccessMessage"] = $"Курсант {student.LastName} {student.Name} {student.Surname} переведён в группу \"{newGroup.Name}\"";
+
+            return RedirectToAction(nameof(Details), new { id = student.StudentID });
+        }
+
+        private async Task TransferStudentAsync(Student student, Group newGroup, int oldGroupID, string comment)
+        {
+            // Отметки курсанта в старой группе. Каждая отметка привязана к занятию,
+            // поэтому пройденные занятия восстанавливаются через них.
+            var oldMarks = await _context.Marks
+                .Where(m => m.StudentID == student.StudentID)
+                .ToListAsync();
+
+            var lessonIDs = oldMarks.Select(m => m.LessonID).Distinct().ToList();
+            var lessons = await _context.Lessons
+                .Where(l => lessonIDs.Contains(l.LessonID))
+                .ToDictionaryAsync(l => l.LessonID);
+
+            Transfer transfer = new()
+            {
+                StudentID = student.StudentID,
+                OldGroupID = oldGroupID,
+                NewGroupID = newGroup.GroupID,
+                Date = DateTime.Now,
+                Comment = comment
+            };
+
+            _context.Transfers.Add(transfer);
+            await _context.SaveChangesAsync();
+
+            // Пройденные занятия сохраняются первыми: отметка привязана к занятию один к одному,
+            // поэтому её идентификатор должен быть известен до вставки истории отметки
+            List<(Mark Mark, HistoryLesson HistoryLesson)> archived = new();
+
+            foreach (var mark in oldMarks)
+            {
+                lessons.TryGetValue(mark.LessonID, out Lesson lesson);
+
+                HistoryLesson historyLesson = new()
+                {
+                    Date = lesson?.Date ?? mark.Date,
+                    Comment = lesson?.Comment ?? mark.Comment,
+                    Signature = lesson?.Signature ?? mark.SignatureOfTeacher ?? string.Empty,
+                    FlagF = lesson?.FlagF ?? mark.FlagF,
+                    ThemeID = mark.ThemeID,
+                    TypeOfExerciseID = mark.TypeOfExerciseID,
+                    TransferID = transfer.TransferID
+                };
+
+                _context.HistoryLessons.Add(historyLesson);
+                archived.Add((mark, historyLesson));
+            }
+
+            await _context.SaveChangesAsync();
+
+            // Отметки добавляются уже с известным идентификатором занятия, иначе
+            // EF Core дозаполняет связь один к одному отдельным UPDATE
+            foreach ((Mark mark, HistoryLesson historyLesson) in archived)
+            {
+                _context.HistoryMarks.Add(new HistoryMark
+                {
+                    Value = mark.Value ?? "-",
+                    Date = mark.Date,
+                    Comment = mark.Comment,
+                    SignatureOfTeacher = mark.SignatureOfTeacher ?? historyLesson.Signature,
+                    HistoryOfMark = mark.HistoryOfMark ?? string.Empty,
+                    FlagF = mark.FlagF,
+                    HistoryLessonID = historyLesson.HistoryLessonID,
+                    HistoryLesson = historyLesson
+                });
+            }
+
+            await _context.SaveChangesAsync();
+
+            // Отметки курсанта удаляются. Занятия старой группы остаются общими,
+            // так как формируют журнал остальных курсантов группы
+            _context.Marks.RemoveRange(oldMarks);
+
+            var subgroupLinks = await _context.SubgroupLinks
+                .Where(sl => sl.StudentID == student.StudentID && sl.GroupID == oldGroupID)
+                .ToListAsync();
+            _context.SubgroupLinks.RemoveRange(subgroupLinks);
+
+            // Курсант выбывает из старой группы и зачисляется в новую.
+            // Навигация меняется вместе с внешним ключом, иначе DetectChanges
+            // перезапишет ключ значением навигационного свойства
+            student.Group = newGroup;
+            student.GroupID = newGroup.GroupID;
+            student.InstituteID = newGroup.InstituteID;
+            _context.Update(student);
+            await _context.SaveChangesAsync();
+
+            await CreatePlaceholderMarksAsync(student, newGroup.GroupID);
+        }
+
+        private async Task CreatePlaceholderMarksAsync(Student student, int groupID)
+        {
+            var groupMarks = await _context.Marks
+                .AsNoTracking()
+                .Where(m => m.GroupID == groupID)
+                .ToListAsync();
+
+            if (!groupMarks.Any())
+            {
+                return;
+            }
+
+            var studentKeys = await _context.Marks
+                .Where(m => m.StudentID == student.StudentID)
+                .Select(m => new { m.LessonID, m.SubjectID, m.TypeOfExerciseID, m.Date })
+                .ToListAsync();
+
+            // Занятие новой группы уникально занятием, предметом, типом занятия и датой
+            var templates = groupMarks
+                .GroupBy(m => new { m.LessonID, m.SubjectID, m.TypeOfExerciseID, m.Date })
+                .Select(g => g.First())
+                .ToList();
+
+            List<Mark> placeholders = new();
+
+            foreach (var template in templates)
+            {
+                bool exists = studentKeys.Any(k =>
+                    k.LessonID == template.LessonID &&
+                    k.SubjectID == template.SubjectID &&
+                    k.TypeOfExerciseID == template.TypeOfExerciseID &&
+                    k.Date == template.Date);
+
+                if (exists)
+                {
+                    continue;
+                }
+
+                placeholders.Add(new Mark
+                {
+                    Value = "-",
+                    Date = template.Date,
+                    FlagF = template.FlagF,
+                    InstituteID = template.InstituteID,
+                    SubjectID = template.SubjectID,
+                    GroupID = template.GroupID,
+                    LessonID = template.LessonID,
+                    TypeOfExerciseID = template.TypeOfExerciseID,
+                    DepartmentID = template.DepartmentID,
+                    SpecialityID = template.SpecialityID,
+                    ThemeID = template.ThemeID,
+                    StudentID = student.StudentID
+                });
+            }
+
+            _context.Marks.AddRange(placeholders);
+            await _context.SaveChangesAsync();
+        }
+
+        private async Task<TransferStudentViewModel> BuildTransferViewModelAsync(Student student, int selectedGroupID)
+        {
+            string oldGroupName = student.Group?.Name ?? await _context.Groups
+                .Where(g => g.GroupID == student.GroupID)
+                .Select(g => g.Name)
+                .FirstOrDefaultAsync();
+
+            var groups = await _context.Groups
+                .AsNoTracking()
+                .Where(g => g.GroupID != student.GroupID)
+                .OrderBy(g => g.Name)
+                .ToListAsync();
+
+            return new TransferStudentViewModel
+            {
+                StudentID = student.StudentID,
+                LastName = student.LastName,
+                Name = student.Name,
+                Surname = student.Surname,
+                OldGroupID = student.GroupID,
+                OldGroupName = oldGroupName,
+                NewGroupID = selectedGroupID,
+                Comment = null,
+                Groups = groups
+                    .Select(g => new SelectListItem(g.Name, g.GroupID.ToString(), g.GroupID == selectedGroupID))
+                    .ToList()
+            };
+        }
+
         private bool StudentExists(int id)
         {
             return _context.Students.Any(e => e.StudentID == id);
