@@ -42,6 +42,9 @@ namespace Portal.Data
         public DbSet<SubgroupLink> SubgroupLinks { get; set; }
         public DbSet<UnsatisfactoryMark> UnsatisfactoryMarks { get; set; }
         public DbSet<CompletedSubject> CompletedSubjects { get; set; }
+        public DbSet<Transfer> Transfers { get; set; }
+        public DbSet<HistoryLesson> HistoryLessons { get; set; }
+        public DbSet<HistoryMark> HistoryMarks { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -78,6 +81,15 @@ namespace Portal.Data
             modelBuilder.Entity<UnsatisfactoryMark>().ToTable("UnsatisfactoryMarks");
             modelBuilder.Entity<CompletedSubject>().ToTable("CompletedSubjects");
             modelBuilder.Entity<SubgroupLink>().ToTable("SubgroupLinks");
+            modelBuilder.Entity<HistoryLesson>()
+                .HasOne(hl => hl.HistoryMark)
+                .WithOne(hm => hm.HistoryLesson)
+                .HasForeignKey<HistoryMark>(hm => hm.HistoryLessonID);
+            modelBuilder.Entity<HistoryLesson>()
+                .HasOne(hl => hl.Transfer)
+                .WithMany(t => t.HistoryLessons)
+                .HasForeignKey(hl => hl.TransferID)
+                .OnDelete(DeleteBehavior.Cascade);
         }
     }
 }
