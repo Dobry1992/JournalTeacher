@@ -1,0 +1,77 @@
+@model Portal.Models.Group
+
+@{
+    ViewData["Title"] = "Отправка группы в архив";
+}
+
+@await Html.PartialAsync("_NavMenuJournal")
+
+<div style="padding:10%">
+    <section class="content-header">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-sm-6">
+                </div>
+            </div>
+        </div>
+    </section>
+    <section class="content mt-3">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-body">
+                            <div id="example1_wrapper" class="dataTables_wrapper dt-bootstrap4">
+                                <div class="row">
+                                    <div class="col-sm-12">
+                                        <div class="bg-danger text-white text-center">
+                                            <h4>Вы уверены что желаете отправить группу в архив?</h4>
+                                            <p>Группа, её курсанты, занятия, ведомости, отметки и журналы будут перенесены в архив и удалены из рабочих таблиц. Просмотр будет доступен в разделе «Архив».</p>
+                                        </div>
+                                        @if ((bool)ViewBag.HasSameArchive)
+                                        {
+                                            <div class="alert alert-warning">
+                                                Для этой группы уже существует архивная запись — данные будут добавлены в неё.
+                                            </div>
+                                        }
+                                        <dl class="row">
+                                            <dd class="col-sm-10">
+                                                <h4>Группа</h4>
+                                            </dd>
+                                            <dd class="col-sm-10">
+                                                Название: @Html.DisplayFor(model => model.Name)
+                                            </dd>
+                                            <dd class="col-sm-10">
+                                                Период обучения: @Model.DateEnter.ToShortDateString() — @Model.DateExit.ToShortDateString()
+                                            </dd>
+                                            <dd class="col-sm-10">
+                                                Курсантов: @ViewBag.StudentsCount
+                                            </dd>
+                                            <dd class="col-sm-10">
+                                                Занятий: @ViewBag.LessonsCount
+                                            </dd>
+                                            <dd class="col-sm-10">
+                                                Итоговых занятий: @ViewBag.StatementLessonsCount
+                                            </dd>
+                                            <dd class="col-sm-10">
+                                                Отметок: @ViewBag.MarksCount
+                                            </dd>
+                                            <dd class="col-sm-10">
+                                                Журналов: @ViewBag.JournalsCount
+                                            </dd>
+                                        </dl>
+                                        <form asp-action="GroupToArchive" method="post">
+                                            <input type="hidden" name="id" value="@Model.GroupID" />
+                                            <input type="submit" value="Отправить в архив" class="btn btn-danger" />
+                                            <a class="btn btn-primary" asp-controller="Groups" asp-action="Index">Назад</a>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>

@@ -26,6 +26,24 @@
                             <div id="example1_wrapper" class="dataTables_wrapper dt-bootstrap4">
                                 <div class="row">
                                     <div class="col-sm-12 table-wrap">
+                                        @if (TempData["SuccessMessage"] != null)
+                                        {
+                                            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                                                <i class="fa fa-check-circle"></i> @TempData["SuccessMessage"]
+                                                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                                    <span aria-hidden="true">&times;</span>
+                                                </button>
+                                            </div>
+                                        }
+                                        @if (TempData["ErrorMessage"] != null)
+                                        {
+                                            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                                                <i class="fa fa-exclamation-circle"></i> @TempData["ErrorMessage"]
+                                                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                                    <span aria-hidden="true">&times;</span>
+                                                </button>
+                                            </div>
+                                        }
                                         <a asp-action="Create" class="btn btn-primary mb-3">Добавить слушателя/курсанта</a>
                                         <table id="Table" class="table table-bordered compact table-sm dataTable dtr-inline" role="grid">
                                             <thead class="thead-dark">
@@ -54,6 +72,7 @@
                                                                     <a title="Редактировать" class="btn btn-warning btn-sm" asp-controller="Students" asp-action="Edit" asp-route-id="@item.StudentID"><i class="fa fa-edit"></i></a>
                                                                     <a title="Информация" class="btn btn-info btn-sm" asp-controller="Students" asp-action="Details" asp-route-id="@item.StudentID"><i class="fa fa-info"></i></a>
                                                                     <a title="Отчислить" class="btn btn-secondary btn-sm" asp-controller="Students" asp-action="SetStatus" asp-route-id="@item.StudentID"><i class="fa fa-lock"></i></a>
+                                                                    <a title="Отправить в архив" class="btn btn-dark btn-sm" asp-controller="Archives" asp-action="StudentToArchive" asp-route-id="@item.StudentID"><i class="fa fa-archive"></i></a>
                                                                     <a title="Удалить" class="btn btn-danger btn-sm" asp-controller="Students" asp-action="Delete" asp-route-id="@item.StudentID"><i class="fa fa-remove"></i></a>
                                                                 </div>
                                                             </td>
@@ -72,6 +91,7 @@
                                                                     <a title="Редактировать" class="btn btn-warning btn-sm" asp-controller="Students" asp-action="Edit" asp-route-id="@item.StudentID"><i class="fa fa-edit"></i></a>
                                                                     <a title="Информация" class="btn btn-info btn-sm" asp-controller="Students" asp-action="Details" asp-route-id="@item.StudentID"><i class="fa fa-info"></i></a>
                                                                     <a title="Восстановить" class="btn btn-success btn-sm" asp-controller="Students" asp-action="SetStatus" asp-route-id="@item.StudentID"><i class="fa fa-lock-open"></i></a>
+                                                                    <a title="Отправить в архив" class="btn btn-dark btn-sm" asp-controller="Archives" asp-action="StudentToArchive" asp-route-id="@item.StudentID"><i class="fa fa-archive"></i></a>
                                                                     <a title="Удалить" class="btn btn-danger btn-sm" asp-controller="Students" asp-action="Delete" asp-route-id="@item.StudentID"><i class="fa fa-remove"></i></a>
                                                                 </div>
                                                             </td>

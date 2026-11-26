@@ -26,6 +26,24 @@
                             <div id="example1_wrapper" class="dataTables_wrapper dt-bootstrap4">
                                 <div class="row">
                                     <div class="col-sm-12 table-wrap">
+                                        @if (TempData["SuccessMessage"] != null)
+                                        {
+                                            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                                                <i class="fa fa-check-circle"></i> @TempData["SuccessMessage"]
+                                                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                                    <span aria-hidden="true">&times;</span>
+                                                </button>
+                                            </div>
+                                        }
+                                        @if (TempData["ErrorMessage"] != null)
+                                        {
+                                            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                                                <i class="fa fa-exclamation-circle"></i> @TempData["ErrorMessage"]
+                                                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                                    <span aria-hidden="true">&times;</span>
+                                                </button>
+                                            </div>
+                                        }
                                         <a asp-action="Create" class="btn btn-primary mb-3">Добавить группу</a>
                                         <table id="Table" class="table table-bordered table-sm compact dataTable dtr-inline" role="grid">
                                             <thead class="thead-dark">
@@ -52,6 +70,7 @@
                                                                     <a title="Редактировать" class="btn btn-warning btn-sm" asp-controller="Groups" asp-action="Edit" asp-route-id="@item.GroupID"><i class="fa fa-file-edit"></i></a>
                                                                     <a title="Информация" class="btn btn-info btn-sm" asp-controller="Groups" asp-action="Details" asp-route-id="@item.GroupID"><i class="fa fa-info"></i></a>
                                                                     <a title="Добавить слушателя/курсанта" class="btn btn-primary btn-sm" asp-controller="Students" asp-action="Create" asp-route-id="@item.GroupID"><i class="fa fa-people-group"></i></a>
+                                                                    <a title="Отправить в архив" class="btn btn-secondary btn-sm" asp-controller="Archives" asp-action="GroupToArchive" asp-route-id="@item.GroupID"><i class="fa fa-archive"></i></a>
                                                                     <a title="Удалить" class="btn btn-danger btn-sm" asp-controller="Groups" asp-action="Delete" asp-route-id="@item.GroupID"><i class="fa fa-remove"></i></a>
                                                                 </div>
                                                             </td>
@@ -69,6 +88,7 @@
                                                                     <a title="Редактировать" class="btn btn-warning btn-sm" asp-controller="Groups" asp-action="Edit" asp-route-id="@item.GroupID"><i class="fa fa-file-edit"></i></a>
                                                                     <a title="Информация" class="btn btn-info btn-sm" asp-controller="Groups" asp-action="Details" asp-route-id="@item.GroupID"><i class="fa fa-info"></i></a>
                                                                     <a title="Добавить слушателя/курсанта" class="btn btn-primary btn-sm" asp-controller="Students" asp-action="Create" asp-route-id="@item.GroupID"><i class="fa fa-people-group"></i></a>
+                                                                    <a title="Отправить в архив" class="btn btn-secondary btn-sm" asp-controller="Archives" asp-action="GroupToArchive" asp-route-id="@item.GroupID"><i class="fa fa-archive"></i></a>
                                                                     <a title="Удалить" class="btn btn-danger btn-sm" asp-controller="Groups" asp-action="Delete" asp-route-id="@item.GroupID"><i class="fa fa-remove"></i></a>
                                                                     <a title="Создать подгруппу"
                                                                        class="btn btn-success btn-sm"

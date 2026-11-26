@@ -36,6 +36,9 @@
                     <a class="btn btn-warning" asp-controller="Students" asp-action="Transfer" asp-route-id="@Model.Student.StudentID">
                         <i class="fas fa-exchange-alt"></i> Перевести в другую группу
                     </a>
+                    <a class="btn btn-dark" asp-controller="Archives" asp-action="StudentToArchive" asp-route-id="@Model.Student.StudentID">
+                        <i class="fas fa-archive"></i> Отправить в архив
+                    </a>
                 }
             </div>
         </div>

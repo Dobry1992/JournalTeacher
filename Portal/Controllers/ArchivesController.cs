@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using Portal.Data;
 using Portal.Models;
 using Portal.ViewModel;
@@ -235,7 +236,10 @@ namespace Portal.Controllers
             var students = from s in _context.StudentArhives
                            select s;
 
-            students = students.Where(s => s.LastName == searchString);
+            if (!String.IsNullOrEmpty(searchString))
+            {
+                students = students.Where(s => s.LastName == searchString);
+            }
 
             return View(await students.AsNoTracking()
                 .Include(s => s.GroupArhive)
@@ -368,6 +372,564 @@ namespace Portal.Controllers
             ViewBag.FinalMarks = finalMarks.OrderBy(m => m.Mark.Date);
 
             return View(student);
+        }
+
+        // ============================================================
+        // ОТПРАВКА В АРХИВ
+        // ============================================================
+
+        [Authorize(Roles = "SuperAdmin, ANB-UMCH")]
+        public async Task<IActionResult> GroupToArchive(int? id)
+        {
+            if (id == null)
+            {
+                return NotFound();
+            }
+
+            var group = await _context.Groups
+                .Include(g => g.Students)
+                .AsNoTracking()
+                .FirstOrDefaultAsync(g => g.GroupID == id);
+
+            if (group == null)
+            {
+                return NotFound();
+            }
+
+            ViewBag.StudentsCount = group.Students.Count;
+            ViewBag.LessonsCount = await _context.Lessons.CountAsync(l => l.GroupID == id);
+            ViewBag.StatementLessonsCount = await _context.StatementLessons.CountAsync(l => l.GroupID == id);
+            ViewBag.MarksCount = await _context.Marks.CountAsync(m => m.GroupID == id);
+            ViewBag.JournalsCount = await _context.Journals.CountAsync(j => j.GroupID == id);
+            ViewBag.HasSameArchive = await _context.GroupArhives.AnyAsync(g =>
+                g.Name == group.Name && g.DateEnter == group.DateEnter && g.DateExit == group.DateExit);
+
+            return View(group);
+        }
+
+        [Authorize(Roles = "SuperAdmin, ANB-UMCH")]
+        [HttpPost, ActionName("GroupToArchive")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> GroupToArchiveConfirmed(int id)
+        {
+            var group = await _context.Groups.FirstOrDefaultAsync(g => g.GroupID == id);
+
+            if (group == null)
+            {
+                return NotFound();
+            }
+
+            string groupName = group.Name;
+            string error = await RunInTransactionAsync(() => ArchiveGroupAsync(group));
+
+            if (error != null)
+            {
+                TempData["ErrorMessage"] = error;
+            }
+            else
+            {
+                TempData["SuccessMessage"] = $"Группа \"{groupName}\" отправлена в архив";
+            }
+
+            return RedirectToAction("Index", "Groups");
+        }
+
+        [Authorize(Roles = "SuperAdmin, ANB-UMCH")]
+        public async Task<IActionResult> StudentToArchive(int? id)
+        {
+            if (id == null)
+            {
+                return NotFound();
+            }
+
+            var student = await _context.Students
+                .Include(s => s.Group)
+                .AsNoTracking()
+                .FirstOrDefaultAsync(s => s.StudentID == id);
+
+            if (student == null)
+            {
+                return NotFound();
+            }
+
+            ViewBag.MarksCount = await _context.Marks.CountAsync(m => m.StudentID == id);
+            ViewBag.StatementMarksCount = await _context.StatementMarks.CountAsync(m => m.StudentID == id);
+            ViewBag.HasSameArchive = await _context.GroupArhives.AnyAsync(g =>
+                g.Name == student.Group.Name && g.DateEnter == student.Group.DateEnter && g.DateExit == student.Group.DateExit);
+
+            return View(student);
+        }
+
+        [Authorize(Roles = "SuperAdmin, ANB-UMCH")]
+        [HttpPost, ActionName("StudentToArchive")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> StudentToArchiveConfirmed(int id)
+        {
+            var student = await _context.Students.FirstOrDefaultAsync(s => s.StudentID == id);
+
+            if (student == null)
+            {
+                return NotFound();
+            }
+
+            string studentName = $"{student.LastName} {student.Name} {student.Surname}";
+            string error = await RunInTransactionAsync(() => ArchiveSingleStudentAsync(student));
+
+            if (error != null)
+            {
+                TempData["ErrorMessage"] = error;
+            }
+            else
+            {
+                TempData["SuccessMessage"] = $"Курсант \"{studentName}\" отправлен в архив";
+            }
+
+            return RedirectToAction("Index", "Students");
+        }
+
+        // ============================================================
+        // АРХИВИРОВАНИЕ: ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ
+        // ============================================================
+
+        // Архивирование состоит из нескольких сохранений, поэтому всё выполняется
+        // в одной транзакции: при ошибке не должно остаться неполного архива
+        private async Task<string> RunInTransactionAsync(Func<Task> operation)
+        {
+            try
+            {
+                var strategy = _context.Database.CreateExecutionStrategy();
+
+                await strategy.ExecuteAsync(async () =>
+                {
+                    using var transaction = await _context.Database.BeginTransactionAsync();
+                    await operation();
+                    await transaction.CommitAsync();
+                });
+
+                return null;
+            }
+            catch (RetryLimitExceededException)
+            {
+                return "Возникла ошибка обратитесь к администратору. Изменения не сохранены.";
+            }
+            catch (DbUpdateException)
+            {
+                return "Не удалось отправить в архив. Изменения не сохранены, обратитесь к администратору.";
+            }
+        }
+
+        private async Task ArchiveGroupAsync(Group group)
+        {
+            GroupArhive groupArchive = await GetOrCreateGroupArchiveAsync(group);
+            ArchiveMaps maps = await LoadArchiveMapsAsync(groupArchive.GroupArhiveID);
+
+            // Занятия копируются все, чтобы архивный журнал соответствовал рабочему
+            var groupLessons = await _context.Lessons
+                .Where(l => l.GroupID == group.GroupID)
+                .ToListAsync();
+
+            await RegisterLessonArchivesAsync(groupArchive, maps,
+                groupLessons.Select(lesson => (LessonKey: LessonKey(groupArchive.GroupArhiveID, lesson.ThemeID, lesson.TypeOfExerciseID, lesson.Date, lesson.SubjectID),
+                                               Archive: BuildLessonArchive(groupArchive.GroupArhiveID, lesson))));
+
+            var students = await _context.Students
+                .Where(s => s.GroupID == group.GroupID)
+                .ToListAsync();
+
+            foreach (var student in students)
+            {
+                await ArchiveStudentMarksAsync(student, group, groupArchive, maps);
+            }
+
+            var journalSubjects = await _context.Journals
+                .Where(j => j.GroupID == group.GroupID)
+                .Select(j => j.SubjectID)
+                .ToListAsync();
+
+            await ArchiveJournalsAsync(group, groupArchive, maps, journalSubjects);
+
+            var links = await _context.SubgroupLinks
+                .Where(sl => sl.GroupID == group.GroupID)
+                .ToListAsync();
+            _context.SubgroupLinks.RemoveRange(links);
+
+            // Каскад удаляет курсантов группы, её занятия, ведомости и журналы
+            _context.Groups.Remove(group);
+            await _context.SaveChangesAsync();
+        }
+
+        // Курсант архивируется в архивное «зеркало» своей группы, поэтому группа
+        // может быть отправлена в архив целиком позже — записи дополнят друг друга
+        private async Task ArchiveSingleStudentAsync(Student student)
+        {
+            var group = await _context.Groups.FirstOrDefaultAsync(g => g.GroupID == student.GroupID);
+
+            if (group == null)
+            {
+                throw new InvalidOperationException($"Не найдена группа курсанта {student.StudentID}");
+            }
+
+            GroupArhive groupArchive = await GetOrCreateGroupArchiveAsync(group);
+            ArchiveMaps maps = await LoadArchiveMapsAsync(groupArchive.GroupArhiveID);
+
+            await ArchiveStudentMarksAsync(student, group, groupArchive, maps);
+
+            var links = await _context.SubgroupLinks
+                .Where(sl => sl.StudentID == student.StudentID && sl.GroupID == group.GroupID)
+                .ToListAsync();
+            _context.SubgroupLinks.RemoveRange(links);
+
+            // Каскад удаляет отметки и итоговые отметки курсанта
+            _context.Students.Remove(student);
+            await _context.SaveChangesAsync();
+        }
+
+        private async Task<GroupArhive> GetOrCreateGroupArchiveAsync(Group group)
+        {
+            var groupArchive = await _context.GroupArhives.FirstOrDefaultAsync(g =>
+                g.Name == group.Name &&
+                g.DateEnter == group.DateEnter &&
+                g.DateExit == group.DateExit &&
+                g.InstituteID == group.InstituteID &&
+                g.SpecialityID == group.SpecialityID);
+
+            if (groupArchive != null)
+            {
+                return groupArchive;
+            }
+
+            groupArchive = new GroupArhive
+            {
+                Name = group.Name,
+                DateEnter = group.DateEnter,
+                DateExit = group.DateExit,
+                InstituteID = group.InstituteID,
+                SpecialityID = group.SpecialityID
+            };
+
+            _context.GroupArhives.Add(groupArchive);
+            await _context.SaveChangesAsync();
+
+            return groupArchive;
+        }
+
+        // Отметки и итоговые отметки одного курсанта. Занятия и ведомости создаются
+        // одним сохранением и только если их ещё нет в архиве этой группы
+        private async Task ArchiveStudentMarksAsync(Student student, Group group, GroupArhive groupArchive, ArchiveMaps maps)
+        {
+            StudentArhive studentArchive = new()
+            {
+                Name = student.Name,
+                Surname = student.Surname,
+                LastName = student.LastName,
+                PlaceOfBirth = student.PlaceOfBirth,
+                DateOfBirth = student.DateOfBirth,
+                Status = false,
+                InstituteID = student.InstituteID,
+                GroupArhiveID = groupArchive.GroupArhiveID
+            };
+
+            _context.StudentArhives.Add(studentArchive);
+            await _context.SaveChangesAsync();
+
+            var marks = await _context.Marks
+                .Where(m => m.StudentID == student.StudentID)
+                .ToListAsync();
+
+            var lessonIDs = marks.Select(m => m.LessonID).Distinct().ToList();
+            var sourceLessons = (await _context.Lessons
+                .Where(l => lessonIDs.Contains(l.LessonID))
+                .ToListAsync())
+                .ToDictionary(l => l.LessonID);
+
+            List<(string LessonKey, LessonArhive Archive)> missingLessons = new();
+
+            foreach (var mark in marks)
+            {
+                sourceLessons.TryGetValue(mark.LessonID, out Lesson lesson);
+
+                string key = LessonKey(groupArchive.GroupArhiveID,
+                    lesson?.ThemeID ?? mark.ThemeID,
+                    lesson?.TypeOfExerciseID ?? mark.TypeOfExerciseID,
+                    lesson?.Date ?? mark.Date,
+                    lesson?.SubjectID ?? mark.SubjectID);
+
+                if (maps.Lessons.ContainsKey(key) || missingLessons.Any(m => m.LessonKey == key))
+                {
+                    continue;
+                }
+
+                missingLessons.Add((key, BuildLessonArchive(groupArchive.GroupArhiveID, lesson, mark)));
+            }
+
+            await RegisterLessonArchivesAsync(groupArchive, maps, missingLessons);
+
+            foreach (var mark in marks)
+            {
+                sourceLessons.TryGetValue(mark.LessonID, out Lesson lesson);
+
+                string key = LessonKey(groupArchive.GroupArhiveID,
+                    lesson?.ThemeID ?? mark.ThemeID,
+                    lesson?.TypeOfExerciseID ?? mark.TypeOfExerciseID,
+                    lesson?.Date ?? mark.Date,
+                    lesson?.SubjectID ?? mark.SubjectID);
+
+                maps.Lessons.TryGetValue(key, out int lessonArchiveID);
+
+                _context.MarkArhives.Add(new MarkArhive
+                {
+                    Value = mark.Value,
+                    Date = mark.Date,
+                    Comment = mark.Comment,
+                    SignatureOfTeacher = mark.SignatureOfTeacher,
+                    HistoryOfMark = mark.HistoryOfMark,
+                    FlagF = mark.FlagF,
+                    InstituteID = mark.InstituteID,
+                    SubjectID = mark.SubjectID,
+                    // в архивных таблицах в этих столбцах лежат идентификаторы архивных
+                    // записей группы и занятия, внешних ключей на Groups/Lessons в схеме нет
+                    GroupID = groupArchive.GroupArhiveID,
+                    LessonID = lessonArchiveID,
+                    TypeOfExerciseID = mark.TypeOfExerciseID,
+                    DepartmentID = mark.DepartmentID,
+                    SpecialityID = mark.SpecialityID,
+                    ThemeID = mark.ThemeID,
+                    StudentArhiveID = studentArchive.StudentArhiveID
+                });
+            }
+
+            await _context.SaveChangesAsync();
+
+            await ArchiveJournalsAsync(group, groupArchive, maps, marks.Select(m => m.SubjectID));
+
+            var statementMarks = await _context.StatementMarks
+                .Where(m => m.StudentID == student.StudentID)
+                .ToListAsync();
+
+            var statementLessonIDs = statementMarks.Select(m => m.StatementLessonID).Distinct().ToList();
+            var sourceStatementLessons = (await _context.StatementLessons
+                .Where(l => statementLessonIDs.Contains(l.StatementLessonID))
+                .ToListAsync())
+                .ToDictionary(l => l.StatementLessonID);
+
+            List<(string Key, StatementLessonArhive Archive)> missingStatementLessons = new();
+
+            foreach (var mark in statementMarks)
+            {
+                sourceStatementLessons.TryGetValue(mark.StatementLessonID, out StatementLesson lesson);
+
+                string key = StatementLessonKey(groupArchive.GroupArhiveID,
+                    lesson?.TypeOfExerciseID ?? mark.TypeOfExerciseID,
+                    lesson?.Date ?? mark.Date);
+
+                if (maps.StatementLessons.ContainsKey(key) || missingStatementLessons.Any(s => s.Key == key))
+                {
+                    continue;
+                }
+
+                missingStatementLessons.Add((key, new StatementLessonArhive
+                {
+                    Date = lesson?.Date ?? mark.Date,
+                    Comment = lesson?.Comment,
+                    Signature = lesson?.Signature ?? mark.SignatureOfTeacher,
+                    TypeOfExerciseID = lesson?.TypeOfExerciseID ?? mark.TypeOfExerciseID,
+                    GroupArhiveID = groupArchive.GroupArhiveID
+                }));
+            }
+
+            if (missingStatementLessons.Any())
+            {
+                _context.StatementLessonArhives.AddRange(missingStatementLessons.Select(s => s.Archive));
+                await _context.SaveChangesAsync();
+
+                foreach ((string key, StatementLessonArhive archive) in missingStatementLessons)
+                {
+                    maps.StatementLessons[key] = archive.StatementLessonArhiveID;
+                }
+            }
+
+            foreach (var mark in statementMarks)
+            {
+                sourceStatementLessons.TryGetValue(mark.StatementLessonID, out StatementLesson lesson);
+
+                string key = StatementLessonKey(groupArchive.GroupArhiveID,
+                    lesson?.TypeOfExerciseID ?? mark.TypeOfExerciseID,
+                    lesson?.Date ?? mark.Date);
+
+                maps.StatementLessons.TryGetValue(key, out int statementLessonArchiveID);
+
+                _context.StatementMarkArhives.Add(new StatementMarkArhive
+                {
+                    Value = mark.Value,
+                    Date = mark.Date,
+                    Comment = mark.Comment,
+                    SignatureOfTeacher = mark.SignatureOfTeacher,
+                    HistoryOfMark = mark.HistoryOfMark,
+                    InstituteID = mark.InstituteID,
+                    SpecialityID = mark.SpecialityID,
+                    GroupID = groupArchive.GroupArhiveID,
+                    TypeOfExerciseID = mark.TypeOfExerciseID,
+                    StatementLessonID = statementLessonArchiveID,
+                    StudentArhiveID = studentArchive.StudentArhiveID
+                });
+            }
+
+            await _context.SaveChangesAsync();
+        }
+
+        private async Task RegisterLessonArchivesAsync(GroupArhive groupArchive, ArchiveMaps maps,
+            IEnumerable<(string LessonKey, LessonArhive Archive)> lessons)
+        {
+            List<(string LessonKey, LessonArhive Archive)> newLessons = new();
+
+            foreach ((string key, LessonArhive archive) in lessons)
+            {
+                if (maps.Lessons.ContainsKey(key) || newLessons.Any(l => l.LessonKey == key))
+                {
+                    continue;
+                }
+
+                newLessons.Add((key, archive));
+            }
+
+            if (!newLessons.Any())
+            {
+                return;
+            }
+
+            _context.LessonArhives.AddRange(newLessons.Select(l => l.Archive));
+            await _context.SaveChangesAsync();
+
+            foreach ((string key, LessonArhive archive) in newLessons)
+            {
+                maps.Lessons[key] = archive.LessonArhiveID;
+            }
+        }
+
+        // Журналы нужны страницам просмотра архива, поэтому заводятся на каждый
+        // предмет, по которому в архиве появились отметки
+        private async Task ArchiveJournalsAsync(Group group, GroupArhive groupArchive, ArchiveMaps maps, IEnumerable<int> subjectIDs)
+        {
+            List<int> missingSubjects = subjectIDs
+                .Distinct()
+                .Where(subjectID => !maps.JournalSubjects.Contains(subjectID))
+                .ToList();
+
+            if (!missingSubjects.Any())
+            {
+                return;
+            }
+
+            var journals = await _context.Journals
+                .Where(j => j.GroupID == group.GroupID && missingSubjects.Contains(j.SubjectID))
+                .ToListAsync();
+
+            foreach (int subjectID in missingSubjects)
+            {
+                var journal = journals.FirstOrDefault(j => j.SubjectID == subjectID);
+
+                _context.JournalArhives.Add(new JournalArhive
+                {
+                    Comment = journal?.Comment,
+                    Date = journal?.Date ?? DateTime.Now,
+                    GroupArhiveID = groupArchive.GroupArhiveID,
+                    SubjectID = subjectID
+                });
+
+                maps.JournalSubjects.Add(subjectID);
+            }
+
+            await _context.SaveChangesAsync();
+        }
+
+        private static LessonArhive BuildLessonArchive(int groupArchiveID, Lesson lesson)
+        {
+            return new LessonArhive
+            {
+                Date = lesson.Date,
+                Comment = lesson.Comment,
+                Signature = lesson.Signature,
+                FlagF = lesson.FlagF,
+                SubjectID = lesson.SubjectID,
+                ThemeID = lesson.ThemeID,
+                TypeOfExerciseID = lesson.TypeOfExerciseID,
+                GroupArhiveID = groupArchiveID
+            };
+        }
+
+        // Занятие могло быть удалено из рабочих таблиц — тогда данные берутся из отметки
+        private static LessonArhive BuildLessonArchive(int groupArchiveID, Lesson lesson, Mark mark)
+        {
+            return new LessonArhive
+            {
+                Date = lesson?.Date ?? mark.Date,
+                Comment = lesson?.Comment,
+                Signature = lesson?.Signature ?? mark.SignatureOfTeacher,
+                FlagF = lesson?.FlagF ?? mark.FlagF,
+                SubjectID = lesson?.SubjectID ?? mark.SubjectID,
+                ThemeID = lesson?.ThemeID ?? mark.ThemeID,
+                TypeOfExerciseID = lesson?.TypeOfExerciseID ?? mark.TypeOfExerciseID,
+                GroupArhiveID = groupArchiveID
+            };
+        }
+
+        private static string LessonKey(int groupArchiveID, int themeID, int typeOfExerciseID, DateTime date, int subjectID)
+        {
+            return $"{groupArchiveID}|{themeID}|{typeOfExerciseID}|{date:yyyyMMddHHmmss}|{subjectID}";
+        }
+
+        private static string StatementLessonKey(int groupArchiveID, int typeOfExerciseID, DateTime date)
+        {
+            return $"{groupArchiveID}|{typeOfExerciseID}|{date:yyyyMMddHHmmss}";
+        }
+
+        // Исходные идентификаторы занятий в архивных таблицах не сохраняются, поэтому
+        // соответствия строятся по составу: архивная группа, тема, тип и дата занятия
+        private async Task<ArchiveMaps> LoadArchiveMapsAsync(int groupArchiveID)
+        {
+            ArchiveMaps maps = new();
+
+            var lessons = await _context.LessonArhives
+                .Where(l => l.GroupArhiveID == groupArchiveID)
+                .Select(l => new { l.LessonArhiveID, l.ThemeID, l.TypeOfExerciseID, l.Date, l.SubjectID })
+                .ToListAsync();
+
+            foreach (var lesson in lessons)
+            {
+                maps.Lessons[LessonKey(groupArchiveID, lesson.ThemeID, lesson.TypeOfExerciseID, lesson.Date, lesson.SubjectID)] = lesson.LessonArhiveID;
+            }
+
+            var statementLessons = await _context.StatementLessonArhives
+                .Where(l => l.GroupArhiveID == groupArchiveID)
+                .Select(l => new { l.StatementLessonArhiveID, l.TypeOfExerciseID, l.Date })
+                .ToListAsync();
+
+            foreach (var lesson in statementLessons)
+            {
+                maps.StatementLessons[StatementLessonKey(groupArchiveID, lesson.TypeOfExerciseID, lesson.Date)] = lesson.StatementLessonArhiveID;
+            }
+
+            var journalSubjects = await _context.JournalArhives
+                .Where(j => j.GroupArhiveID == groupArchiveID)
+                .Select(j => j.SubjectID)
+                .ToListAsync();
+
+            foreach (int subjectID in journalSubjects)
+            {
+                maps.JournalSubjects.Add(subjectID);
+            }
+
+            return maps;
+        }
+
+        // Состояние одного архивирования: «исходные данные -> архивная запись»
+        private sealed class ArchiveMaps
+        {
+            public Dictionary<string, int> Lessons { get; } = new Dictionary<string, int>();
+
+            public Dictionary<string, int> StatementLessons { get; } = new Dictionary<string, int>();
+
+            public HashSet<int> JournalSubjects { get; } = new HashSet<int>();
         }
     }
 }
