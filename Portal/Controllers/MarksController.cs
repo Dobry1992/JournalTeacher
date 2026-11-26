@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Portal.Data;
+using Portal.Helpers;
 using Portal.Models;
 using Portal.Services;
 using System;
@@ -88,6 +89,34 @@ namespace Portal.Controllers
                 RestoreEditViewBag(GroupID, SubjectID, subgroup);
                 return View(mark);
             }
+
+            // Правила проверяются по отметке из базы: значения из формы преподаватель может передать любые
+            var persistedMark = await _context.Marks.AsNoTracking()
+                .FirstOrDefaultAsync(m => m.MarkID == MarkID);
+
+            if (persistedMark == null)
+                return NotFound();
+
+            var controlTypeNames = MarkEditingRules.ControlTypeNames.ToList();
+            var controlTypeIDs = await _context.Types
+                .Where(t => controlTypeNames.Contains(t.Name))
+                .Select(t => t.TypeOfExerciseID)
+                .ToListAsync();
+
+            string controlTypeName = await _context.Types
+                .Where(t => t.TypeOfExerciseID == persistedMark.TypeOfExerciseID)
+                .Select(t => t.Name)
+                .FirstOrDefaultAsync();
+
+            if (!MarkEditingRules.CanEditMark(persistedMark, controlTypeIDs, DateTime.Now, controlTypeName, out string editError))
+            {
+                ModelState.AddModelError("", editError);
+                RestoreEditViewBag(GroupID, SubjectID, subgroup);
+                return View(mark);
+            }
+
+            // счётчик корректировок берём из сохранённой отметки, а не из формы
+            mark.ChangeCounter = persistedMark.ChangeCounter;
 
             string teacher = _userNameService.GetDisplayName();
             bool isWriter = User.IsInRole("ICDA-writer") || User.IsInRole("K-8Writer");

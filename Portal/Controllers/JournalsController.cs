@@ -8,6 +8,7 @@ using Microsoft.Extensions.Logging;
 using OfficeOpenXml;
 using OfficeOpenXml.Style;
 using Portal.Data;
+using Portal.Helpers;
 using Portal.Models;
 using Portal.Models.Model;
 using Portal.ViewModel;
@@ -368,8 +369,9 @@ namespace Portal
             int semester = GetSemester(today);
 
             // Вынесено из цикла — раньше запрос выполнялся для каждой отметки
+            var controlTypeNames = MarkEditingRules.ControlTypeNames.ToList();
             var allowedTypes = _context.Types
-                .Where(t => t.Name == "Экзамен" || t.Name == "Зачёт" || t.Name == "Дифференцированный зачёт")
+                .Where(t => controlTypeNames.Contains(t.Name))
                 .Select(t => t.TypeOfExerciseID)
                 .ToList();
 
@@ -408,11 +410,12 @@ namespace Portal
                 {
                     isEditAllowedByRules = false;
                 }
-                else if (mark.ChangeCounter >= 3)
+                else if (allowedTypes.Contains(mark.TypeOfExerciseID))
                 {
-                    isEditAllowedByRules = false;
+                    // контрольные мероприятия: корректировка в день занятия, не более MarkEditingRules.MaxCorrections раз
+                    isEditAllowedByRules = MarkEditingRules.CanEditMark(mark, allowedTypes, today, null, out _);
                 }
-                else if (mark.ChangeCounter >= 1 && allowedTypes.Contains(mark.TypeOfExerciseID))
+                else if (mark.ChangeCounter >= 3)
                 {
                     isEditAllowedByRules = false;
                 }
