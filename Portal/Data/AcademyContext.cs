@@ -45,6 +45,7 @@ namespace Portal.Data
         public DbSet<Transfer> Transfers { get; set; }
         public DbSet<HistoryLesson> HistoryLessons { get; set; }
         public DbSet<HistoryMark> HistoryMarks { get; set; }
+        public DbSet<Comment> Comments { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -90,6 +91,7 @@ namespace Portal.Data
                 .WithMany(t => t.HistoryLessons)
                 .HasForeignKey(hl => hl.TransferID)
                 .OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<Comment>().ToTable("Comments");
         }
     }
 }
