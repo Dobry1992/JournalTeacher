@@ -11,6 +11,7 @@ using Portal.Data;
 using Portal.Helpers;
 using Portal.Models;
 using Portal.Models.Model;
+using Portal.Services;
 using Portal.ViewModel;
 using System;
 using System.Collections.Generic;
@@ -25,15 +26,33 @@ namespace Portal
         private readonly AcademyContext _context;
         private readonly IWebHostEnvironment _env;
         private readonly ILogger<JournalsController> _logger;
+        private readonly UserNameService _userNameService;
 
         public JournalsController(
             AcademyContext context,
             IWebHostEnvironment env,
-            ILogger<JournalsController> logger)
+            ILogger<JournalsController> logger,
+            UserNameService userNameService)
         {
             _context = context;
             _env = env;
             _logger = logger;
+            _userNameService = userNameService;
+        }
+
+        // Списки преподавателей для контекстного меню выставления отметки в журнале:
+        // те же роли и списки, что в MarksController.Edit (ICDA-writer / K-8Writer)
+        private void FillMarkFormViewBag()
+        {
+            if (User.IsInRole("ICDA-writer"))
+            {
+                ViewBag.Teachers = _context.Teachers.OrderBy(t => t.FamilyName).AsNoTracking().ToList();
+            }
+            else if (User.IsInRole("K-8Writer"))
+            {
+                ViewBag.UserName = _userNameService.GetDisplayName();
+                ViewBag.TeachersNoPC = _context.TeacherNoPCs.OrderBy(t => t.LastName).AsNoTracking().ToList();
+            }
         }
 
         // ============================================================
@@ -225,6 +244,7 @@ namespace Portal
 
         public async Task<IActionResult> Journal(int GroupID, int SubjectID, string subgroup = null)
         {
+            FillMarkFormViewBag();
             return await PrepareJournalViewWithSubgroup(GroupID, SubjectID, "Journal", subgroup);
         }
 

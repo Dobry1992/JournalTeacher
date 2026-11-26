@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.EntityFrameworkCore;
 using Portal.Data;
 using Portal.Helpers;
@@ -47,6 +48,25 @@ namespace Portal.Controllers
             return View(await marks.ToListAsync());
         }
 
+        // Ошибки привязки моделей (Date, ThemeID и т.п.) для полей без span-валидаторов
+        // на форме невидимы для пользователя - выводим их в суммарный блок, чтобы
+        // причина отказа была видна и в представлении Edit, и в контекстном меню журнала
+        internal static void SurfaceModelStateErrors(ModelStateDictionary modelState)
+        {
+            if (modelState.IsValid)
+                return;
+            if (modelState.Keys.Any(k => string.IsNullOrEmpty(k)))
+                return; // модельные ошибки уже попадут в summary
+
+            foreach (var message in modelState.Values.SelectMany(v => v.Errors)
+                         .Select(e => string.IsNullOrWhiteSpace(e.ErrorMessage) ? e.Exception?.Message : e.ErrorMessage)
+                         .Where(m => !string.IsNullOrWhiteSpace(m))
+                         .Distinct())
+            {
+                modelState.AddModelError(string.Empty, message);
+            }
+        }
+
         // ============================================================
         // EDIT (обычный журнал)
         // ============================================================
@@ -86,6 +106,7 @@ namespace Portal.Controllers
 
             if (!ModelState.IsValid)
             {
+                SurfaceModelStateErrors(ModelState);
                 RestoreEditViewBag(GroupID, SubjectID, subgroup);
                 return View(mark);
             }
@@ -447,6 +468,7 @@ namespace Portal.Controllers
 
             if (!ModelState.IsValid)
             {
+                SurfaceModelStateErrors(ModelState);
                 RestoreEditViewBag(GroupID, SubjectID, subgroup);
                 return View(mark);
             }

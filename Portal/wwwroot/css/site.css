@@ -497,6 +497,19 @@ span {
 .table th.col-fixed-2 { min-width: var(--col2-width); width: var(--col2-width); }
 .table thead th.col-fixed-1, .table thead th.col-fixed-2 { top: 0; z-index: 6; }
 
+/* Контекстное меню быстрой выставления отметки в журнале */
+.mark-context-menu {
+    max-height: 340px;
+    overflow-y: auto;
+    min-width: 240px;
+    position: fixed;
+    z-index: 2050;
+}
+
+.mark-context-menu .dropdown-item {
+    cursor: pointer;
+}
+
 /* Флажок и всплывающая подсказка комментариев о курсантах/слушателях */
 .student-comment-flag {
     color: #ffc107;

@@ -181,7 +181,28 @@ else
                                                    asp-route-SubjectID="@Model.Subject.SubjectID"
                                                    asp-route-GroupID="@Model.Group.GroupID"
                                                    asp-route-subgroup="@Model.Subgroup"
-                                                   class="btn border-0 p-2 btn-tooltip w-100"
+                                                   class="btn border-0 p-2 btn-tooltip w-100 mark-menu-cell"
+                                                   data-menu-url="@Url.Action("AdjustmentEdit", "Marks")"
+                                                   data-mark="@(System.Text.Json.JsonSerializer.Serialize(new {
+                                                       markID = mark.Mark.MarkID,
+                                                       value = mark.Mark.Value,
+                                                       date = mark.Mark.Date.ToString(),
+                                                       comment = mark.Mark.Comment,
+                                                       signature = mark.Mark.SignatureOfTeacher,
+                                                       history = mark.Mark.HistoryOfMark,
+                                                       subjectID = mark.Mark.SubjectID,
+                                                       groupID = mark.Mark.GroupID,
+                                                       lessonID = mark.Mark.LessonID,
+                                                       typeOfExerciseID = mark.Mark.TypeOfExerciseID,
+                                                       departmentID = mark.Mark.DepartmentID,
+                                                       specialityID = mark.Mark.SpecialityID,
+                                                       themeID = mark.Mark.ThemeID,
+                                                       studentID = mark.Mark.StudentID,
+                                                       flagF = mark.Mark.FlagF,
+                                                       instituteID = mark.Mark.InstituteID,
+                                                       changeCounter = mark.Mark.ChangeCounter,
+                                                       subgroup = Model.Subgroup
+                                                   }))"
                                                    data-toggle="tooltip"
                                                    data-placement="left"
                                                    data-html="true"
@@ -401,4 +422,15 @@ else
             });
         });
     </script>
+
+    @* Токен и данные для контекстного меню быстрой выставления отметки (mark-cell-menu.js) *@
+    <form style="display:none">@Html.AntiForgeryToken()</form>
+    <input type="hidden" id="markMenuJournalMarker" />
+    @* Шаблон поля подписи для меню: как в Marks/AdjustmentEdit - редактируется только у SuperAdmin *@
+    @if (User.IsInRole("SuperAdmin"))
+    {
+        <input type="text" id="markMenuSignatureTpl" style="display:none" />
+    }
+    <script>window.__MARK_VALUES = @Json.Serialize(Portal.Helpers.MarkValueOptions.All);</script>
+    <script src="~/js/mark-cell-menu.js" asp-append-version="true"></script>
 }

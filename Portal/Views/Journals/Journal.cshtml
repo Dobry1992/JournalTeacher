@@ -175,12 +175,35 @@ else if (User.IsInRole("SuperAdmin") || User.IsInRole("ANB-UMCH") || User.IsInRo
                                         if (mark.IsEdit)
                                         {
                                             <td class="text-center align-middle p-0 @mark.Property" id="@mark.CollapseId">
-                                                <a class="btn border-0 p-2 btn-tooltip w-100"
+                                                <a class="btn border-0 p-2 btn-tooltip w-100 mark-menu-cell"
                                                    asp-controller="@mark.Controller" asp-action="@mark.Action"
                                                    asp-route-MarkID="@mark.Mark.MarkID"
                                                    asp-route-SubjectID="@Model.Subject.SubjectID"
                                                    asp-route-GroupID="@Model.Group.GroupID"
                                                    asp-route-subgroup="@Model.Subgroup"
+                                                   data-menu-url="@Url.Action(mark.Action, mark.Controller)"
+                                                   @* JsonSerializer.Serialize возвращает строку - Razor закодирует кавычки для атрибута
+                                                      (Json.Serialize вернул бы IHtmlContent с сырыми кавычками и сломал атрибут) *@
+                                                   data-mark="@(System.Text.Json.JsonSerializer.Serialize(new {
+                                                       markID = mark.Mark.MarkID,
+                                                       value = mark.Mark.Value,
+                                                       date = mark.Mark.Date.ToString(),
+                                                       comment = mark.Mark.Comment,
+                                                       signature = mark.Mark.SignatureOfTeacher,
+                                                       history = mark.Mark.HistoryOfMark,
+                                                       subjectID = mark.Mark.SubjectID,
+                                                       groupID = mark.Mark.GroupID,
+                                                       lessonID = mark.Mark.LessonID,
+                                                       typeOfExerciseID = mark.Mark.TypeOfExerciseID,
+                                                       departmentID = mark.Mark.DepartmentID,
+                                                       specialityID = mark.Mark.SpecialityID,
+                                                       themeID = mark.Mark.ThemeID,
+                                                       studentID = mark.Mark.StudentID,
+                                                       flagF = mark.Mark.FlagF,
+                                                       instituteID = mark.Mark.InstituteID,
+                                                       changeCounter = mark.Mark.ChangeCounter,
+                                                       subgroup = Model.Subgroup
+                                                   }))"
                                                    data-toggle="tooltip"
                                                    data-html="true"
                                                    title="Подпись: @mark.Mark.SignatureOfTeacher<br>История:<br>@mark.Mark.HistoryOfMark">
@@ -375,4 +398,36 @@ else
             });
         });
     </script>
+
+    @* Токен и данные для контекстного меню быстрой выставления отметки (mark-cell-menu.js) *@
+    <form style="display:none">@Html.AntiForgeryToken()</form>
+    <input type="hidden" id="markMenuJournalMarker" />
+    @* Шаблон выбора преподавателя для меню: те же роли и списки, что в Marks/Edit *@
+    @if (User.IsInRole("ICDA-writer"))
+    {
+        <select id="markMenuTeacherTpl" style="display:none">
+            @if (ViewBag.Teachers != null)
+            {
+                @foreach (var teacher in (IEnumerable<Portal.Models.Teacher>)ViewBag.Teachers)
+                {
+                    <option value="@teacher.FamilyName @teacher.Name @teacher.Surname">@teacher.FamilyName @teacher.Name @teacher.Surname</option>
+                }
+            }
+        </select>
+    }
+    else if (User.IsInRole("K-8Writer"))
+    {
+        <select id="markMenuTeacherTpl" style="display:none">
+            @if (ViewBag.TeachersNoPC != null)
+            {
+                <option value="@ViewBag.UserName">@ViewBag.UserName</option>
+                @foreach (var teacher in (IEnumerable<Portal.Models.TeacherNoPC>)ViewBag.TeachersNoPC)
+                {
+                    <option value="@teacher.LastName @teacher.Name @teacher.Surname">@teacher.LastName @teacher.Name @teacher.Surname</option>
+                }
+            }
+        </select>
+    }
+    <script>window.__MARK_VALUES = @Json.Serialize(Portal.Helpers.MarkValueOptions.All);</script>
+    <script src="~/js/mark-cell-menu.js" asp-append-version="true"></script>
 }
