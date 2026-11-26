@@ -86,7 +86,7 @@
                                     {
                                         <tr class="text-center" style="font-size:small;">
                                             <td class="align-middle">@i</td>
-                                            <td class="fix fixed"><a class="nav-link text-dark" asp-controller="Students" asp-action="Details" asp-route-id="@student.Student.StudentID">@student.Student.LastName @student.Student.Name[0]. @student.Student.Surname[0].</a></td>
+                                            <td class="fix fixed"><a class="nav-link text-dark" asp-controller="Students" asp-action="Details" asp-route-id="@student.Student.StudentID" data-student-id="@student.Student.StudentID">@student.Student.LastName @student.Student.Name[0]. @student.Student.Surname[0].</a></td>
                                             @if (@student.Raiting != null)
                                             {
                                                 <td class="align-middle">@student.Raiting.ToString().Replace(",", ".")</td>
@@ -154,7 +154,7 @@
                     @if (ViewBag.BestStudent.Group != null)
                     {
                         <div class="info-box-content">
-                            <span class="info-box-text mb-1">Лучший слушатель/курсант:<br />@ViewBag.BestStudent.Student.LastName @ViewBag.BestStudent.Student.Name[0].@ViewBag.BestStudent.Student.Surname[0].</span>
+                            <span class="info-box-text mb-1">Лучший слушатель/курсант:<br /><span data-student-id="@ViewBag.BestStudent.Student.StudentID">@ViewBag.BestStudent.Student.LastName @ViewBag.BestStudent.Student.Name[0].@ViewBag.BestStudent.Student.Surname[0].</span></span>
                             <span class="info-box-text">Группа: @ViewBag.BestStudent.Group.Name</span>
                             <span class="info-box-number">Средний балл: @ViewBag.BestStudent.Raiting.ToString()</span>
                         </div>
@@ -168,7 +168,7 @@
                     @if (ViewBag.WorseStudent.Group != null)
                     {
                         <div class="info-box-content">
-                            <span class="info-box-text mb-1">Худший слушатель/курсант:<br />@ViewBag.WorseStudent.Student.LastName @ViewBag.WorseStudent.Student.Name[0].@ViewBag.WorseStudent.Student.Surname[0].</span>
+                            <span class="info-box-text mb-1">Худший слушатель/курсант:<br /><span data-student-id="@ViewBag.WorseStudent.Student.StudentID">@ViewBag.WorseStudent.Student.LastName @ViewBag.WorseStudent.Student.Name[0].@ViewBag.WorseStudent.Student.Surname[0].</span></span>
                             <span class="info-box-text">Группа: @ViewBag.WorseStudent.Group.Name</span>
                             <span class="info-box-number">Средний балл: @ViewBag.WorseStudent.Raiting.ToString()</span>
                         </div>

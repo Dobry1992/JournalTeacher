@@ -40,7 +40,7 @@
                         <span class="info-box-text text-center">Лучший курсант/слушатель</span>
                         @if (ViewBag.BestStudent != null)
                         {
-                            <span class="info-box-text text-center"><a class="text-decoration-none stretched-link text-success" asp-controller="Students" asp-action="Details" asp-route-id="@ViewBag.BestStudent.Student.StudentID">@ViewBag.BestStudent.Student.LastName @ViewBag.BestStudent.Student.Name[0]. @ViewBag.BestStudent.Student.Surname[0].</a></span>
+                            <span class="info-box-text text-center"><a class="text-decoration-none stretched-link text-success" asp-controller="Students" asp-action="Details" asp-route-id="@ViewBag.BestStudent.Student.StudentID" data-student-id="@ViewBag.BestStudent.Student.StudentID">@ViewBag.BestStudent.Student.LastName @ViewBag.BestStudent.Student.Name[0]. @ViewBag.BestStudent.Student.Surname[0].</a></span>
                             <span class="info-box-number text-center">@ViewBag.BestStudent.Raiting.ToString()</span>
                         }
                     </div>
@@ -53,7 +53,7 @@
                         <span class="info-box-text text-center">Худший курсант/слушатель</span>
                         @if (ViewBag.WorseStudent != null)
                         {
-                            <span class="info-box-text text-center"><a class="text-decoration-none stretched-link text-danger" asp-controller="Students" asp-action="Details" asp-route-id="@ViewBag.WorseStudent.Student.StudentID">@ViewBag.WorseStudent.Student.LastName @ViewBag.WorseStudent.Student.Name[0]. @ViewBag.WorseStudent.Student.Surname[0].</a></span>
+                            <span class="info-box-text text-center"><a class="text-decoration-none stretched-link text-danger" asp-controller="Students" asp-action="Details" asp-route-id="@ViewBag.WorseStudent.Student.StudentID" data-student-id="@ViewBag.WorseStudent.Student.StudentID">@ViewBag.WorseStudent.Student.LastName @ViewBag.WorseStudent.Student.Name[0]. @ViewBag.WorseStudent.Student.Surname[0].</a></span>
                             <span class="info-box-number text-center">@ViewBag.WorseStudent.Raiting.ToString()</span>
                         }
                     </div>
@@ -126,7 +126,7 @@
                                     {
                                         <tr class="text-center" style="font-size:small;">
                                             <td class="align-middle">@i</td>
-                                            <td><a class="nav-link text-dark" asp-controller="Students" asp-action="Details" asp-route-id="@student.Student.StudentID">@student.Student.LastName @student.Student.Name[0]. @student.Student.Surname[0].</a></td>
+                                            <td><a class="nav-link text-dark" asp-controller="Students" asp-action="Details" asp-route-id="@student.Student.StudentID" data-student-id="@student.Student.StudentID">@student.Student.LastName @student.Student.Name[0]. @student.Student.Surname[0].</a></td>
                                             <td class="align-middle">@student.Raiting.ToString().Replace(",", ".")</td>
                                             <td class="align-middle">@student.NumberOfMark</td>
                                         </tr>

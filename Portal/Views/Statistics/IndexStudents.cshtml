@@ -49,7 +49,7 @@
                                                 {
                                                     <tr role="row" class="odd bg-white text-center">
                                                         <td tabindex="0" class="sorting_1">@i</td>
-                                                        <td tabindex="0" class="sorting_1">@item.LastName @item.Name[0]. @item.Surname[0].</td>
+                                                        <td tabindex="0" class="sorting_1" data-student-id="@item.StudentID">@item.LastName @item.Name[0]. @item.Surname[0].</td>
                                                         <td tabindex="0" class="sorting_1">@item.Group.Name</td>
                                                         <td tabindex="0" class="sorting_1">@item.Group.Speciality.Institute.Name</td>
                                                         <td tabindex="0" class="sorting_1"><a class="btn btn-success" asp-controller="Students" asp-action="Details" asp-route-id="@item.StudentID"><i class="fas fa-arrow-right"></i></a></td>

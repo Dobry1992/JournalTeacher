@@ -52,7 +52,7 @@
                                                             {
                                                                 <tr>
                                                                     <td class="align-middle text-center p-1 bg-light fix">@i</td>
-                                                                    <td class="align-middle text-center p-1 bg-light fix" style="white-space:nowrap">@student.Student.LastName @student.Student.Name[0]. @student.Student.Surname[0].</td>
+                                                                    <td class="align-middle text-center p-1 bg-light fix" style="white-space:nowrap" data-student-id="@student.Student.StudentID">@student.Student.LastName @student.Student.Name[0]. @student.Student.Surname[0].</td>
                                                                     @foreach (var item in student.SubRaitings)
                                                                     {
                                                                         <td class="align-middle text-center bg-light" style="background-color:@item.Color !important;">@item.Raiting</td>
@@ -102,7 +102,7 @@
                                                             {
                                                                 <tr>
                                                                     <td class="align-middle text-center p-1 bg-light fix">@j</td>
-                                                                    <td class="align-middle text-center p-1 bg-light fix" style="white-space:nowrap">@student.Student.LastName @student.Student.Name[0]. @student.Student.Surname[0].</td>
+                                                                    <td class="align-middle text-center p-1 bg-light fix" style="white-space:nowrap" data-student-id="@student.Student.StudentID">@student.Student.LastName @student.Student.Name[0]. @student.Student.Surname[0].</td>
                                                                     @foreach (var subject in student.SubRaitings)
                                                                     {
                                                                         <td class="align-middle text-center bg-light">

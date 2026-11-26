@@ -56,7 +56,7 @@
                                                name="SelectedStudentIDs"
                                                value="@student.StudentID"
                                                @(isChecked ? "checked" : "") />
-                                        <label class="custom-control-label" for="cur_@student.StudentID">
+                                        <label class="custom-control-label" for="cur_@student.StudentID" data-student-id="@student.StudentID">
                                             @student.LastName @student.Name @student.Surname
                                         </label>
                                     </div>
@@ -78,7 +78,7 @@
                                                id="av_@student.StudentID"
                                                name="SelectedStudentIDs"
                                                value="@student.StudentID" />
-                                        <label class="custom-control-label" for="av_@student.StudentID">
+                                        <label class="custom-control-label" for="av_@student.StudentID" data-student-id="@student.StudentID">
                                             @student.LastName @student.Name @student.Surname
                                         </label>
                                     </div>

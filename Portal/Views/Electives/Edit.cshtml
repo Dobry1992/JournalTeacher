@@ -65,14 +65,14 @@
                                                         {
                                                             <div class="form-check-inline">
                                                                 <input type="checkbox" value="@student.Student.StudentID" name="IdStudents" class="form-check-input" checked/>
-                                                                <label class="form-check-label">@student.Student.LastName @student.Student.Name[0]. @student.Student.Surname[0].</label>
+                                                                <label class="form-check-label" data-student-id="@student.Student.StudentID">@student.Student.LastName @student.Student.Name[0]. @student.Student.Surname[0].</label>
                                                             </div>
                                                         }
                                                         else
                                                         {
                                                             <div class="form-check-inline">
                                                                 <input type="checkbox" value="@student.Student.StudentID" name="IdStudents" class="form-check-input" />
-                                                                <label class="form-check-label">@student.Student.LastName @student.Student.Name[0]. @student.Student.Surname[0].</label>
+                                                                <label class="form-check-label" data-student-id="@student.Student.StudentID">@student.Student.LastName @student.Student.Name[0]. @student.Student.Surname[0].</label>
                                                             </div>
                                                         }
                                                     }

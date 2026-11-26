@@ -47,7 +47,7 @@
                                                         {
                                                             <tr>
                                                                 <td class="align-middle text-center p-1 bg-light fix">@i</td>
-                                                                <td class="align-middle text-center p-1 bg-light fix" style="white-space:nowrap">@student.LastName @student.Name @student.Surname</td>
+                                                                <td class="align-middle text-center p-1 bg-light fix" data-student-id="@student.StudentID" style="white-space:nowrap">@student.LastName @student.Name @student.Surname</td>
                                                                 @foreach (var mark in ViewBag.Marks)
                                                                 {
                                                                     if (mark.StudentID == student.StudentID)

@@ -55,7 +55,7 @@
                             {
                                 <tr>
                                     <td class="align-middle text-center p-1 bg-light fix">@i</td>
-                                    <td class="align-middle text-center p-1 bg-light fix">@student.LastName @student.Name @student.Surname</td>
+                                    <td class="align-middle text-center p-1 bg-light fix" data-student-id="@student.StudentID">@student.LastName @student.Name @student.Surname</td>
                                     @foreach (var mark in Model.Marks.Where(m => m.StudentID == student.StudentID))
                                     {
                                         <td class="align-middle text-center p-0">

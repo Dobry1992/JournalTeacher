@@ -459,6 +459,18 @@ namespace Portal.Controllers
             List<StudentTransferView> studentTransfers = await BuildTransferHistoryAsync(student.StudentID);
 
             // ========================================
+            // КОММЕНТАРИИ (только для руководства)
+            // ========================================
+            if (User.IsInRole("SuperAdmin") || User.IsInRole("ANB-UMCH"))
+            {
+                ViewBag.StudentComments = await _context.Comments
+                    .AsNoTracking()
+                    .Where(c => c.StudentID == student.StudentID)
+                    .OrderByDescending(c => c.Date)
+                    .ToListAsync();
+            }
+
+            // ========================================
             // ФОРМИРОВАНИЕ VIEWMODEL
             // ========================================
             StudentDetailsView studentDetailsView = new()

@@ -35,7 +35,7 @@
                     <ul>
                         @foreach (var student in Model.Students)
                         {
-                            <li>@student.LastName @student.Name @student.Surname</li>
+                            <li data-student-id="@student.StudentID">@student.LastName @student.Name @student.Surname</li>
                         }
                     </ul>
                 }

@@ -51,7 +51,7 @@
                                                 {
                                                     <tr role="row" class="odd bg-white">
                                                         <td tabindex="0" class="sorting_1">@i</td>
-                                                        <td tabindex="0" class="sorting_1"><a class="text-decoration-none text-success" asp-controller="Students" asp-action="Details" asp-route-id="@item.Student.StudentID">@item.Student.LastName @item.Student.Name[0].@item.Student.Surname[0].</a></td>
+                                                        <td tabindex="0" class="sorting_1"><a class="text-decoration-none text-success" asp-controller="Students" asp-action="Details" asp-route-id="@item.Student.StudentID" data-student-id="@item.Student.StudentID">@item.Student.LastName @item.Student.Name[0].@item.Student.Surname[0].</a></td>
                                                         <td tabindex="0" class="sorting_1"><a class="text-decoration-none text-success" asp-controller="Groups" asp-action="DetailsGroup" asp-route-id="@item.Group.GroupID">@item.Group.Name</a></td>
                                                         <td tabindex="0" class="sorting_1">@item.ElectiveMark.ElectiveLesson.Theme.Elective.Name</td>
                                                         <td tabindex="0" class="sorting_1">@item.ElectiveMark.Value</td>

@@ -63,7 +63,7 @@
                                                     {
                                                         <tr role="row" class="odd bg-white">
                                                             <td tabindex="0" class="sorting_1">@i</td>
-                                                            <td tabindex="0" class="sorting_1">@item.LastName @item.Name @item.Surname</td>
+                                                            <td tabindex="0" class="sorting_1" data-student-id="@item.StudentID">@item.LastName @item.Name @item.Surname</td>
                                                             <td tabindex="0" class="sorting_1">@item.DateOfBirth.ToShortDateString()</td>
                                                             <td tabindex="0" class="sorting_1">@Html.DisplayFor(modelItem => item.PlaceOfBirth)</td>
                                                             <td tabindex="0" class="sorting_1">@Html.DisplayFor(modelItem => item.Group.Name)</td>
@@ -82,7 +82,7 @@
                                                     {
                                                         <tr role="row" class="odd bg-gray">
                                                             <td tabindex="0" class="sorting_1">@i</td>
-                                                            <td tabindex="0" class="sorting_1">@item.LastName @item.Name @item.Surname</td>
+                                                            <td tabindex="0" class="sorting_1" data-student-id="@item.StudentID">@item.LastName @item.Name @item.Surname</td>
                                                             <td tabindex="0" class="sorting_1">@item.DateOfBirth.ToShortDateString()</td>
                                                             <td tabindex="0" class="sorting_1">@Html.DisplayFor(modelItem => item.PlaceOfBirth)</td>
                                                             <td tabindex="0" class="sorting_1">@Html.DisplayFor(modelItem => item.Group.Name)</td>

@@ -25,7 +25,7 @@
                 </button>
             </div>
         }
-        <h3 class="mb-3 text-center bg-gray-light headGroup p-2 rounded shadow">@Model.Student.LastName @Model.Student.Name @Model.Student.Surname</h3>
+        <h3 class="mb-3 text-center bg-gray-light headGroup p-2 rounded shadow" data-student-id="@Model.Student.StudentID">@Model.Student.LastName @Model.Student.Name @Model.Student.Surname</h3>
         <div class="row mb-3">
             <div class="col-12 text-center">
                 <a class="btn btn-info" asp-controller="Students" asp-action="TransferHistory" asp-route-id="@Model.Student.StudentID">
@@ -92,6 +92,65 @@
             </div>
             <div class="clearfix hidden-md-up"></div>
         </div>
+        @if (User.IsInRole("SuperAdmin") || User.IsInRole("ANB-UMCH"))
+        {
+            var studentComments = ViewBag.StudentComments as List<Portal.Models.Comment> ?? new List<Portal.Models.Comment>();
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="card card-light">
+                        <div class="card-header">
+                            <h3 class="card-title"><i class="fas fa-comments"></i> Комментарии</h3>
+                            <div class="card-tools">
+                                <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                                    <i class="fas fa-minus"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            @if (TempData["ErrorMessage"] != null)
+                            {
+                                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                                    <i class="fa fa-exclamation-circle"></i> @TempData["ErrorMessage"]
+                                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                        <span aria-hidden="true">&times;</span>
+                                    </button>
+                                </div>
+                            }
+                            @if (studentComments.Count == 0)
+                            {
+                                <p class="text-muted">Комментариев пока нет.</p>
+                            }
+                            else
+                            {
+                                foreach (var comment in studentComments)
+                                {
+                                    <div class="d-flex justify-content-between align-items-start bg-light rounded p-2 mb-2">
+                                        <div class="mr-2">
+                                            <div class="text-muted small">@comment.Date.ToString("dd.MM.yyyy HH:mm") — @comment.Author</div>
+                                            <div style="white-space: pre-line;">@comment.CommentString</div>
+                                        </div>
+                                        <form asp-controller="StudentComments" asp-action="Delete" method="post" onsubmit="return confirm('Удалить комментарий?');">
+                                            <input type="hidden" name="commentId" value="@comment.CommentID" />
+                                            <input type="hidden" name="studentId" value="@Model.Student.StudentID" />
+                                            <button type="submit" class="btn btn-outline-danger btn-sm" title="Удалить комментарий">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                }
+                            }
+                            <form asp-controller="StudentComments" asp-action="Add" method="post" class="mt-2">
+                                <input type="hidden" name="studentId" value="@Model.Student.StudentID" />
+                                <div class="form-group">
+                                    <textarea name="comment" class="form-control" rows="2" placeholder="Новый комментарий..." required></textarea>
+                                </div>
+                                <button type="submit" class="btn btn-primary btn-sm"><i class="fas fa-plus"></i> Добавить комментарий</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
         <div class="row">
             <div class="col-md-12">
                 <div class="card card-light">
