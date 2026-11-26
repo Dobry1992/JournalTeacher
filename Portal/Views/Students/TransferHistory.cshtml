@@ -1,0 +1,162 @@
+@model Portal.ViewModel.StudentTransfersViewModel
+
+@{
+    ViewData["Title"] = "История переводов";
+}
+
+@await Html.PartialAsync("_NavMenuJournal")
+
+<section class="content-header">
+    <div class="container-fluid">
+    </div>
+</section>
+<section class="content">
+    <div class="container-fluid">
+        <h3 class="mb-3 text-center bg-gray-light headGroup p-2 rounded shadow">@Model.Student.LastName @Model.Student.Name @Model.Student.Surname</h3>
+        <div class="row">
+            <div class="col-12 col-sm-6 col-md-3">
+                <div class="info-box">
+                    <span class="info-box-icon bg-success elevation-1"><i class="fas fa-users"></i></span>
+                    <div class="info-box-content">
+                        <span class="info-box-text text-center">Текущая группа</span>
+                        <span class="info-box-number text-center">
+                            <a class="text-decoration-none stretched-link text-success" asp-controller="Groups" asp-action="DetailsGroup" asp-route-id="@Model.Student.GroupID">@Model.Student.Group.Name</a>
+                        </span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-sm-6 col-md-3">
+                <div class="info-box mb-3">
+                    <span class="info-box-icon bg-warning elevation-1"><i class="fas fa-exchange-alt"></i></span>
+                    <div class="info-box-content">
+                        <span class="info-box-text text-center">Переводов</span>
+                        <span class="info-box-number text-center">@Model.Transfers.Count</span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-sm-6 col-md-3">
+                <div class="info-box mb-3">
+                    <span class="info-box-icon bg-info elevation-1"><i class="fas fa-book"></i></span>
+                    <div class="info-box-content">
+                        <span class="info-box-text text-center">Занятий в других группах</span>
+                        <span class="info-box-number text-center">@Model.LessonsCount</span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-sm-6 col-md-3">
+                <div class="info-box mb-3">
+                    <span class="info-box-icon bg-danger elevation-1"><i class="fas fa-book-open"></i></span>
+                    <div class="info-box-content">
+                        <span class="info-box-text text-center">Пройдено предметов</span>
+                        <span class="info-box-number text-center">@Model.SubjectsCount</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        @if (!Model.Transfers.Any())
+        {
+            <div class="alert alert-warning text-center" role="alert">
+                <h4 class="alert-heading">Переводов не было</h4>
+                <p>Курсант ни разу не переводился из группы в группу.</p>
+            </div>
+        }
+        else
+        {
+            foreach (var transfer in Model.Transfers)
+            {
+                <div class="card card-outline card-warning">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <i class="fas fa-exchange-alt text-warning"></i>
+                            @transfer.OldGroupName
+                            <i class="fas fa-arrow-right"></i>
+                            @transfer.NewGroupName
+                        </h3>
+                        <div class="card-tools">
+                            <span class="badge badge-secondary">@transfer.Date.ToShortDateString()</span>
+                            <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                                <i class="fas fa-minus"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body p-2">
+                        @if (!string.IsNullOrEmpty(transfer.Comment))
+                        {
+                            <h6 class="text-center mb-3 bg-light p-2 rounded">@transfer.Comment</h6>
+                        }
+                        <h6 class="text-center mb-2 bg-warning p-2 rounded">Пройденные предметы</h6>
+                        <div class="table-responsive mb-3">
+                            <table class="table table-sm table-bordered table-hover text-center mb-0" style="font-size:small;">
+                                <thead class="thead-dark">
+                                    <tr>
+                                        <th class="text-center">#</th>
+                                        <th class="text-center">Предмет</th>
+                                        <th class="text-center">Занятий</th>
+                                        <th class="text-center">Полученные отметки</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @{ int s = 1; }
+                                    @foreach (var subject in transfer.Subjects)
+                                    {
+                                        <tr>
+                                            <td>@s</td>
+                                            <td class="text-left">@subject.SubjectName</td>
+                                            <td>@subject.LessonsCount</td>
+                                            <td class="text-left">@subject.Marks</td>
+                                        </tr>
+                                        s++;
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                        <h6 class="text-center mb-2 bg-info p-2 rounded text-white">Занятия и отметки</h6>
+                        <div class="table-responsive">
+                            <table class="table table-sm table-bordered table-hover text-center mb-0" style="font-size:small;">
+                                <thead class="thead-dark">
+                                    <tr>
+                                        <th class="text-center">#</th>
+                                        <th class="text-center">Дата</th>
+                                        <th class="text-center">Предмет</th>
+                                        <th class="text-center">Тема</th>
+                                        <th class="text-center">Тип занятия</th>
+                                        <th class="text-center">Отметка</th>
+                                        <th class="text-center">Преподаватель</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @{ int n = 1; }
+                                    @foreach (var lesson in transfer.Lessons)
+                                    {
+                                        string markClass = "text-muted";
+                                        if (double.TryParse(lesson.Value, out double lessonValue))
+                                        {
+                                            markClass = lessonValue < 4 ? "text-white bg-danger" : "text-white bg-success";
+                                        }
+                                        <tr>
+                                            <td>@n</td>
+                                            <td>@lesson.Date.ToShortDateString()</td>
+                                            <td>@lesson.SubjectName</td>
+                                            <td class="text-left">@lesson.ThemeName</td>
+                                            <td>@lesson.TypeOfExerciseName</td>
+                                            <td class="@markClass">@lesson.Value</td>
+                                            <td class="text-left">@lesson.Signature</td>
+                                        </tr>
+                                        n++;
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            }
+        }
+        <div class="row">
+            <div class="col-12 text-center mb-3">
+                <a class="btn btn-primary" asp-controller="Students" asp-action="Details" asp-route-id="@Model.Student.StudentID">
+                    <i class="fas fa-arrow-left"></i> Назад к профилю
+                </a>
+            </div>
+        </div>
+    </div>
+</section>

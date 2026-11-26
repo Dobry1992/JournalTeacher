@@ -19,5 +19,6 @@ namespace Portal.ViewModel
         public Dictionary<string, string> RaitingTimeSubject { get; set; }
         public Subject? Subject { get; set; }
         public Dictionary<string, string> RaitingTime {  get; set; }
+        public List<StudentTransferView> Transfers { get; set; } = new List<StudentTransferView>();
     }
 }

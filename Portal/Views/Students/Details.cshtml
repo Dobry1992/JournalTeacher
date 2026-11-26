@@ -5,6 +5,7 @@
     int i = 1;
     int j = 1;
     int k = 1;
+    int tr = 0;
 }
 
 @await Html.PartialAsync("_NavMenuJournal")
@@ -25,16 +26,19 @@
             </div>
         }
         <h3 class="mb-3 text-center bg-gray-light headGroup p-2 rounded shadow">@Model.Student.LastName @Model.Student.Name @Model.Student.Surname</h3>
-        @if (User.IsInRole("SuperAdmin") || User.IsInRole("ANB-UMCH"))
-        {
-            <div class="row mb-3">
-                <div class="col-12 text-center">
+        <div class="row mb-3">
+            <div class="col-12 text-center">
+                <a class="btn btn-info" asp-controller="Students" asp-action="TransferHistory" asp-route-id="@Model.Student.StudentID">
+                    <i class="fas fa-history"></i> История переводов
+                </a>
+                @if (User.IsInRole("SuperAdmin") || User.IsInRole("ANB-UMCH"))
+                {
                     <a class="btn btn-warning" asp-controller="Students" asp-action="Transfer" asp-route-id="@Model.Student.StudentID">
                         <i class="fas fa-exchange-alt"></i> Перевести в другую группу
                     </a>
-                </div>
+                }
             </div>
-        }
+        </div>
         <div class="row">
             <div class="col-12 col-sm-6 col-md-3">
                 <div class="info-box">
@@ -248,6 +252,82 @@
                         <span class="text-wrap p-1">@Model.Student.Group.Speciality.Name</span>
                     </div>
                 </div>
+                @if (Model.Transfers.Any())
+                {
+                    <div class="card card-outline card-warning">
+                        <div class="card-header">
+                            <h3 class="card-title">Переводы между группами</h3>
+                            <div class="card-tools">
+                                <a class="btn btn-tool" asp-controller="Students" asp-action="TransferHistory" asp-route-id="@Model.Student.StudentID"
+                                   title="Подробнее о переводах и пройденных предметах">
+                                    <i class="fas fa-external-link-alt"></i>
+                                </a>
+                                <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                                    <i class="fas fa-minus"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body p-2">
+                            @foreach (var transfer in Model.Transfers)
+                            {
+                                tr++;
+                                <div class="pb-2 mb-2 border-bottom">
+                                    <a class="text-decoration-none" data-toggle="collapse" href="#transfer@tr" role="button" aria-expanded="false" aria-controls="transfer@tr">
+                                        <i class="fas fa-exchange-alt text-warning"></i>
+                                        <b>@transfer.OldGroupName</b>
+                                        <i class="fas fa-arrow-right"></i>
+                                        <b>@transfer.NewGroupName</b>
+                                    </a>
+                                    <span class="float-right badge badge-secondary">@transfer.Date.ToShortDateString()</span>
+                                    <div class="mb-1">
+                                        <span class="badge badge-light">занятий: @transfer.Lessons.Count</span>
+                                        <span class="badge badge-light">предметов: @transfer.SubjectsCount</span>
+                                    </div>
+                                    @if (!string.IsNullOrEmpty(transfer.Comment))
+                                    {
+                                        <div class="text-muted small">@transfer.Comment</div>
+                                    }
+                                    <div class="collapse" id="transfer@tr">
+                                        <div class="table-responsive">
+                                            <table class="table table-sm table-bordered table-hover text-center mb-0" style="font-size:small;">
+                                                <thead class="thead-dark">
+                                                    <tr>
+                                                        <th class="text-center">#</th>
+                                                        <th class="text-center">Дата</th>
+                                                        <th class="text-center">Предмет</th>
+                                                        <th class="text-center">Тема</th>
+                                                        <th class="text-center">Тип занятия</th>
+                                                        <th class="text-center">Отметка</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    @{ int n = 1; }
+                                                    @foreach (var lesson in transfer.Lessons)
+                                                    {
+                                                        string markClass = "text-muted";
+                                                        if (double.TryParse(lesson.Value, out double lessonValue))
+                                                        {
+                                                            markClass = lessonValue < 4 ? "text-white bg-danger" : "text-white bg-success";
+                                                        }
+                                                        <tr>
+                                                            <td>@n</td>
+                                                            <td>@lesson.Date.ToShortDateString()</td>
+                                                            <td>@lesson.SubjectName</td>
+                                                            <td class="text-left">@lesson.ThemeName</td>
+                                                            <td>@lesson.TypeOfExerciseName</td>
+                                                            <td class="@markClass">@lesson.Value</td>
+                                                        </tr>
+                                                        n++;
+                                                    }
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
                 <div class="card bg-light">
                     <div class="card-header">
                         <h3 class="card-title">Диаграмма отметок</h3>

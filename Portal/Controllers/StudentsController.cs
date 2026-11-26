@@ -454,6 +454,11 @@ namespace Portal.Controllers
             }
 
             // ========================================
+            // ПЕРЕВОДЫ МЕЖДУ ГРУППАМИ
+            // ========================================
+            List<StudentTransferView> studentTransfers = await BuildTransferHistoryAsync(student.StudentID);
+
+            // ========================================
             // ФОРМИРОВАНИЕ VIEWMODEL
             // ========================================
             StudentDetailsView studentDetailsView = new()
@@ -471,13 +476,122 @@ namespace Portal.Controllers
                 YearsStudy = yearsStudy,
                 RaitingTimeSubject = raitingTimeSubject,
                 Subject = subject,
-                RaitingTime = raitingTime
+                RaitingTime = raitingTime,
+                Transfers = studentTransfers
             };
 
             return View(studentDetailsView);
         }
 
+        [Authorize(Roles = "SuperAdmin, ANB-UMCH, User")]
+        public async Task<IActionResult> TransferHistory(int? id)
+        {
+            if (id == null)
+            {
+                return NotFound();
+            }
+
+            var student = await _context.Students
+                .Include(s => s.Group)
+                .FirstOrDefaultAsync(s => s.StudentID == id);
+
+            if (student == null)
+            {
+                return NotFound();
+            }
+
+            StudentTransfersViewModel model = new()
+            {
+                Student = student,
+                Transfers = await BuildTransferHistoryAsync(student.StudentID)
+            };
+
+            return View(model);
+        }
+
         // Вспомогательные методы
+        private async Task<List<StudentTransferView>> BuildTransferHistoryAsync(int studentID)
+        {
+            var transfers = await _context.Transfers
+                .AsSplitQuery()
+                .Where(t => t.StudentID == studentID)
+                .Include(t => t.HistoryLessons)
+                    .ThenInclude(hl => hl.HistoryMark)
+                .OrderBy(t => t.Date)
+                .ToListAsync();
+
+            List<StudentTransferView> studentTransfers = new();
+
+            if (!transfers.Any())
+            {
+                return studentTransfers;
+            }
+
+            var archivedLessons = transfers.SelectMany(t => t.HistoryLessons).ToList();
+
+            // У HistoryLesson нет навигаций на тему и тип занятия,
+            // поэтому названия подтягиваются отдельными запросами
+            var themeIDs = archivedLessons.Select(hl => hl.ThemeID).Distinct().ToList();
+            var themes = (await _context.Themes
+                .AsNoTracking()
+                .Where(t => themeIDs.Contains(t.ThemeID))
+                .Include(t => t.Subject)
+                .ToListAsync())
+                .ToDictionary(t => t.ThemeID);
+
+            var typeIDs = archivedLessons.Select(hl => hl.TypeOfExerciseID).Distinct().ToList();
+            var types = (await _context.Types
+                .AsNoTracking()
+                .Where(t => typeIDs.Contains(t.TypeOfExerciseID))
+                .ToListAsync())
+                .ToDictionary(t => t.TypeOfExerciseID);
+
+            var groupIDs = transfers
+                .SelectMany(t => new[] { t.OldGroupID, t.NewGroupID })
+                .Distinct()
+                .ToList();
+            var groupNames = await _context.Groups
+                .AsNoTracking()
+                .Where(g => groupIDs.Contains(g.GroupID))
+                .ToDictionaryAsync(g => g.GroupID, g => g.Name);
+
+            foreach (var transfer in transfers)
+            {
+                studentTransfers.Add(new StudentTransferView
+                {
+                    Date = transfer.Date,
+                    Comment = transfer.Comment,
+                    OldGroupName = groupNames.TryGetValue(transfer.OldGroupID, out var oldGroupName)
+                        ? oldGroupName
+                        : "группа не найдена",
+                    NewGroupName = groupNames.TryGetValue(transfer.NewGroupID, out var newGroupName)
+                        ? newGroupName
+                        : "группа не найдена",
+                    Lessons = transfer.HistoryLessons
+                        .Select(hl =>
+                        {
+                            themes.TryGetValue(hl.ThemeID, out Theme theme);
+                            types.TryGetValue(hl.TypeOfExerciseID, out TypeOfExercise type);
+
+                            return new StudentTransferLessonView
+                            {
+                                Date = hl.Date,
+                                SubjectName = theme?.Subject?.ShortName ?? theme?.Subject?.Name ?? "—",
+                                ThemeName = theme?.Name ?? "—",
+                                TypeOfExerciseName = type?.Name ?? "—",
+                                Value = hl.HistoryMark?.Value ?? "-",
+                                Signature = hl.Signature
+                            };
+                        })
+                        .OrderBy(l => l.SubjectName)
+                        .ThenBy(l => l.Date)
+                        .ToList()
+                });
+            }
+
+            return studentTransfers;
+        }
+
         private string GetMonthName(int month)
         {
             string[] months = { "Январь", "Февраль", "Март", "Апрель", "Май", "Июнь",
