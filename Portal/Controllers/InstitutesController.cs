@@ -64,11 +64,12 @@ namespace Portal
             var studentIds = students.Select(s => s.StudentID).ToList();
 
             // Загрузка всех оценок как Mark
+            // (включая "закрытые" периоды с FlagF != 0 - нужны для среднего
+            // балла рядом с итоговой отметкой)
             var marks = await _context.Marks
                 .Where(m =>
                     studentIds.Contains(m.StudentID) &&
-                    subjectIds.Contains(m.SubjectID) &&
-                    (m.FlagF == 0 || m.TypeOfExerciseID == typeIO.TypeOfExerciseID))
+                    subjectIds.Contains(m.SubjectID))
                 .ToListAsync();
 
             // Группировки
@@ -118,12 +119,31 @@ namespace Portal
                             .ToList();
 
                         string rating;
+                        string avgRaiting = null;
                         string color;
 
                         if (finalMarks.Any() && !regularMarks.Any())
                         {
-                            rating = finalMarks.First().Value;
+                            var latestFinal = finalMarks.First();
+                            rating = latestFinal.Value;
                             color = "#ebc509";
+
+                            // Итоговая отметка выставлена (экзамен/зачёт): средний балл никуда
+                            // не деняем - считаем по отметкам того же периода (тот же FlagF),
+                            // т.е. по отметкам, по которым и была выставлена итоговая.
+                            // С началом нового семестра появятся отметки с FlagF == 0 и
+                            // ячейка снова покажет среднее только по новому семестру.
+                            var periodNumericMarks = studentMarks
+                                .Where(m => m.FlagF == latestFinal.FlagF &&
+                                            m.TypeOfExerciseID != typeIO.TypeOfExerciseID)
+                                .Select(m => int.TryParse(m.Value, out int val) ? (int?)val : null)
+                                .Where(v => v.HasValue)
+                                .Select(v => v.Value)
+                                .ToList();
+
+                            avgRaiting = periodNumericMarks.Any()
+                                ? Math.Round(periodNumericMarks.Average(), 3, MidpointRounding.AwayFromZero).ToString()
+                                : null;
                         }
                         else
                         {
@@ -144,6 +164,7 @@ namespace Portal
                         {
                             Subject = subject,
                             Raiting = rating,
+                            AvgRaiting = avgRaiting,
                             Color = color,
                             FinalMarks = finalMarks
                         });

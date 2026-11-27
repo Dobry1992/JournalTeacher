@@ -27,7 +27,7 @@
                                     <div class="col-sm-12">
                                         <div class="container">
                                             <h4 class="text-center">Сводная ведомость текущей средней успеваемости.</h4>
-                                            <p class="text-sm-center">*Белый цвет ячейки таблицы показывает среднюю текущую успеваемость по предмету. Если ячейка выделена оттенком жёлтого цвета, значит на текущий момент выставлена итоговая отметка.</p>
+                                            <p class="text-sm-center">*Белый цвет ячейки таблицы показывает среднюю текущую успеваемость по предмету. Если ячейка выделена оттенком жёлтого цвета, значит на текущий момент выставлена итоговая отметка (рядом в ячейке указывается средний балл по предмету).</p>
                                         </div>
                                         @foreach (var group in Model)
                                         {
@@ -55,7 +55,13 @@
                                                                     <td class="align-middle text-center p-1 bg-light fix" style="white-space:nowrap" data-student-id="@student.Student.StudentID">@student.Student.LastName @student.Student.Name[0]. @student.Student.Surname[0].</td>
                                                                     @foreach (var item in student.SubRaitings)
                                                                     {
-                                                                        <td class="align-middle text-center bg-light" style="background-color:@item.Color !important;">@item.Raiting</td>
+                                                                        <td class="align-middle text-center bg-light" style="background-color:@item.Color !important;">
+                                                                            @item.Raiting
+                                                                            @if (!string.IsNullOrEmpty(item.AvgRaiting))
+                                                                            {
+                                                                                <br /><small>ср.: @item.AvgRaiting</small>
+                                                                            }
+                                                                        </td>
                                                                     }
                                                                 </tr>
                                                                 i++;
