@@ -1,0 +1,82 @@
+@model Portal.Models.Mark
+
+@{
+    ViewData["Title"] = "Выставить отметку";
+    var markOptions = new (string Value, string Label)[]
+    {
+        (" ", "Нет отметки"), ("1", "1"), ("2", "2"), ("3", "3"), ("4", "4"), ("5", "5"),
+        ("6", "6"), ("7", "7"), ("8", "8"), ("9", "9"), ("10", "10"),
+        ("Б", "Б"), ("НР", "НР"), ("О", "О"), ("КМ", "КМ"), ("Р", "Р"), ("НБ", "НБ"),
+        ("Н/Я", "Н/Я"), ("НД/К", "НД/К"), ("ОСВ", "ОСВ"), ("З", "З"), ("НЗ", "НЗ")
+    };
+}
+
+@await Html.PartialAsync("_NavMenuJournal")
+
+<div style="padding:10%;">
+    <section class="content-header">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-sm-6">
+                    <h3>Выставить отметку</h3>
+                </div>
+            </div>
+        </div>
+    </section>
+    <section class="content">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-6">
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-sm-12">
+                                    @* Форма простого (сквозного) выставления отметки: журнал без МРСО.
+                                       id="markFormEdit" сохраняется, чтобы контекстное меню (mark-cell-menu.js)
+                                       распознало ответ с этой формой как "не сохранено". *@
+                                    <form id="markFormEdit" asp-action="SimpleEdit">
+                                        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                                        <input type="hidden" name="MarkID" value="@Model.MarkID" />
+                                        <input type="hidden" name="subgroup" value="@ViewBag.Subgroup" />
+                                        <div class="form-group">
+                                            <label class="control-label" for="Value">Отметка</label>
+                                            <select name="Value" id="Value" class="form-control">
+                                                @foreach (var opt in markOptions)
+                                                {
+                                                    if ((Model.Value ?? "") == opt.Value)
+                                                    {
+                                                        <option value="@opt.Value" selected="selected">@opt.Label</option>
+                                                    }
+                                                    else
+                                                    {
+                                                        <option value="@opt.Value">@opt.Label</option>
+                                                    }
+                                                }
+                                            </select>
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="control-label" for="Comment">Замечание преподавателя</label>
+                                            <textarea name="Comment" id="Comment" class="form-control">@Model.Comment</textarea>
+                                        </div>
+                                        <div class="form-group">
+                                            <input type="submit" value="Выставить отметку" class="btn btn-primary" />
+                                            <a class="btn btn-outline-primary" asp-controller="Journals" asp-action="SimpleJournal"
+                                               asp-route-GroupID="@ViewBag.GroupID" asp-route-SubjectID="@ViewBag.SubjectID"
+                                               asp-route-subgroup="@ViewBag.Subgroup">Назад</a>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6 alert alert-success" role="alert">
+                    <h4 class="alert-heading">Условные обозначения:</h4>
+                    <p>
+                        Б - болезнь,<br> НР - наряд,<br> О - отпуск,<br> КМ - командировка,<br> Р - отсутствие по мотивированному рапорту,<br> НБ - отсутствие без уважительной причины.<br> З - зачтено,<br> НЗ - не зачтено,<br> Н/Я - не явился,<br> НД/К - не допущен кафедрой,<br> ОСВ - освобождение.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>

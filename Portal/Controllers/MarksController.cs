@@ -998,5 +998,70 @@ namespace Portal.Controllers
         {
             return _context.Marks.Any(e => e.MarkID == id);
         }
+
+        #region ПРОСТАЯ ОТМЕТКА (журнал без МРСО, Journals.IsSystem == true)
+        // GET: Marks/SimpleEdit/5?GroupID=1&SubjectID=2&subgroup=...
+        // Форма выставления отметки для журнала, не подчиняющегося МРСО.
+        public async Task<IActionResult> SimpleEdit(int? MarkID, int? GroupID, int? SubjectID, string subgroup = null)
+        {
+            if (MarkID == null)
+            {
+                return NotFound();
+            }
+
+            var mark = await _context.Marks
+                .FirstOrDefaultAsync(m => m.MarkID == MarkID);
+            if (mark == null)
+            {
+                return NotFound();
+            }
+
+            ViewBag.GroupID = GroupID;
+            ViewBag.SubjectID = SubjectID;
+            ViewBag.Subgroup = subgroup;
+
+            return View(mark);
+        }
+
+        // POST: Marks/SimpleEdit
+        // Сквозное выставление: правила редактирования МРСО не действуют.
+        // Обновляются только значение, комментарий и подпись преподавателя;
+        // дата, история и счётчик изменений сохраняются как были.
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> SimpleEdit(int MarkID, int? GroupID, int? SubjectID,
+            [Bind("MarkID,Value,Comment")] Mark mark, string subgroup = null)
+        {
+            if (MarkID != mark.MarkID)
+            {
+                return NotFound();
+            }
+
+            var persistedMark = await _context.Marks.FindAsync(MarkID);
+            if (persistedMark == null)
+            {
+                return NotFound();
+            }
+
+            persistedMark.Value = mark.Value;
+            persistedMark.Comment = mark.Comment;
+            persistedMark.SignatureOfTeacher = _userNameService.GetDisplayName();
+
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                if (!MarkExists(mark.MarkID))
+                {
+                    return NotFound();
+                }
+                throw;
+            }
+
+            return RedirectToAction("SimpleJournal", "Journals", new { GroupID, SubjectID, subgroup });
+        }
+        #endregion
     }
 }

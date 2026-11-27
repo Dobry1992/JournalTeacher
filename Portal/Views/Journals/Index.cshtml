@@ -34,6 +34,7 @@
                                                     <th class="sorting_asc">Группа</th>
                                                     <th class="sorting_asc">Предмет</th>
                                                     <th class="sorting_asc">Комментарий</th>
+                                                    <th class="sorting_asc">Система оценивания</th>
                                                     <th class="sorting_asc">Дата создания</th>
                                                     <th class="sorting_asc">Действие</th>
                                                 </tr>
@@ -46,6 +47,16 @@
                                                         <td tabindex="0" class="sorting_1">@item.Group.Name</td>
                                                         <td tabindex="0" class="sorting_1">@item.Subject.Name</td>
                                                         <td tabindex="0" class="sorting_1">@item.Comment</td>
+                                                        <td tabindex="0" class="sorting_1">
+                                                            @if (item.IsSystem)
+                                                            {
+                                                                <span class="badge badge-warning" title="Журнал не подчиняется модульно-рейтинговой системе (сквозное выставление отметок)">без МРСО</span>
+                                                            }
+                                                            else
+                                                            {
+                                                                <span class="badge badge-secondary" title="Модульно-рейтинговая система">МРСО</span>
+                                                            }
+                                                        </td>
                                                         <td tabindex="0" class="sorting_1">@item.Date.ToShortDateString()</td>
                                                         <td tabindex="0" class="sorting_1">
                                                             <div class="container">

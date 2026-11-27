@@ -244,6 +244,10 @@ namespace Portal
 
         public async Task<IActionResult> Journal(int GroupID, int SubjectID, string subgroup = null)
         {
+            // Журналы вне модульно-рейтинговой системы (IsSystem=true) открываются в простом режиме
+            if (await IsSimpleJournalAsync(GroupID, SubjectID))
+                return RedirectToAction(nameof(SimpleJournal), new { GroupID, SubjectID, subgroup });
+
             FillMarkFormViewBag();
             return await PrepareJournalViewWithSubgroup(GroupID, SubjectID, "Journal", subgroup);
         }
@@ -251,10 +255,181 @@ namespace Portal
         [Authorize(Roles = "SuperAdmin,ANB-UMCH")]
         public async Task<IActionResult> AdjustedJournal(int GroupID, int SubjectID, string subgroup = null)
         {
+            if (await IsSimpleJournalAsync(GroupID, SubjectID))
+                return RedirectToAction(nameof(SimpleJournal), new { GroupID, SubjectID, subgroup });
+
             var academicYears = await GetAcademicYearsForSubjectAndGroup(GroupID, SubjectID);
             ViewBag.AcademicYears = academicYears;
 
             return await PrepareJournalViewWithSubgroup(GroupID, SubjectID, "AdjustedJournal", subgroup);
+        }
+
+        // ============================================================
+        // ПРОСТОЙ ЖУРНАЛ (IsSystem = true)
+        // Журнал вне модульно-рейтинговой системы: свободное создание занятий
+        // и сквозное выставление отметок без правил и пересчёта итоговых.
+        // ============================================================
+
+        private Task<bool> IsSimpleJournalAsync(int groupID, int subjectID) =>
+            _context.Journals.AnyAsync(j => j.GroupID == groupID && j.SubjectID == subjectID && j.IsSystem);
+
+        public async Task<IActionResult> SimpleJournal(int GroupID, int SubjectID, string subgroup = null)
+        {
+            var group = await _context.Groups.FindAsync(GroupID);
+            var subject = await _context.Subjects.FindAsync(SubjectID);
+            if (group == null || subject == null)
+                return NotFound();
+
+            var journalExists = await _context.Journals
+                .AnyAsync(j => j.GroupID == GroupID && j.SubjectID == SubjectID);
+
+            var department = await _context.Departments.FindAsync(subject.DepartmentID);
+
+            bool hasAccess = User.IsInRole("SuperAdmin")
+                || User.IsInRole("ANB-UMCH")
+                || User.IsInRole("ANB-HEAD")
+                || (department != null && !string.IsNullOrEmpty(department.Role) && User.IsInRole(department.Role));
+
+            // Выбор подгруппы - тот же механизм, что у обычных журналов (SelectSubgroup использует ReturnAction)
+            var subgroupNames = await _context.SubgroupLinks
+                .Where(sl => sl.GroupID == GroupID && sl.SubjectID == SubjectID)
+                .Select(sl => sl.Name)
+                .Distinct()
+                .ToListAsync();
+
+            if (subgroupNames.Any() && string.IsNullOrEmpty(subgroup))
+            {
+                var counts = await _context.SubgroupLinks
+                    .Where(sl => sl.GroupID == GroupID && sl.SubjectID == SubjectID)
+                    .GroupBy(sl => sl.Name)
+                    .Select(g => new { Name = g.Key, Count = g.Count() })
+                    .ToListAsync();
+
+                return View("SelectSubgroup", new SubgroupSelectionViewModel
+                {
+                    GroupID = GroupID,
+                    SubjectID = SubjectID,
+                    GroupName = group.Name,
+                    SubjectName = subject.Name,
+                    ReturnAction = nameof(SimpleJournal),
+                    Subgroups = counts
+                        .OrderBy(c => c.Name)
+                        .Select(c => new SubgroupOption { Name = c.Name, StudentCount = c.Count })
+                        .ToList()
+                });
+            }
+
+            var model = new SimpleJournalViewModel
+            {
+                Group = group,
+                Subject = subject,
+                Department = department,
+                HasAccess = hasAccess,
+                JournalExists = journalExists,
+                Subgroup = subgroup,
+                HasSubgroups = subgroupNames.Any(),
+                SubgroupNames = subgroupNames.OrderBy(n => n).ToList()
+            };
+
+            if (!hasAccess)
+                return View(model);
+
+            if (!string.IsNullOrEmpty(subgroup) && !subgroupNames.Contains(subgroup))
+                subgroup = null;
+
+            var studentsQuery = _context.Students
+                .Where(s => s.GroupID == GroupID && s.Status == true);
+
+            if (!string.IsNullOrEmpty(subgroup))
+            {
+                var subgroupStudentIds = await _context.SubgroupLinks
+                    .Where(sl => sl.GroupID == GroupID
+                              && sl.SubjectID == SubjectID
+                              && sl.Name == subgroup)
+                    .Select(sl => sl.StudentID)
+                    .ToListAsync();
+
+                studentsQuery = studentsQuery.Where(s => subgroupStudentIds.Contains(s.StudentID));
+            }
+
+            var students = await studentsQuery
+                .OrderBy(s => s.LastName)
+                .AsNoTracking()
+                .ToListAsync();
+
+            var lessons = await _context.Lessons
+                .Where(l => l.Theme.SubjectID == SubjectID && l.GroupID == GroupID)
+                .OrderBy(l => l.Date)
+                .Include(l => l.TypeOfExercise)
+                .Include(l => l.Theme)
+                .AsNoTracking()
+                .ToListAsync();
+
+            var studentIds = students.Select(s => s.StudentID).ToList();
+            var lessonIds = lessons.Select(l => l.LessonID).ToList();
+
+            var marks = await _context.Marks
+                .Where(m => m.SubjectID == SubjectID
+                         && m.GroupID == GroupID
+                         && studentIds.Contains(m.StudentID)
+                         && lessonIds.Contains(m.LessonID))
+                .ToListAsync();
+
+            // Сквозное выставление: дособиваем отсутствующие строки отметок
+            // (студент x занятие), чтобы каждая ячейка журнала была доступна для ввода
+            var marksByLesson = new Dictionary<int, Dictionary<int, Mark>>();
+            foreach (var m in marks)
+            {
+                if (!marksByLesson.TryGetValue(m.LessonID, out var perStudent))
+                {
+                    perStudent = new Dictionary<int, Mark>();
+                    marksByLesson[m.LessonID] = perStudent;
+                }
+                perStudent[m.StudentID] = m;
+            }
+
+            var addedAny = false;
+            foreach (var lesson in lessons)
+            {
+                if (!marksByLesson.TryGetValue(lesson.LessonID, out var perStudent))
+                {
+                    perStudent = new Dictionary<int, Mark>();
+                    marksByLesson[lesson.LessonID] = perStudent;
+                }
+
+                foreach (var student in students)
+                {
+                    if (perStudent.ContainsKey(student.StudentID))
+                        continue;
+
+                    var newMark = new Mark
+                    {
+                        Value = "",
+                        Date = lesson.Date,
+                        SubjectID = SubjectID,
+                        GroupID = GroupID,
+                        LessonID = lesson.LessonID,
+                        TypeOfExerciseID = lesson.TypeOfExerciseID,
+                        DepartmentID = subject.DepartmentID,
+                        InstituteID = group.InstituteID,
+                        SpecialityID = group.SpecialityID,
+                        ThemeID = lesson.ThemeID,
+                        StudentID = student.StudentID
+                    };
+                    _context.Marks.Add(newMark);
+                    perStudent[student.StudentID] = newMark;
+                    addedAny = true;
+                }
+            }
+
+            if (addedAny)
+                await _context.SaveChangesAsync();
+
+            model.Students = students;
+            model.Lessons = lessons;
+            model.MarksByLesson = marksByLesson;
+
+            return View(model);
         }
 
         // ============================================================
@@ -851,7 +1026,7 @@ namespace Portal
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(int GroupID, int SubjectID,
-            [Bind("JournalID,Comment,GroupID,SubjectID,Date")] Journal journal)
+            [Bind("JournalID,Comment,GroupID,SubjectID,Date,IsSystem")] Journal journal)
         {
             if (ModelState.IsValid)
             {
@@ -880,7 +1055,7 @@ namespace Portal
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> CreateJournal(
-            [Bind("JournalID,Comment,GroupID,SubjectID,Date")] Journal journal)
+            [Bind("JournalID,Comment,GroupID,SubjectID,Date,IsSystem")] Journal journal)
         {
             if (ModelState.IsValid)
             {

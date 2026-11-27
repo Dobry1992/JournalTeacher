@@ -15,5 +15,6 @@ namespace Portal.Models
         public Group Group { get; set; }
         public int SubjectID { get; set; }
         public Subject Subject { get; set; }
+        public bool IsSystem { get; set; }
     }
 }

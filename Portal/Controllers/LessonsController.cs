@@ -2106,5 +2106,142 @@ namespace Portal
         {
             return _context.Lessons.Any(e => e.LessonID == id);
         }
+
+        #region ПРОСТОЕ ЗАНЯТИЕ (журнал без МРСО, Journals.IsSystem == true)
+        // GET: Lessons/SimpleCreate?GroupID=1&SubjectID=2&subgroup=...
+        // Создание занятия для журнала, не подчиняющегося МРСО:
+        // без недельных окон, без ограничений по типу занятия.
+        public IActionResult SimpleCreate(int? GroupID, int? SubjectID, string subgroup = null)
+        {
+            string teacher = _userNameService.GetDisplayName();
+
+            var themes = _context.Themes
+                    .Where(t => t.SubjectID == SubjectID)
+                    .AsEnumerable()
+                    .OrderBy(t => _shortNameParser.GetNumericParts(t.ShortName), new NumericPartsComparer())
+                    .ToList();
+
+            ViewBag.Themes = themes;
+            // Типы занятий для расписания/практик/итогов в простом журнале недоступны,
+            // остальные (в т.ч. зачёт/экзамен/дифференцированный зачёт) - доступны
+            string[] excludedTypes = {
+                "Дипломный проект", "Дипломная работа",
+                "Государственный экзамен", "Стажировка",
+                "Производственная практика", "Учебная практика",
+                "Итоговая отметка", "Магистерская работа"
+            };
+            ViewData["TypeOfExerciseID"] = new SelectList(
+                _context.Types.Where(t => !excludedTypes.Contains(t.Name)),
+                "TypeOfExerciseID", "Name"
+            );
+
+            ViewBag.UserName = teacher;
+            ViewBag.GroupID = GroupID;
+            ViewBag.SubjectID = SubjectID;
+            ViewBag.Subgroup = subgroup;
+
+            return View();
+        }
+
+        // POST: Lessons/SimpleCreate
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> SimpleCreate(int GroupID, int SubjectID,
+            [Bind("LessonID,Date,Comment,ThemeID,TypeOfExerciseID,GroupID,SubjectID,Signature")] Lesson lesson,
+            string subgroup = null)
+        {
+            string teacher = _userNameService.GetDisplayName();
+
+            // Правила МРСО (окна дат, FlagF) не действуют
+            lesson.SubjectID = SubjectID;
+            lesson.GroupID = GroupID;
+            lesson.FlagF = 0;
+            lesson.Signature = teacher;
+
+            _context.Add(lesson);
+            await _context.SaveChangesAsync();
+
+            var subject = await _context.Subjects.FindAsync(SubjectID);
+            var group = await _context.Groups.FindAsync(GroupID);
+            var students = _context.Students.Where(s => s.GroupID == GroupID);
+
+            foreach (var student in students)
+            {
+                var mark = new Mark
+                {
+                    Value = "",
+                    Date = lesson.Date,
+                    SubjectID = SubjectID,
+                    GroupID = GroupID,
+                    LessonID = lesson.LessonID,
+                    TypeOfExerciseID = lesson.TypeOfExerciseID,
+                    DepartmentID = subject.DepartmentID,
+                    InstituteID = group.InstituteID,
+                    SpecialityID = group.SpecialityID,
+                    ThemeID = lesson.ThemeID,
+                    StudentID = student.StudentID
+                };
+                _context.Marks.Add(mark);
+            }
+
+            await _context.SaveChangesAsync();
+
+            return RedirectToAction("SimpleJournal", "Journals", new { GroupID, SubjectID, subgroup });
+        }
+
+        // GET: Lessons/SimpleDelete/5?GroupID=1&SubjectID=2&subgroup=...
+        public async Task<IActionResult> SimpleDelete(int? id, int? GroupID, int? SubjectID, string subgroup = null)
+        {
+            if (id == null)
+            {
+                return NotFound();
+            }
+
+            var lesson = await _context.Lessons
+                .Include(l => l.Group)
+                .Include(l => l.Theme)
+                    .ThenInclude(t => t.Subject)
+                .Include(l => l.TypeOfExercise)
+                .FirstOrDefaultAsync(m => m.LessonID == id);
+            if (lesson == null)
+            {
+                return NotFound();
+            }
+            ViewBag.GroupID = GroupID;
+            ViewBag.SubjectID = SubjectID;
+            ViewBag.Subgroup = subgroup;
+            return View(lesson);
+        }
+
+        // POST: Lessons/SimpleDelete/5
+        [HttpPost, ActionName("SimpleDelete")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> SimpleDeleteConfirmed(int id, int GroupID, int SubjectID, string subgroup = null)
+        {
+            string teacher = _userNameService.GetDisplayName();
+
+            var lesson = await _context.Lessons.FindAsync(id);
+            var marks = _context.Marks.Where(m => m.LessonID == id);
+            foreach (var mark in marks)
+            {
+                _context.Marks.Remove(mark);
+            }
+            _context.Lessons.Remove(lesson);
+            await _context.SaveChangesAsync();
+
+            var subject = await _context.Subjects.FindAsync(lesson.SubjectID);
+            var theme = await _context.Themes.FindAsync(lesson.ThemeID);
+            var type = await _context.Types.FindAsync(lesson.TypeOfExerciseID);
+            var group = await _context.Groups.FindAsync(GroupID);
+            Event e = new();
+            e.Date = DateTime.Now;
+            e.Teacher = teacher;
+            e.Log = "Удалено занятие (журнал без МРСО) от: " + lesson.Date.ToShortDateString() + ", предмет: " + subject.Name + " , тема: " + theme.Name + ", тип: " + type.Name + ", группа: " + group.Name;
+            _context.Events.Update(e);
+            await _context.SaveChangesAsync();
+
+            return RedirectToAction("SimpleJournal", "Journals", new { GroupID, SubjectID, subgroup });
+        }
+        #endregion
     }
 }

@@ -1,0 +1,226 @@
+@using Portal.ViewModel
+@model SimpleJournalViewModel
+
+@{
+    ViewData["Title"] = "Журнал";
+    int i = 1;
+    // Ячейки занятий с темой «Контрольное занятие» подсвечиваются оттенком красного
+    var controlLessonIds = new HashSet<int>(Model.Lessons
+        .Where(l => l.Theme != null && l.Theme.Name == "Контрольное занятие")
+        .Select(l => l.LessonID));
+}
+
+@await Html.PartialAsync("_NavMenuJournal")
+
+<div>
+    <section class="content-header">
+        <div class="container-fluid">
+            <div class="row">
+            </div>
+        </div>
+    </section>
+</div>
+
+@if (!Model.JournalExists)
+{
+    <div class="text-center p-5">
+        <div class="alert alert-warning" role="alert">
+            <h4 class="alert-heading">Журнал не сформирован</h4>
+            <p>Для выбранной группы и предмета журнал отсутствует.</p>
+            @if (User.IsInRole("ANB-UMCH") || User.IsInRole("SuperAdmin"))
+            {
+                <a asp-controller="Journals" asp-action="Create"
+                   asp-route-GroupID="@Model.Group.GroupID"
+                   asp-route-SubjectID="@Model.Subject.SubjectID"
+                   class="btn btn-danger mt-3">Сформировать журнал</a>
+            }
+        </div>
+    </div>
+}
+else if (Model.HasAccess)
+{
+    <div class="container-fluid mt-3">
+        <div class="card">
+            <div class="card-body">
+                <h6 class="text-center mb-4 bg-info p-2 rounded text-white">
+                    Группа: @Model.Group.Name | Предмет: @Model.Subject.Name
+                    @if (Model.HasSubgroups && !string.IsNullOrEmpty(Model.Subgroup))
+                    {
+                        <text><br />Подгруппа: @Model.Subgroup</text>
+                    }
+                    <br /><small>Журнал без модульно-рейтинговой системы</small>
+                </h6>
+
+                <div class="mb-3 d-flex flex-wrap gap-2">
+                    <a class="btn btn-dark mr-2 btn-sm" asp-controller="Lessons" asp-action="SimpleCreate"
+                       asp-route-GroupID="@Model.Group.GroupID"
+                       asp-route-SubjectID="@Model.Subject.SubjectID"
+                       asp-route-subgroup="@Model.Subgroup">
+                        Занятие
+                    </a>
+                    @if (Model.HasSubgroups)
+                    {
+                        <div class="btn-group btn-group-sm" role="group">
+                            <a class="btn btn-outline-secondary @(string.IsNullOrEmpty(Model.Subgroup) ? "active" : "")"
+                               asp-action="SimpleJournal"
+                               asp-route-GroupID="@Model.Group.GroupID"
+                               asp-route-SubjectID="@Model.Subject.SubjectID">
+                                Все
+                            </a>
+                            @foreach (var sg in Model.SubgroupNames)
+                            {
+                                <a class="btn btn-outline-secondary @(Model.Subgroup == sg ? "active" : "")"
+                                   asp-action="SimpleJournal"
+                                   asp-route-GroupID="@Model.Group.GroupID"
+                                   asp-route-SubjectID="@Model.Subject.SubjectID"
+                                   asp-route-subgroup="@sg">
+                                    @sg
+                                </a>
+                            }
+                        </div>
+                    }
+                </div>
+
+                <div class="table-responsive" id="sd">
+                    <table class="table table-bordered table-sm compact">
+                        <thead class="thead-dark">
+                            <tr>
+                                <th class="text-center align-middle p-1 fix tableRowSticky title-row col-fixed-1">#</th>
+                                <th class="text-center align-middle p-1 fix tableRowSticky title-row col-fixed-2">Ф.И.О.</th>
+                                @foreach (var lesson in Model.Lessons)
+                                {
+                                    <th class="text-center align-middle p-0 tableRowSticky">
+                                        <a class="btn btn-outline-danger border-0 p-1 text-white btn-tooltip"
+                                           asp-controller="Lessons" asp-action="SimpleDelete"
+                                           asp-route-id="@lesson.LessonID"
+                                           asp-route-GroupID="@Model.Group.GroupID"
+                                           asp-route-SubjectID="@Model.Subject.SubjectID"
+                                           asp-route-subgroup="@Model.Subgroup"
+                                           data-toggle="tooltip"
+                                           data-html="true"
+                                           title="Подпись: @lesson.Signature<br>@lesson.TypeOfExercise.Name<br>Тема: @lesson.Theme.Name">
+                                            <span class="rotate-sm-90">
+                                                @lesson.TypeOfExercise.ShortName<br />
+                                                @lesson.Theme.ShortName<br />
+                                                @lesson.Date.ToShortDateString()
+                                            </span>
+                                        </a>
+                                    </th>
+                                }
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white compact">
+                            @foreach (var student in Model.Students)
+                            {
+                                <tr>
+                                    <td class="text-center align-middle bg-light p-1 fix col-fixed-1">@i</td>
+                                    <td class="text-left align-middle bg-light p-1 fix col-fixed-2" data-student-id="@student.StudentID">@student.LastName @student.Name @student.Surname</td>
+                                    @foreach (var lesson in Model.Lessons)
+                                    {
+                                        Model.MarksByLesson.TryGetValue(lesson.LessonID, out var perStudent);
+                                        var mark = perStudent != null && perStudent.TryGetValue(student.StudentID, out var m) ? m : null;
+                                        if (mark != null)
+                                        {
+                                            <td class="text-center align-middle p-0 @(controlLessonIds.Contains(lesson.LessonID) ? "ControlEventMarkRed" : "")">
+                                                <a class="btn border-0 p-2 btn-tooltip w-100 mark-menu-cell"
+                                                   asp-controller="Marks" asp-action="SimpleEdit"
+                                                   asp-route-MarkID="@mark.MarkID"
+                                                   asp-route-SubjectID="@Model.Subject.SubjectID"
+                                                   asp-route-GroupID="@Model.Group.GroupID"
+                                                   asp-route-subgroup="@Model.Subgroup"
+                                                   data-menu-url="@Url.Action("SimpleEdit", "Marks")"
+                                                   @* JsonSerializer.Serialize возвращает строку - Razor закодирует кавычки для атрибута
+                                                      (Json.Serialize вернул бы IHtmlContent с сырыми кавычками и сломал атрибут) *@
+                                                   data-mark="@(System.Text.Json.JsonSerializer.Serialize(new {
+                                                       markID = mark.MarkID,
+                                                       value = mark.Value,
+                                                       date = mark.Date.ToString(),
+                                                       comment = mark.Comment,
+                                                       signature = mark.SignatureOfTeacher,
+                                                       history = mark.HistoryOfMark,
+                                                       subjectID = mark.SubjectID,
+                                                       groupID = mark.GroupID,
+                                                       lessonID = mark.LessonID,
+                                                       typeOfExerciseID = mark.TypeOfExerciseID,
+                                                       departmentID = mark.DepartmentID,
+                                                       specialityID = mark.SpecialityID,
+                                                       themeID = mark.ThemeID,
+                                                       studentID = mark.StudentID,
+                                                       flagF = mark.FlagF,
+                                                       instituteID = mark.InstituteID,
+                                                       changeCounter = mark.ChangeCounter,
+                                                       subgroup = Model.Subgroup
+                                                   }))"
+                                                   data-toggle="tooltip"
+                                                   data-html="true"
+                                                   title="Подпись: @mark.SignatureOfTeacher<br>История:<br>@mark.HistoryOfMark">
+                                                    @mark.Value
+                                                </a>
+                                            </td>
+                                        }
+                                        else
+                                        {
+                                            <td class="text-center align-middle p-0 @(controlLessonIds.Contains(lesson.LessonID) ? "ControlEventMarkRed" : "")">
+                                                <span class="btn border-0 p-2 w-100">&nbsp;</span>
+                                            </td>
+                                        }
+                                    }
+                                </tr>
+                                i++;
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <div class="container p-5 text-center">
+        <div class="card border-danger">
+            <div class="row no-gutters">
+                <div class="col-md-4">
+                    <img src="~/images/rejected.jpg" class="img-fluid" />
+                </div>
+                <div class="col-md-8 p-4">
+                    <h3 class="text-danger">Отказ в доступе</h3>
+                    <p>У Вас нет доступа к журналу данной группы и предмета.</p>
+                    <small class="text-muted">@DateTime.Now.ToLongTimeString()</small>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@section Scripts {
+    <script>
+        $(function () {
+            $('.btn-tooltip').tooltip();
+        });
+
+        document.addEventListener("DOMContentLoaded", function () {
+            const div = document.getElementById('sd');
+            if (!div) return;
+            const savedScroll = localStorage.getItem('scrollLeft') || 0;
+            const savedScrollTop = localStorage.getItem('scrollTop') || 0;
+
+            div.scrollLeft = savedScroll;
+            div.scrollTop = savedScrollTop;
+
+            div.addEventListener('scroll', () => {
+                localStorage.setItem('scrollLeft', div.scrollLeft);
+                localStorage.setItem('scrollTop', div.scrollTop);
+            });
+        });
+    </script>
+
+    @* Токен и данные для контекстного меню быстрой выставления отметки (mark-cell-menu.js) *@
+    <form style="display:none">@Html.AntiForgeryToken()</form>
+    <input type="hidden" id="markMenuJournalMarker" />
+    @* В простом журнале отметки выставляются свободно: правило обязательного замечания отключено.
+       Поле преподавателя в меню не показываем - сервер всегда подписывает текущего пользователя. *@
+    <script>window.__MARK_VALUES = @Json.Serialize(Portal.Helpers.MarkValueOptions.All);</script>
+    <script>window.__MARK_MENU_COMMENT_RULE = false;</script>
+    <script src="~/js/mark-cell-menu.js" asp-append-version="true"></script>
+}

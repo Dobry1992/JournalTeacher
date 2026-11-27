@@ -139,6 +139,16 @@ body {
     background-color: #FFE8A1;
 }
 
+/* Ячейки контрольных мероприятий в простом журнале (без МРСО): оттенок красного */
+.ControlEventMarkRed {
+    background-color: #F26C6C;
+}
+
+.ControlEventMarkRed:hover {
+    background-color: #E53935;
+    transition: 0.5s;
+}
+
 .tableMarkIO {
     background-color: darksalmon;
 }

@@ -38,6 +38,10 @@
                                                 <textarea asp-for="Comment" class="form-control"></textarea>
                                                 <span asp-validation-for="Comment" class="text-danger"></span>
                                             </div>
+                                            <div class="form-group form-check">
+                                                <input asp-for="IsSystem" class="form-check-input" />
+                                                <label asp-for="IsSystem" class="form-check-label">Журнал НЕ подчиняется модульно-рейтинговой системе (сквозное выставление отметок)</label>
+                                            </div>
                                             <div class="form-group">
                                                 <input type="submit" value="Сформировать" class="btn btn-success" />
                                                 <a class="btn btn-primary" asp-action="Index">Назад</a>

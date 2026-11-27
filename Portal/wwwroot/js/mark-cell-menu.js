@@ -12,8 +12,10 @@ $(function () {
     var values = window.__MARK_VALUES || [];
     var $token = $('input[name="__RequestVerificationToken"]').first();
 
-    // Клиентское правило из Edit.cshtml / AdjustmentEdit.cshtml: для этих отметок обязательно замечание
+    // Клиентское правило из Edit.cshtml / AdjustmentEdit.cshtml: для этих отметок обязательно замечание.
+    // В простых журналах (без МРСО) правило отключают установкой window.__MARK_MENU_COMMENT_RULE = false.
     var REQUIRED_COMMENT_VALUES = ['1', '2', '3', 'НЗ'];
+    var requireCommentRule = window.__MARK_MENU_COMMENT_RULE !== false;
 
     var $menu = $('<div class="dropdown-menu mark-context-menu"></div>').appendTo('body').hide();
     var current = null;
@@ -282,7 +284,7 @@ $(function () {
         $save.on('click', function () {
             var value = $sel.val();
             var comment = $cmt.val() || '';
-            if ($.inArray($.trim(value || ''), REQUIRED_COMMENT_VALUES) !== -1 && !$.trim(comment)) {
+            if (requireCommentRule && $.inArray($.trim(value || ''), REQUIRED_COMMENT_VALUES) !== -1 && !$.trim(comment)) {
                 $err.removeClass('d-none').text('Поле "Замечание преподавателя" обязательно для заполнения.');
                 $cmt.focus();
                 return;
