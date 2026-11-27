@@ -22,6 +22,9 @@ namespace Portal.ViewModel
         public List<Student> Students { get; set; } = new List<Student>();
         public List<Lesson> Lessons { get; set; } = new List<Lesson>();
 
+        // Средний балл студента по предмету: среднее арифметическое числовых отметок (1-10)
+        public Dictionary<int, double?> StudentAverages { get; set; } = new Dictionary<int, double?>();
+
         // MarksByLesson[lessonID][studentID] -> отметка
         public Dictionary<int, Dictionary<int, Mark>> MarksByLesson { get; set; }
             = new Dictionary<int, Dictionary<int, Mark>>();

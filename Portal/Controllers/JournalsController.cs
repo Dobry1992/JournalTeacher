@@ -425,6 +425,66 @@ namespace Portal
             if (addedAny)
                 await _context.SaveChangesAsync();
 
+            // Колонка "СО": как в обычном журнале (PrepareJournalView) -
+            // в расчёт входят только "учебные" занятия (без экзамена, зачёта,
+            // дифференцированного зачёта, итоговой отметки и курсовых).
+            var excludeTypeNames = new HashSet<string>
+            {
+                "Экзамен", "Дифференцированный зачёт", "Зачёт",
+                "Итоговая отметка", "Курсовой проект", "Курсовая работа"
+            };
+            var excludedTypeIds = (await _context.Types
+                .Where(t => excludeTypeNames.Contains(t.Name))
+                .Select(t => t.TypeOfExerciseID)
+                .ToListAsync()).ToHashSet();
+
+            var simpleLessons = lessons
+                .Where(l => !excludedTypeIds.Contains(l.TypeOfExerciseID))
+                .ToList();
+
+            foreach (var student in students)
+            {
+                var values = new List<double>();
+                foreach (var simpleLesson in simpleLessons)
+                {
+                    if (marksByLesson.TryGetValue(simpleLesson.LessonID, out var perStudent)
+                        && perStudent.TryGetValue(student.StudentID, out var mk)
+                        && double.TryParse(mk.Value, out double number))
+                    {
+                        values.Add(number);
+                    }
+                }
+
+                model.StudentAverages[student.StudentID] = values.Any()
+                    ? Math.Round(values.Average(), 3, MidpointRounding.AwayFromZero)
+                    : (double?)null;
+            }
+
+            // Колонка СО ставится строго после "учебных" занятий и до колонок
+            // экзамена/зачёта/дифференцированного зачёта (и прочих невходящих в средний),
+            // независимо от дат занятий (виртуальный урок: LessonID = 0).
+            if (simpleLessons.Any())
+            {
+                var statLesson = new Lesson
+                {
+                    LessonID = 0,
+                    GroupID = GroupID,
+                    SubjectID = SubjectID,
+                    Group = group,
+                    Date = simpleLessons[simpleLessons.Count - 1].Date.AddHours(1)
+                };
+
+                var otherLessons = lessons
+                    .Where(l => excludedTypeIds.Contains(l.TypeOfExerciseID))
+                    .ToList();
+
+                var orderedLessons = new List<Lesson>(simpleLessons);
+                orderedLessons.Add(statLesson);
+                orderedLessons.AddRange(otherLessons);
+
+                lessons = orderedLessons;
+            }
+
             model.Students = students;
             model.Lessons = lessons;
             model.MarksByLesson = marksByLesson;

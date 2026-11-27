@@ -89,23 +89,39 @@ else if (Model.HasAccess)
                                 <th class="text-center align-middle p-1 fix tableRowSticky title-row col-fixed-2">Ф.И.О.</th>
                                 @foreach (var lesson in Model.Lessons)
                                 {
-                                    <th class="text-center align-middle p-0 tableRowSticky">
-                                        <a class="btn btn-outline-danger border-0 p-1 text-white btn-tooltip"
-                                           asp-controller="Lessons" asp-action="SimpleDelete"
-                                           asp-route-id="@lesson.LessonID"
-                                           asp-route-GroupID="@Model.Group.GroupID"
-                                           asp-route-SubjectID="@Model.Subject.SubjectID"
-                                           asp-route-subgroup="@Model.Subgroup"
-                                           data-toggle="tooltip"
-                                           data-html="true"
-                                           title="Подпись: @lesson.Signature<br>@lesson.TypeOfExercise.Name<br>Тема: @lesson.Theme.Name">
-                                            <span class="rotate-sm-90">
-                                                @lesson.TypeOfExercise.ShortName<br />
-                                                @lesson.Theme.ShortName<br />
-                                                @lesson.Date.ToShortDateString()
+                                    if (lesson.LessonID == 0)
+                                    {
+                                        <th class="text-center align-middle p-0 tableRowSticky">
+                                            <span class="btn btn-outline-success border-0 p-1 text-white btn-tooltip"
+                                                  data-toggle="tooltip"
+                                                  data-html="true"
+                                                  title="Средняя отметка">
+                                                <span class="rotate-sm-90">
+                                                    СО
+                                                </span>
                                             </span>
-                                        </a>
-                                    </th>
+                                        </th>
+                                    }
+                                    else
+                                    {
+                                        <th class="text-center align-middle p-0 tableRowSticky">
+                                            <a class="btn btn-outline-danger border-0 p-1 text-white btn-tooltip"
+                                               asp-controller="Lessons" asp-action="SimpleDelete"
+                                               asp-route-id="@lesson.LessonID"
+                                               asp-route-GroupID="@Model.Group.GroupID"
+                                               asp-route-SubjectID="@Model.Subject.SubjectID"
+                                               asp-route-subgroup="@Model.Subgroup"
+                                               data-toggle="tooltip"
+                                               data-html="true"
+                                               title="Подпись: @lesson.Signature<br>@lesson.TypeOfExercise.Name<br>Тема: @lesson.Theme.Name">
+                                                <span class="rotate-sm-90">
+                                                    @lesson.TypeOfExercise.ShortName<br />
+                                                    @lesson.Theme.ShortName<br />
+                                                    @lesson.Date.ToShortDateString()
+                                                </span>
+                                            </a>
+                                        </th>
+                                    }
                                 }
                             </tr>
                         </thead>
@@ -117,6 +133,21 @@ else if (Model.HasAccess)
                                     <td class="text-left align-middle bg-light p-1 fix col-fixed-2" data-student-id="@student.StudentID">@student.LastName @student.Name @student.Surname</td>
                                     @foreach (var lesson in Model.Lessons)
                                     {
+                                        if (lesson.LessonID == 0)
+                                        {
+                                            @* Колонка СО: как в обычном журнале - statMark на td, ячейка без редактирования *@
+                                            var avg = Model.StudentAverages.TryGetValue(student.StudentID, out var a) ? a : (double?)null;
+                                            <td class="text-center align-middle p-0 @(avg.HasValue ? "statMark" : "")">
+                                                <span class="btn border-0 p-2 btn-tooltip w-100"
+                                                      data-toggle="tooltip"
+                                                      data-html="true"
+                                                      title="Средняя отметка">
+                                                    @avg?.ToString()
+                                                </span>
+                                            </td>
+                                        }
+                                        else
+                                        {
                                         Model.MarksByLesson.TryGetValue(lesson.LessonID, out var perStudent);
                                         var mark = perStudent != null && perStudent.TryGetValue(student.StudentID, out var m) ? m : null;
                                         if (mark != null)
@@ -163,6 +194,7 @@ else if (Model.HasAccess)
                                             <td class="text-center align-middle p-0 @(controlLessonIds.Contains(lesson.LessonID) ? "ControlEventMarkRed" : "")">
                                                 <span class="btn border-0 p-2 w-100">&nbsp;</span>
                                             </td>
+                                        }
                                         }
                                     }
                                 </tr>
