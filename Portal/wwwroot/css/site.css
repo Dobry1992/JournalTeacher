@@ -539,3 +539,48 @@ span {
     border-color: rgba(255, 255, 255, 0.3);
 }
 
+/* Заголовки предметов в сводных ведомостях (Institutes/Statement):
+   кнопка-шапка с подсветкой при наведении */
+.subject-head-btn {
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    background-color: rgba(255, 255, 255, 0.08);
+    border-radius: 0.35rem;
+    cursor: help;
+    transition: background-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease, border-color 0.25s ease;
+}
+
+    .subject-head-btn:hover {
+        background-image: linear-gradient(135deg, #007bff, #00bcd4);
+        border-color: transparent;
+        box-shadow: 0 4px 14px rgba(0, 123, 255, 0.5);
+        transform: translateY(-2px);
+    }
+
+/* Стильный тултип с полным наименованием предмета */
+.subject-tooltip .tooltip-inner {
+    background: linear-gradient(135deg, #1f2933, #3e4c59);
+    color: #fff;
+    font-weight: 600;
+    border-radius: 0.5rem;
+    padding: 0.45rem 0.8rem;
+    max-width: 320px;
+    white-space: normal;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
+}
+
+.subject-tooltip.bs-tooltip-top .arrow::before {
+    border-top-color: #3e4c59;
+}
+
+.subject-tooltip.bs-tooltip-bottom .arrow::before {
+    border-bottom-color: #1f2933;
+}
+
+.subject-tooltip.bs-tooltip-left .arrow::before {
+    border-left-color: #3e4c59;
+}
+
+.subject-tooltip.bs-tooltip-right .arrow::before {
+    border-right-color: #1f2933;
+}
+

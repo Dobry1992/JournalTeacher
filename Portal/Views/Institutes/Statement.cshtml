@@ -41,8 +41,10 @@
                                                                 <th class="align-middle text-center p-1 fix">Ф.И.О.</th>
                                                                 @foreach (var subject in group.Subjects)
                                                                 {
-                                                                    <th class="align-middle text-center">
-                                                                        <span class="rotate-sm-90 text-white">@subject.Name</span>
+                                                                    <th class="align-middle text-center p-0">
+                                                                        <span class="btn border-0 p-2 subject-head-btn subject-head-tooltip" title="@subject.Name">
+                                                                            <span class="rotate-sm-90 text-white">@subject.ShortName</span>
+                                                                        </span>
                                                                     </th>
                                                                 }
                                                             </tr>
@@ -97,8 +99,10 @@
                                                                 <th class="align-middle text-center p-1 fix">Ф.И.О.</th>
                                                                 @foreach (var subject in group.Subjects)
                                                                 {
-                                                                    <th class="align-middle text-center">
-                                                                        <span class="rotate-sm-90 text-white">@subject.Name</span>
+                                                                    <th class="align-middle text-center p-0">
+                                                                        <span class="btn border-0 p-2 subject-head-btn subject-head-tooltip" title="@subject.Name">
+                                                                            <span class="rotate-sm-90 text-white">@subject.ShortName</span>
+                                                                        </span>
                                                                     </th>
                                                                 }
                                                             </tr>
@@ -141,4 +145,16 @@
 
 @section Scripts {
     <script src="~/js/journal.js"></script>
+    <script>
+        $(function () {
+            // Свои тултипы с классом subject-tooltip (шаблоном),
+            // чтобы не зависеть от инициализации AdminLTE с дефолтным шаблоном
+            $('.subject-head-tooltip').tooltip({
+                html: true,
+                container: 'body',
+                trigger: 'hover',
+                template: '<div class="tooltip subject-tooltip" role="tooltip"><div class="arrow"></div><div class="tooltip-inner"></div></div>'
+            });
+        });
+    </script>
 }
