@@ -30,7 +30,7 @@
                                                     <thead class="thead-dark compact">
                                                         <tr role="row">
                                                             <th class="align-middle text-center p-1 fix">#</th>
-                                                            <th class="align-middle text-center p-1 fix">Ф.И.О.</th>
+                                                            <th class="align-middle text-left p-1 fix">Ф.И.О.</th>
                                                             @foreach (var lesson in Model)
                                                             {
                                                                 <th class="align-middle text-center p-0 m-0">
@@ -44,7 +44,7 @@
                                                         {
                                                             <tr>
                                                                 <td class="align-middle text-center p-1 bg-light fix">@i</td>
-                                                                <td class="align-middle text-center p-1 bg-light fix" style="white-space:nowrap">@student.LastName @student.Name @student.Surname</td>
+                                                                <td class="align-middle text-left p-1 bg-light fix" style="white-space:nowrap">@student.LastName @student.Name @student.Surname</td>
                                                                 @foreach (var mark in ViewBag.Marks)
                                                                 {
                                                                     if (mark.Mark.StudentArhiveID == student.StudentArhiveID)

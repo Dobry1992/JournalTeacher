@@ -87,7 +87,7 @@ else
                         <thead class="thead-dark">
                             <tr role="row">
                                 <th class="text-center align-middle p-1 fix tableRowSticky title-row">#</th>
-                                <th class="text-center align-middle p-1 fix tableRowSticky title-row">Ф.И.О.</th>
+                                <th class="text-left align-middle p-1 fix tableRowSticky title-row">Ф.И.О.</th>
                                 @foreach (var col in allColumns)
                                 {
                                     <th class="text-center align-middle p-0 tableRowSticky">
@@ -114,7 +114,7 @@ else
                             {
                                 <tr>
                                     <td class="text-center align-middle bg-light p-1 fix">@n</td>
-                                    <td class="text-center align-middle bg-light p-1 fix" style="white-space:nowrap" data-student-id="@student.StudentID">@student.StudentFullName</td>
+                                    <td class="text-left align-middle bg-light p-1 fix" style="white-space:nowrap" data-student-id="@student.StudentID">@student.StudentFullName</td>
                                     @foreach (var col in allColumns)
                                     {
                                         var mark = student.Marks.FirstOrDefault(m =>

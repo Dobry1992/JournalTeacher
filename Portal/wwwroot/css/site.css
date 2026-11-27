@@ -584,3 +584,10 @@ span {
     border-right-color: #1f2933;
 }
 
+/* Фамилии курсантов всегда по левому краю, включая таблицы DataTables
+   (ячейки с data-student-id и ячейки, где ссылка с этим атрибутом - внутри). */
+td[data-student-id],
+td:has(> a[data-student-id]) {
+    text-align: left !important;
+}
+

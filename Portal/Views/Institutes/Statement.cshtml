@@ -38,7 +38,7 @@
                                                         <thead class="thead-dark compact">
                                                             <tr role="row">
                                                                 <th class="align-middle text-center p-1 fix">#</th>
-                                                                <th class="align-middle text-center p-1 fix">Ф.И.О.</th>
+                                                                <th class="align-middle text-left p-1 fix">Ф.И.О.</th>
                                                                 @foreach (var subject in group.Subjects)
                                                                 {
                                                                     <th class="align-middle text-center p-0">
@@ -54,7 +54,7 @@
                                                             {
                                                                 <tr>
                                                                     <td class="align-middle text-center p-1 bg-light fix">@i</td>
-                                                                    <td class="align-middle text-center p-1 bg-light fix" style="white-space:nowrap" data-student-id="@student.Student.StudentID">@student.Student.LastName @student.Student.Name[0]. @student.Student.Surname[0].</td>
+                                                                    <td class="align-middle text-left p-1 bg-light fix" style="white-space:nowrap" data-student-id="@student.Student.StudentID">@student.Student.LastName @student.Student.Name[0]. @student.Student.Surname[0].</td>
                                                                     @foreach (var item in student.SubRaitings)
                                                                     {
                                                                         <td class="align-middle text-center bg-light" style="background-color:@item.Color !important;">
@@ -96,7 +96,7 @@
                                                         <thead class="thead-dark compact">
                                                             <tr role="row">
                                                                 <th class="align-middle text-center p-1 fix">#</th>
-                                                                <th class="align-middle text-center p-1 fix">Ф.И.О.</th>
+                                                                <th class="align-middle text-left p-1 fix">Ф.И.О.</th>
                                                                 @foreach (var subject in group.Subjects)
                                                                 {
                                                                     <th class="align-middle text-center p-0">
@@ -112,7 +112,7 @@
                                                             {
                                                                 <tr>
                                                                     <td class="align-middle text-center p-1 bg-light fix">@j</td>
-                                                                    <td class="align-middle text-center p-1 bg-light fix" style="white-space:nowrap" data-student-id="@student.Student.StudentID">@student.Student.LastName @student.Student.Name[0]. @student.Student.Surname[0].</td>
+                                                                    <td class="align-middle text-left p-1 bg-light fix" style="white-space:nowrap" data-student-id="@student.Student.StudentID">@student.Student.LastName @student.Student.Name[0]. @student.Student.Surname[0].</td>
                                                                     @foreach (var subject in student.SubRaitings)
                                                                     {
                                                                         <td class="align-middle text-center bg-light">
