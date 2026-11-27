@@ -128,5 +128,60 @@ namespace Portal
         {
             return _context.StatementMarks.Any(e => e.StatementMarkID == id);
         }
+
+        // Быстрая выставление итоговой отметки из журнала (mark-cell-menu.js).
+        // Логика повторяет POST Edit: подпись - преподаватель из AD, история дописывается
+        // в HistoryOfMark, событие пишется в Events. Успех - редирект (302), на который
+        // скрипт реагирует перезагрузкой журнала без перехода на Edit.
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> EditMenu(int MarkID, string Value, DateTime Date, string Comment, string HistoryOfMark)
+        {
+            var statementMark = await _context.StatementMarks.FindAsync(MarkID);
+            if (statementMark == null)
+            {
+                return NotFound();
+            }
+
+            string teacher = "";
+            var username = User.Identity.Name;
+            using (var context = new PrincipalContext(ContextType.Domain, AD.root))
+            {
+                try
+                {
+                    var user = UserPrincipal.FindByIdentity(context, username);
+
+                    if (user != null)
+                    {
+                        teacher = user.DisplayName;
+                    }
+                }
+                catch
+                {
+                    teacher = username;
+                }
+            }
+
+            var type = await _context.Types.FindAsync(statementMark.TypeOfExerciseID);
+            var student = await _context.Students.FindAsync(statementMark.StudentID);
+            var group = await _context.Groups.FindAsync(statementMark.GroupID);
+
+            Event e = new();
+            e.Date = statementMark.Date;
+            e.Teacher = teacher;
+            e.Log = "Изменение отметки от " + statementMark.Date.ToShortDateString() + ", тип занятия: " + type.Name + ", курсант/слушатель: "
+                + student.LastName + " " + student.Name[0] + "." + student.Surname[0] + "." + ", группа: " + group.Name;
+            _context.Events.Add(e);
+
+            statementMark.Value = Value;
+            statementMark.Comment = Comment;
+            statementMark.SignatureOfTeacher = teacher;
+            statementMark.HistoryOfMark = (statementMark.HistoryOfMark ?? "")
+                + statementMark.Value + " - " + statementMark.Date.ToShortDateString() + " - " + teacher + "</br>";
+            _context.StatementMarks.Update(statementMark);
+            await _context.SaveChangesAsync();
+
+            return RedirectToAction("Statement", "Journals", new { GroupID = statementMark.GroupID });
+        }
     }
 }

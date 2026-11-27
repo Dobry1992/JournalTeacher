@@ -3,102 +3,135 @@
 @{
     ViewData["Title"] = "Итоговые отметки";
     int i = 1;
+
+    // Отметки привязаны к занятиям (StatementLessonID ставится при создании занятия) -
+    // словарь: (занятие, курсант) -> отметка, чтобы ячейки стояли строго под своими колонками
+    var allMarks = (IEnumerable<Portal.Models.StatementMark>)ViewBag.Marks;
+    var marksByLesson = allMarks
+        .Where(m => m.StatementLessonID != 0)
+        .GroupBy(m => new { m.StatementLessonID, m.StudentID })
+        .ToDictionary(g => (g.Key.StatementLessonID, g.Key.StudentID), g => g.First());
+
+    int typeDR = ViewBag.typeDR;
+    int typeDP = ViewBag.typeDP;
+    int typeMR = ViewBag.typeMR;
+    int typePP = ViewBag.typePP;
+    int typeUP = ViewBag.typeUP;
+    int typeS = ViewBag.typeS;
+    int typeGE = ViewBag.typeGE;
 }
 
 @await Html.PartialAsync("_NavMenuJournal")
 
 @if (User.IsInRole("SuperAdmin") || User.IsInRole("ANB-UMCH") || User.IsInRole(ViewBag.Institute.Role))
 {
-    <div style="padding: 5%">
-        <section class="content-header">
-            <div class="container-fluid">
-                <div class="row">
-                    <div class="col-sm-6">
-                        <h3 class="mb-1">Ведомость итоговых отметок</h3>
-                    </div>
+    <div class="container-fluid mt-3">
+        <div class="card">
+            <div class="card-body">
+                <h6 class="text-center mb-4 bg-warning p-2 rounded">
+                    Ведомость итоговых отметок<br />
+                    Группа: @ViewBag.Group.Name
+                </h6>
+
+                <div class="mb-3 d-flex flex-wrap gap-2">
+                    <a class="btn btn-success btn-sm" asp-route-GroupID="@ViewBag.GroupID"
+                       asp-controller="StatementLessons" asp-action="Create">
+                        Добавить отметку
+                    </a>
+                </div>
+
+                <div class="table-responsive" id="sd">
+                    <table class="table table-bordered table-sm compact">
+                        <thead class="thead-dark">
+                            <tr role="row">
+                                <th class="text-center align-middle p-1 fix tableRowSticky title-row col-fixed-1">#</th>
+                                <th class="text-center align-middle p-1 fix tableRowSticky title-row col-fixed-2">Ф.И.О.</th>
+                                @foreach (var lesson in Model)
+                                {
+                                    <th class="text-center align-middle p-0 tableRowSticky">
+                                        <a class="btn btn-outline-danger border-0 p-1 text-white btn-tooltip"
+                                           asp-controller="StatementLessons" asp-action="Delete"
+                                           asp-route-id="@lesson.StatementLessonID"
+                                           asp-route-GroupID="@ViewBag.GroupID"
+                                           data-toggle="tooltip"
+                                           data-html="true"
+                                           title="Подпись: @lesson.Signature<br>@lesson.TypeOfExercise.Name<br>@lesson.Date.ToShortDateString()">
+                                            <span class="rotate-sm-90">
+                                                @lesson.TypeOfExercise.ShortName<br />
+                                                @lesson.Date.ToShortDateString()
+                                            </span>
+                                        </a>
+                                    </th>
+                                }
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white compact">
+                            @foreach (var student in ViewBag.Students)
+                            {
+                                <tr>
+                                    <td class="text-center align-middle bg-light p-1 fix col-fixed-1">@i</td>
+                                    <td class="text-left align-middle bg-light p-1 fix col-fixed-2" data-student-id="@student.StudentID">@student.LastName @student.Name @student.Surname</td>
+                                    @foreach (var lesson in Model)
+                                    {
+                                        marksByLesson.TryGetValue((lesson.StatementLessonID, (int)student.StudentID), out var mark);
+                                        if (mark != null)
+                                        {
+                                            string markClass = "";
+                                            if (mark.TypeOfExerciseID == typeDR || mark.TypeOfExerciseID == typeDP || mark.TypeOfExerciseID == typeMR)
+                                                markClass = "markDR";
+                                            else if (mark.TypeOfExerciseID == typePP || mark.TypeOfExerciseID == typeUP || mark.TypeOfExerciseID == typeS)
+                                                markClass = "markPP";
+                                            else if (mark.TypeOfExerciseID == typeGE)
+                                                markClass = "markGE";
+                                            <td class="text-center align-middle p-0 @markClass">
+                                                <a class="btn border-0 p-2 btn-tooltip w-100 mark-menu-cell @(markClass == "markDR" ? "text-white" : "")"
+                                                   asp-controller="StatementMarks" asp-action="Edit"
+                                                   asp-route-id="@mark.StatementMarkID"
+                                                   asp-route-GroupID="@ViewBag.GroupID"
+                                                   data-menu-url="@Url.Action("EditMenu", "StatementMarks")"
+                                                   @* JsonSerializer.Serialize возвращает строку - Razor закодирует кавычки для атрибута *@
+                                                   data-mark="@(System.Text.Json.JsonSerializer.Serialize(new {
+                                                       markID = mark.StatementMarkID,
+                                                       value = mark.Value,
+                                                       date = mark.Date.ToString(),
+                                                       comment = mark.Comment,
+                                                       signature = mark.SignatureOfTeacher,
+                                                       history = mark.HistoryOfMark,
+                                                       subjectID = 0,
+                                                       groupID = mark.GroupID,
+                                                       lessonID = mark.StatementLessonID,
+                                                       typeOfExerciseID = mark.TypeOfExerciseID,
+                                                       departmentID = 0,
+                                                       specialityID = mark.SpecialityID,
+                                                       themeID = 0,
+                                                       studentID = mark.StudentID,
+                                                       flagF = 0,
+                                                       instituteID = mark.InstituteID,
+                                                       changeCounter = 0,
+                                                       subgroup = ""
+                                                   }))"
+                                                   data-toggle="tooltip"
+                                                   data-html="true"
+                                                   title="Комментарий: @mark.Comment<br>Подпись: @mark.SignatureOfTeacher<br>История:<br>@mark.HistoryOfMark">
+                                                    @mark.Value
+                                                </a>
+                                            </td>
+                                        }
+                                        else
+                                        {
+                                            <td class="text-center align-middle p-0">
+                                                <span class="btn border-0 p-2 w-100">&nbsp;</span>
+                                            </td>
+                                        }
+                                    }
+                                </tr>
+                                i++;
+                            }
+                        </tbody>
+                    </table>
                 </div>
             </div>
-        </section>
-        <section class="content">
-            <div class="container-fluid">
-                <div class="row">
-                    <div class="col-12">
-                        <div class="card">
-                            <div class="card-body">
-                                <div id="example1_wrapper" class="dataTables_wrapper dt-bootstrap4">
-                                    <div class="row">
-                                        <div class="col-sm-12">
-                                            <div class="p-2">
-                                                <h6 class="mb-3 text-center bg-warning headGroup p-2 rounded">Группа: @ViewBag.Group.Name</h6>
-                                                <div class="btn-group mr-2 mb-3 border rounded" role="group" aria-label="Занятия">
-                                                    <a class="btn btn-success p-2" asp-route-GroupID="@ViewBag.GroupID" asp-controller="StatementLessons" asp-action="Create">Добавить отметку</a>
-                                                </div>
-                                                <div class="table-wrap">
-                                                    <table class="table table-bordered" id="JournalTable">
-                                                        <thead class="thead-dark compact">
-                                                            <tr role="row">
-                                                                <th class="align-middle text-center p-1 fix">#</th>
-                                                                <th class="align-middle text-center p-1 fix">Ф.И.О.</th>
-                                                                @foreach (var lesson in Model)
-                                                                {
-                                                                    <th class="align-middle text-center p-1">
-                                                                        <a class="btn btn-outline-danger text-white border-0" title="Удалить" asp-controller="StatementLessons" asp-action="Delete" asp-route-id="@lesson.StatementLessonID" asp-route-GroupID="@ViewBag.GroupID"><span class="rotate-sm-90">@lesson.TypeOfExercise.Name<br />@lesson.Date.ToShortDateString()</span></a>
-                                                                    </th>
-                                                                }
-                                                            </tr>
-                                                        </thead>
-                                                        <tbody class="bg-white">
-                                                            @foreach (var student in ViewBag.Students)
-                                                            {
-                                                                <tr>
-                                                                    <td class="align-middle text-center p-1 bg-light fix">@i</td>
-                                                                    <td class="align-middle text-center p-1 bg-light fix" data-student-id="@student.StudentID" style="white-space:nowrap">@student.LastName @student.Name @student.Surname</td>
-                                                                    @foreach (var mark in ViewBag.Marks)
-                                                                    {
-                                                                        if (mark.StudentID == student.StudentID)
-                                                                        {
-                                                                            if (mark.TypeOfExerciseID == ViewBag.typeDR || mark.TypeOfExerciseID == ViewBag.typeDP || mark.TypeOfExerciseID == ViewBag.typeMR)
-                                                                            {
-                                                                                <td class="align-middle text-center p-0 markDR">
-                                                                                    <a asp-controller="StatementMarks" asp-action="Edit" asp-route-id="@mark.StatementMarkID" asp-route-GroupID="@ViewBag.GroupID" data-toggle="tooltip" id="btn-tooltip" data-placement="left" class="btn border-0 text-center align-middle text-white p-3" data-html="true" data-title="Комментарий: @mark.Comment<br>Подпись: @mark.SignatureOfTeacher<br>История:<br> @mark.HistoryOfMark" style="width:100%;">
-                                                                                        @mark.Value
-                                                                                    </a>
-                                                                                </td>
-                                                                            }
-                                                                            else if (mark.TypeOfExerciseID == ViewBag.typePP || mark.TypeOfExerciseID == ViewBag.typeUP || mark.TypeOfExerciseID == ViewBag.typeS)
-                                                                            {
-                                                                                <td class="align-middle text-center p-0 markPP">
-                                                                                    <a asp-controller="StatementMarks" asp-action="Edit" asp-route-id="@mark.StatementMarkID" asp-route-GroupID="@ViewBag.GroupID" data-toggle="tooltip" id="btn-tooltip" data-placement="left" class="btn border-0 text-center align-middle p-3" data-html="true" data-title="Комментарий: @mark.Comment<br>Подпись: @mark.SignatureOfTeacher<br>История:<br> @mark.HistoryOfMark" style="width:100%;">
-                                                                                        @mark.Value
-                                                                                    </a>
-                                                                                </td>
-                                                                            }
-                                                                            else if (mark.TypeOfExerciseID == ViewBag.typeGE)
-                                                                            {
-                                                                                <td class="align-middle text-center p-0 markGE">
-                                                                                    <a asp-controller="StatementMarks" asp-action="Edit" asp-route-id="@mark.StatementMarkID" asp-route-GroupID="@ViewBag.GroupID" data-toggle="tooltip" id="btn-tooltip" data-placement="left" class="btn border-0 text-center align-middle text-white p-3" data-html="true" data-title="Комментарий: @mark.Comment<br>Подпись: @mark.SignatureOfTeacher<br>История:<br> @mark.HistoryOfMark" style="width:100%;">
-                                                                                        @mark.Value
-                                                                                    </a>
-                                                                                </td>
-                                                                            }
-                                                                        }
-                                                                    }
-                                                                </tr>
-                                                                i++;
-                                                            }
-                                                        </tbody>
-                                                    </table>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
+        </div>
     </div>
 }
 else
@@ -134,4 +167,31 @@ else
             $('[data-toggle="tooltip"]').tooltip();
         });
     </script>
+
+    @* Токен и маркер для контекстного меню быстрой выставления отметки (mark-cell-menu.js) *@
+    <form style="display:none">@Html.AntiForgeryToken()</form>
+    <input type="hidden" id="markMenuJournalMarker" />
+    @* Список отметок совпадает с StatementMarks/Edit *@
+    <script>
+        window.__MARK_VALUES = [
+            { value: " ", label: "Нет отметки" },
+            { value: "1", label: "1" },
+            { value: "2", label: "2" },
+            { value: "3", label: "3" },
+            { value: "4", label: "4" },
+            { value: "5", label: "5" },
+            { value: "6", label: "6" },
+            { value: "7", label: "7" },
+            { value: "8", label: "8" },
+            { value: "9", label: "9" },
+            { value: "10", label: "10" },
+            { value: "Б", label: "Б" },
+            { value: "НР", label: "НР" },
+            { value: "О", label: "О" },
+            { value: "КМ", label: "КМ" },
+            { value: "Р", label: "Р" },
+            { value: "НБ", label: "НБ" }
+        ];
+    </script>
+    <script src="~/js/mark-cell-menu.js" asp-append-version="true"></script>
 }

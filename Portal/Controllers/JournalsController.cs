@@ -164,6 +164,7 @@ namespace Portal
             };
 
             var lessons = _context.StatementLessons
+                .Include(l => l.TypeOfExercise)
                 .Where(l => l.GroupID == GroupID && statementTypeIds.Contains(l.TypeOfExerciseID))
                 .OrderBy(l => l.Date)
                 .AsNoTracking();
