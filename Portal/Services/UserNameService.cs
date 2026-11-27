@@ -1,23 +1,35 @@
 ﻿using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Configuration;
-using Portal.Repository;
 using System;
+using System.Collections.Concurrent;
 using System.DirectoryServices.AccountManagement;
-using System.DirectoryServices.Protocols;
+using Portal.Repository;
 
 namespace Portal.Services
 {
     public class UserNameService
     {
-        private readonly IHttpContextAccessor _httpContextAccessor;
-        private readonly IConfiguration _configuration;
-        private readonly bool _isDevelopment;
+        // Кэш логин -> DisplayName из AD. Обращение к контроллеру домена дорогое
+        // (создание PrincipalContext + LDAP-запрос на каждый вызов), а ФИО сотрудника
+        // меняется редко. Успешные результаты кешируются навсегда (до перезапуска),
+        // неудачные - на 10 минут, чтобы при недоступном AD не платить таймаутом за каждый чих.
+        private static readonly ConcurrentDictionary<string, CacheEntry> Cache =
+            new ConcurrentDictionary<string, CacheEntry>(StringComparer.OrdinalIgnoreCase);
+        private static readonly TimeSpan NegativeCacheLifetime = TimeSpan.FromMinutes(10);
 
-        public UserNameService(IHttpContextAccessor httpContextAccessor, IConfiguration configuration)
+        public static void ClearCache() => Cache.Clear();
+
+        private sealed class CacheEntry
+        {
+            public string DisplayName;
+            public DateTime CachedAt;
+            public bool FromAd;
+        }
+
+        private readonly IHttpContextAccessor _httpContextAccessor;
+
+        public UserNameService(IHttpContextAccessor httpContextAccessor)
         {
             _httpContextAccessor = httpContextAccessor;
-            _configuration = configuration;
-            _isDevelopment = configuration.GetValue<bool>("AD:IsDevelopment");
         }
 
         public string GetDisplayName()
@@ -27,31 +39,46 @@ namespace Portal.Services
             if (string.IsNullOrEmpty(username))
                 return "Unknown";
 
-            // Если в разработке - возвращаем username без обращения к AD
-            if (_isDevelopment)
-                return username;
+            if (Cache.TryGetValue(username, out var entry) &&
+                (entry.FromAd || DateTime.Now - entry.CachedAt < NegativeCacheLifetime))
+            {
+                return entry.DisplayName;
+            }
+
+            string displayName;
+            bool fromAd = false;
 
             try
             {
-                using var context = new PrincipalContext(ContextType.Domain, AD.root);
-                var user = UserPrincipal.FindByIdentity(context, username);
-                return user?.DisplayName ?? username;
+                // Как в коде выставления отметки: полное имя (DisplayName) из AD,
+                // при любой неудаче - исходный логин.
+                using (var context = new PrincipalContext(ContextType.Domain, AD.root))
+                {
+                    var user = UserPrincipal.FindByIdentity(context, username);
+                    if (user != null && !string.IsNullOrWhiteSpace(user.DisplayName))
+                    {
+                        displayName = user.DisplayName;
+                        fromAd = true;
+                    }
+                    else
+                    {
+                        displayName = username;
+                    }
+                }
             }
-            catch (LdapException ex) when (ex.Message.Contains("unavailable") || ex.Message.Contains("connect"))
+            catch
             {
-                // Логирование ошибки
-                return username;
+                displayName = username;
             }
-            catch (PrincipalServerDownException)
+
+            Cache[username] = new CacheEntry
             {
-                // Логирование ошибки
-                return username;
-            }
-            catch (Exception)
-            {
-                // Логирование ошибки
-                return username;
-            }
+                DisplayName = displayName,
+                CachedAt = DateTime.Now,
+                FromAd = fromAd
+            };
+
+            return displayName;
         }
     }
 }

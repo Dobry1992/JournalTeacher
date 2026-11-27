@@ -176,7 +176,7 @@ namespace Portal
                 .Where(s => s.GroupID == groupId
                          && s.Status
                          && !existingStudentIds.Contains(s.StudentID))
-                .OrderBy(s => s.Surname)
+                .OrderBy(s => s.LastName)
                 .ThenBy(s => s.Name)
                 .ToListAsync();
         }
@@ -940,7 +940,7 @@ namespace Portal
             var allSubjects = await _context.Subjects
                 .AsNoTracking()
                 .Where(sub => subjectIds.Contains(sub.SubjectID))
-                .Select(sub => new { sub.SubjectID, sub.Name })
+                .Select(sub => new { sub.SubjectID, sub.Name, sub.ShortName })
                 .ToListAsync();
 
             return studentsData.Select(s =>
@@ -957,7 +957,9 @@ namespace Portal
                     return new SubjectAverageViewModel
                     {
                         SubjectId = subject.SubjectID,
-                        SubjectName = subject.Name,
+                        // В шапке и экспорте - краткое наименование, полное - в тултипе
+                        SubjectName = string.IsNullOrWhiteSpace(subject.ShortName) ? subject.Name : subject.ShortName,
+                        SubjectFullName = subject.Name,
                         AvgMark = marks.Any() ? marks.Average() : (double?)null
                     };
                 }).ToList();

@@ -38,7 +38,7 @@
                             @foreach (var subject in subjects)
                             {
                                 <th class="text-center align-middle p-0 tableRowSticky">
-                                    <span class="btn btn-outline-danger border-0 p-1 text-white btn-tooltip"
+                                    <span class="btn border-0 p-1 text-white subject-head-btn subject-head-tooltip"
                                           data-toggle="tooltip"
                                           data-html="true"
                                           title="@subject.SubjectFullName">
@@ -47,7 +47,7 @@
                                 </th>
                             }
                             <th class="text-center align-middle p-0 tableRowSticky">
-                                <span class="btn btn-outline-danger border-0 p-1 text-white btn-tooltip"
+                                <span class="btn border-0 p-1 text-white subject-head-btn subject-head-tooltip"
                                       data-toggle="tooltip"
                                       data-html="true"
                                       title="Средняя отметка студента">
@@ -102,7 +102,14 @@
     }
     <script>
         $(function () {
-            $('.btn-tooltip').tooltip();
+            // Свои тултипы с классом subject-tooltip (шаблоном),
+            // чтобы не зависеть от инициализации AdminLTE с дефолтным шаблоном
+            $('.subject-head-tooltip').tooltip({
+                html: true,
+                container: 'body',
+                trigger: 'hover',
+                template: '<div class="tooltip subject-tooltip" role="tooltip"><div class="arrow"></div><div class="tooltip-inner"></div></div>'
+            });
         });
         document.addEventListener("DOMContentLoaded", function () {
             const div = document.getElementById('sd');

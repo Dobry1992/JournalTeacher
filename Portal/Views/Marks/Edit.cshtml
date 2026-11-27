@@ -250,47 +250,4 @@
 </div>
 
 @section Scripts {
-    <script>
-        (function(){
-            var form = document.getElementById('markFormEdit');
-            if(!form) return;
-            var select = form.querySelector('select[name$=".Value"], select[name$="Value"], select[id$="Value"], select[id="Value"]');
-            var comment = form.querySelector('textarea[name$=".Comment"], textarea[name$="Comment"], textarea[id$="Comment"], textarea[id$="_Comment"]');
-            var commentErr = form.querySelector('span[data-valmsg-for$=".Comment"], span[data-valmsg-for="Comment"], span[asp-validation-for="Comment"]');
-            var requiredVals = ['1','2','3','НЗ'];
-
-            function getValue(el){ return el ? (el.value || '').trim() : ''; }
-
-            function updateRequired(){
-                var val = getValue(select);
-                if(requiredVals.indexOf(val) !== -1){
-                    if(comment) comment.setAttribute('required','required');
-                } else {
-                    if(comment) comment.removeAttribute('required');
-                    if(commentErr) commentErr.textContent = '';
-                }
-            }
-
-            if(select){ select.addEventListener('change', updateRequired); }
-
-            form.addEventListener('submit', function(e){
-                updateRequired();
-                if(comment && comment.hasAttribute('required') && !getValue(comment)){
-                    e.preventDefault();
-                    var message = 'Поле "Замечание преподавателя" обязательно для заполнения.';
-                    if(commentErr) commentErr.textContent = message;
-                    try{ comment.setCustomValidity(message); comment.reportValidity(); } catch(ex){}
-                    comment.focus();
-                    return false;
-                } else if(comment){
-                    try{ comment.setCustomValidity(''); } catch(ex){}
-                }
-            });
-
-            updateRequired();
-            if(comment){
-                comment.addEventListener('input', function(){ try{ comment.setCustomValidity(''); } catch(e){} if(commentErr) commentErr.textContent = ''; });
-            }
-        })();
-    </script>
 }
