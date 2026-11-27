@@ -219,6 +219,8 @@ namespace Portal
             var typeL = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Лекция");
             var typeKM = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Контрольное мероприятие");
             var typeGPZ = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Городское практическое занятие");
+            // Итоговые отметки (экзамен/зачёт): участвуют в рейтинге по правилу сессии
+            var typeF = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Итоговая отметка");
 
             // ========================================
             // 1. ОТМЕТКИ ДЛЯ РЕЙТИНГА (с учетом FlagF == 0 из прошлых семестров)
@@ -265,7 +267,8 @@ namespace Portal
                          m.TypeOfExerciseID == typeSZ.TypeOfExerciseID ||
                          m.TypeOfExerciseID == typePZ.TypeOfExerciseID ||
                          m.TypeOfExerciseID == typeLZ.TypeOfExerciseID ||
-                         m.TypeOfExerciseID == typeL.TypeOfExerciseID) &&
+                         m.TypeOfExerciseID == typeL.TypeOfExerciseID ||
+                         m.TypeOfExerciseID == typeF.TypeOfExerciseID) &&
                         ((m.Date.Month >= 9 && m.Date.Month <= 12 && m.Date.Year == startYear) ||
                          m.FlagF == 0)
                     )
@@ -296,7 +299,8 @@ namespace Portal
                          m.TypeOfExerciseID == typeSZ.TypeOfExerciseID ||
                          m.TypeOfExerciseID == typePZ.TypeOfExerciseID ||
                          m.TypeOfExerciseID == typeLZ.TypeOfExerciseID ||
-                         m.TypeOfExerciseID == typeL.TypeOfExerciseID) &&
+                         m.TypeOfExerciseID == typeL.TypeOfExerciseID ||
+                         m.TypeOfExerciseID == typeF.TypeOfExerciseID) &&
                         (((m.Date.Month == 1 && m.Date.Year == endYear) ||
                           (m.Date.Month >= 9 && m.Date.Month <= 12 && m.Date.Year == startYear)) ||
                          m.FlagF == 0)
@@ -329,7 +333,8 @@ namespace Portal
                          m.TypeOfExerciseID == typeSZ.TypeOfExerciseID ||
                          m.TypeOfExerciseID == typePZ.TypeOfExerciseID ||
                          m.TypeOfExerciseID == typeLZ.TypeOfExerciseID ||
-                         m.TypeOfExerciseID == typeL.TypeOfExerciseID) &&
+                         m.TypeOfExerciseID == typeL.TypeOfExerciseID ||
+                         m.TypeOfExerciseID == typeF.TypeOfExerciseID) &&
                         ((m.Date.Month >= 2 && m.Date.Month <= 8 && m.Date.Year == endYear) ||
                          m.FlagF == 0)
                     )
@@ -356,9 +361,11 @@ namespace Portal
             }
 
             // Извлекаем числовые отметки для расчетов рейтинга
+            // (итоговые отметки не учитываем - они производные)
             foreach (var mark in marksForRating)
             {
-                if (double.TryParse(mark.Value, out var m))
+                if (double.TryParse(mark.Value, out var m) &&
+                    mark.TypeOfExerciseID != typeF.TypeOfExerciseID)
                 {
                     marksAverage.Add(m);
                 }
@@ -401,7 +408,7 @@ namespace Portal
             List<StudentRaiting> studentRaitings = new();
             foreach (var student in students)
             {
-                double? studentRating = _studentAverageMarkService.GetStudentAverageMark(student, marksForRating);
+                double? studentRating = _studentAverageMarkService.GetStudentAverageMark(student, marksForRating, typeF?.TypeOfExerciseID);
 
                 StudentRaiting sr = new StudentRaiting()
                 {
@@ -443,7 +450,7 @@ namespace Portal
                 List<double> groupStudentRatings = new();
                 foreach (var student in groupStudents)
                 {
-                    double? studentRating = _studentAverageMarkService.GetStudentAverageMark(student, groupMarks);
+                    double? studentRating = _studentAverageMarkService.GetStudentAverageMark(student, groupMarks, typeF?.TypeOfExerciseID);
                     if (studentRating != null && studentRating > 0)
                     {
                         groupStudentRatings.Add((double)studentRating);

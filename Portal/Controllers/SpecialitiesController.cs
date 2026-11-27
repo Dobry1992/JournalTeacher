@@ -273,6 +273,8 @@ namespace Portal.Controllers
             var typeL = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Лекция");
             var typeKM = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Контрольное мероприятие");
             var typeGPZ = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Городское практическое занятие");
+            // Итоговые отметки (экзамен/зачёт): участвуют в рейтинге по правилу сессии
+            var typeF = await _context.Types.FirstOrDefaultAsync(t => t.Name == "Итоговая отметка");
 
             // Типы для учебных отметок
             var studyTypeIds = new HashSet<int>
@@ -320,7 +322,8 @@ namespace Portal.Controllers
 
                 var semesterMarks = allMarks
                     .Where(m =>
-                        studyTypeIds.Contains(m.TypeOfExerciseID) &&
+                        (studyTypeIds.Contains(m.TypeOfExerciseID) ||
+                         (typeF != null && m.TypeOfExerciseID == typeF.TypeOfExerciseID)) &&
                         m.Date.Year == DateTime.Now.Year &&
                         m.Date.Month >= 9 && m.Date.Month <= 12
                     )
@@ -340,7 +343,8 @@ namespace Portal.Controllers
 
                 var semesterMarks = allMarks
                     .Where(m =>
-                        studyTypeIds.Contains(m.TypeOfExerciseID) &&
+                        (studyTypeIds.Contains(m.TypeOfExerciseID) ||
+                         (typeF != null && m.TypeOfExerciseID == typeF.TypeOfExerciseID)) &&
                         ((m.Date.Year == DateTime.Now.Year && m.Date.Month == 1) ||
                          (m.Date.Year == date.Year && m.Date.Month >= 9 && m.Date.Month <= 12))
                     )
@@ -360,7 +364,8 @@ namespace Portal.Controllers
 
                 var semesterMarks = allMarks
                     .Where(m =>
-                        studyTypeIds.Contains(m.TypeOfExerciseID) &&
+                        (studyTypeIds.Contains(m.TypeOfExerciseID) ||
+                         (typeF != null && m.TypeOfExerciseID == typeF.TypeOfExerciseID)) &&
                         m.Date.Year == DateTime.Now.Year &&
                         m.Date.Month >= 2 && m.Date.Month <= 8
                     )
@@ -376,9 +381,11 @@ namespace Portal.Controllers
             }
 
             // Извлекаем числовые отметки для расчетов
+            // (итоговые отметки не учитываем - они производные)
             foreach (var mark in marks)
             {
-                if (double.TryParse(mark.Value, out var m))
+                if (double.TryParse(mark.Value, out var m) &&
+                    (typeF == null || mark.TypeOfExerciseID != typeF.TypeOfExerciseID))
                 {
                     marksAverage.Add(m);
                 }
@@ -400,7 +407,7 @@ namespace Portal.Controllers
             List<StudentRaiting> studentRaitings = new();
             foreach (var student in students)
             {
-                double? studentRating = _studentAverageMarkService.GetStudentAverageMark(student, marks);
+                double? studentRating = _studentAverageMarkService.GetStudentAverageMark(student, marks, typeF?.TypeOfExerciseID);
                 studentRaitings.Add(new StudentRaiting
                 {
                     Group = student.Group,
@@ -426,7 +433,7 @@ namespace Portal.Controllers
                 List<double> groupStudentRatings = new();
                 foreach (var student in groupStudents)
                 {
-                    double? studentRating = _studentAverageMarkService.GetStudentAverageMark(student, groupMarks);
+                    double? studentRating = _studentAverageMarkService.GetStudentAverageMark(student, groupMarks, typeF?.TypeOfExerciseID);
                     if (studentRating.HasValue && studentRating.Value > 0)
                     {
                         groupStudentRatings.Add(studentRating.Value);

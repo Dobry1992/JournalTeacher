@@ -114,7 +114,8 @@ namespace Portal.Controllers
             {
                 var semesterMarks = allMarks
                     .Where(m =>
-                        studyTypeIds.Contains(m.TypeOfExerciseID) &&
+                        (studyTypeIds.Contains(m.TypeOfExerciseID) ||
+                         (typeF != null && m.TypeOfExerciseID == typeF.TypeOfExerciseID)) &&
                         m.Date.Year == DateTime.Now.Year &&
                         m.Date.Month >= 9 && m.Date.Month <= 12
                     )
@@ -132,7 +133,8 @@ namespace Portal.Controllers
             {
                 var semesterMarks = allMarks
                     .Where(m =>
-                        studyTypeIds.Contains(m.TypeOfExerciseID) &&
+                        (studyTypeIds.Contains(m.TypeOfExerciseID) ||
+                         (typeF != null && m.TypeOfExerciseID == typeF.TypeOfExerciseID)) &&
                         ((m.Date.Year == DateTime.Now.Year && m.Date.Month == 1) ||
                          (m.Date.Year == date.Year && m.Date.Month >= 9 && m.Date.Month <= 12))
                     )
@@ -150,7 +152,8 @@ namespace Portal.Controllers
             {
                 var semesterMarks = allMarks
                     .Where(m =>
-                        studyTypeIds.Contains(m.TypeOfExerciseID) &&
+                        (studyTypeIds.Contains(m.TypeOfExerciseID) ||
+                         (typeF != null && m.TypeOfExerciseID == typeF.TypeOfExerciseID)) &&
                         m.Date.Year == DateTime.Now.Year &&
                         m.Date.Month >= 2 && m.Date.Month <= 8
                     )
@@ -167,32 +170,33 @@ namespace Portal.Controllers
 
             // ========================================
             // ИЗВЛЕКАЕМ ЧИСЛОВЫЕ ОТМЕТКИ ДЛЯ РАСЧЕТОВ
+            // (итоговые отметки не учитываем - они производные)
             // ========================================
             var numericMarks = marks
+                .Where(m => typeF == null || m.TypeOfExerciseID != typeF.TypeOfExerciseID)
                 .Select(m => double.TryParse(m.Value, out var value) ? value : (double?)null)
                 .Where(v => v.HasValue)
                 .Select(v => v.Value)
                 .ToList();
 
             // ========================================
-            // ТЕКУЩИЙ СРЕДНИЙ БАЛЛ СТУДЕНТА 
-            // (СРЕДНЕЕ АРИФМЕТИЧЕСКОЕ СРЕДНИХ БАЛЛОВ ПО ПРЕДМЕТАМ)
+            // ТЕКУЩИЙ СРЕДНИЙ БАЛЛ СТУДЕНТА
+            // (СРЕДНЕЕ АРИФМЕТИЧЕСКОЕ ОЦЕНОК ПО ПРЕДМЕТАМ)
+            // Правило сессии: если по предмету выставлена итоговая отметка
+            // (экзамен/зачёт) и новых отметок после неё нет - берётся итоговая,
+            // а не среднее по отметкам.
             // ========================================
             double raiting = 0;
 
-            // Группируем отметки по предметам и считаем средний балл по каждому предмету
+            // Группируем отметки по предметам и считаем оценку по каждому предмету
             var subjectAverages = marks
-                .Where(m => studyTypeIds.Contains(m.TypeOfExerciseID))
+                .Where(m => studyTypeIds.Contains(m.TypeOfExerciseID) ||
+                            (typeF != null && m.TypeOfExerciseID == typeF.TypeOfExerciseID))
                 .GroupBy(m => m.SubjectID)
                 .Select(g => new
                 {
                     SubjectID = g.Key,
-                    Average = g
-                        .Select(m => double.TryParse(m.Value, out var value) ? value : (double?)null)
-                        .Where(v => v.HasValue)
-                        .Select(v => v.Value)
-                        .DefaultIfEmpty(0)
-                        .Average()
+                    Average = _studentAverageMarkService.GetSubjectAverage(g, typeF?.TypeOfExerciseID) ?? 0
                 })
                 .Where(s => s.Average > 0)
                 .ToList();

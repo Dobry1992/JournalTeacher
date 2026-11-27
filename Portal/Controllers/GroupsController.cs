@@ -477,6 +477,12 @@ namespace Portal
                     .Select(kv => kv.Value)
             );
 
+            // Итоговые отметки (экзамен/зачёт): участвуют в рейтинге по правилу сессии
+            var typeIORating = await _context.Types
+                .AsNoTracking()
+                .FirstOrDefaultAsync(t => t.Name == "Итоговая отметка");
+            int? typeIOId = typeIORating?.TypeOfExerciseID;
+
             var institute = await _context.Institutes
                 .AsNoTracking()
                 .FirstOrDefaultAsync(i => i.InstituteID == group.InstituteID);
@@ -499,11 +505,13 @@ namespace Portal
                 endYear = DateTime.Now.Year;
             }
 
-            var (marks, term) = FilterMarksBySemester(allMarks, studyTypeIds);
+            var (marks, term) = FilterMarksBySemester(allMarks, studyTypeIds, typeIOId);
 
+            // Распределение отметок считается по "живым" отметкам (итоговые - производные)
             var marksAverage = new List<double>();
             foreach (var mark in marks)
-                if (double.TryParse(mark.Value, out var m))
+                if ((!typeIOId.HasValue || mark.TypeOfExerciseID != typeIOId.Value) &&
+                    double.TryParse(mark.Value, out var m))
                     marksAverage.Add(m);
 
             // Определяем предмет для отображения
@@ -517,10 +525,11 @@ namespace Portal
                 ? await _context.Subjects.AsNoTracking().FirstOrDefaultAsync(s => s.SubjectID == subjectID)
                 : null;
 
-            var raitingTimeSubject = BuildMonthlyRating(marks.Where(m => m.SubjectID == subjectID));
+            var raitingTimeSubject = BuildMonthlyRating(marks.Where(m => m.SubjectID == subjectID &&
+                (!typeIOId.HasValue || m.TypeOfExerciseID != typeIOId.Value)));
 
             var students = group.Students.Where(s => s.Status).ToList();
-            var groupRating = BuildGroupRating(students, marks);
+            var groupRating = BuildGroupRating(students, marks, typeIOId);
             var rating = groupRating.Any(g => g.Raiting > 0)
                 ? Math.Round(groupRating.Where(g => g.Raiting > 0).Average(g => g.Raiting), 3, MidpointRounding.AwayFromZero)
                 : 0;
@@ -550,14 +559,20 @@ namespace Portal
             return View(group);
         }
 
-        private static (List<Mark> marks, string term) FilterMarksBySemester(List<Mark> allMarks, HashSet<int> studyTypeIds)
+        private static (List<Mark> marks, string term) FilterMarksBySemester(List<Mark> allMarks, HashSet<int> studyTypeIds, int? typeIOId = null)
         {
             var date = DateTime.Now.AddYears(-1);
+
+            // В окно семестра дополнительно берём итоговые отметки (сессия): они
+            // "флажатся" при создании экзамена и иначе не попали бы в расчёт рейтинга
+            bool InSemesterTypes(Mark m) =>
+                studyTypeIds.Contains(m.TypeOfExerciseID) ||
+                (typeIOId.HasValue && m.TypeOfExerciseID == typeIOId.Value);
 
             if (DateTime.Now.Month >= 9 && DateTime.Now.Month <= 12)
             {
                 var semester = allMarks.Where(m =>
-                    studyTypeIds.Contains(m.TypeOfExerciseID) &&
+                    InSemesterTypes(m) &&
                     m.Date.Year == DateTime.Now.Year &&
                     m.Date.Month >= 9 && m.Date.Month <= 12).ToList();
                 var incomplete = allMarks.Where(m => m.FlagF == 0).ToList();
@@ -567,7 +582,7 @@ namespace Portal
             if (DateTime.Now.Month == 1)
             {
                 var semester = allMarks.Where(m =>
-                    studyTypeIds.Contains(m.TypeOfExerciseID) &&
+                    InSemesterTypes(m) &&
                     ((m.Date.Year == DateTime.Now.Year && m.Date.Month == 1) ||
                      (m.Date.Year == date.Year && m.Date.Month >= 9 && m.Date.Month <= 12))).ToList();
                 var incomplete = allMarks.Where(m => m.FlagF == 0).ToList();
@@ -575,7 +590,7 @@ namespace Portal
             }
 
             var semester2 = allMarks.Where(m =>
-                studyTypeIds.Contains(m.TypeOfExerciseID) &&
+                InSemesterTypes(m) &&
                 m.Date.Year == DateTime.Now.Year &&
                 m.Date.Month >= 2 && m.Date.Month <= 8).ToList();
             var incomplete2 = allMarks.Where(m => m.FlagF == 0).ToList();
@@ -588,13 +603,16 @@ namespace Portal
             return marks.Where(m => seen.Add(m.MarkID)).ToList();
         }
 
-        private List<GroupRaiting> BuildGroupRating(List<Student> students, List<Mark> marks)
+        private List<GroupRaiting> BuildGroupRating(List<Student> students, List<Mark> marks, int? typeIOId)
         {
             var result = new List<GroupRaiting>();
             foreach (var student in students)
             {
                 var marksStudent = marks.Where(m => m.StudentID == student.StudentID).ToList();
+                // Для количества отметок берём "живые" отметки (итоговые - производные),
+                // а в сервис передаём все: он применит правило сессии
                 var marksValue = marksStudent
+                    .Where(m => !typeIOId.HasValue || m.TypeOfExerciseID != typeIOId.Value)
                     .Select(m => double.TryParse(m.Value, out var v) ? v : (double?)null)
                     .Where(v => v.HasValue)
                     .Select(v => v.Value)
@@ -602,7 +620,7 @@ namespace Portal
 
                 double ratingStudent = 0;
                 if (marksValue.Any())
-                    ratingStudent = _studentRating.GetStudentAverageMark(student, marksStudent) ?? 0;
+                    ratingStudent = _studentRating.GetStudentAverageMark(student, marksStudent, typeIOId) ?? 0;
 
                 result.Add(new GroupRaiting
                 {
